@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sistema Despachante</title>
+<title>VeloDoc</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;color:#1a1a1a;background:#f5f5f3;min-height:100vh}
 .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
 .login-box{background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:2rem;width:100%;max-width:370px}
 .login-logo{text-align:center;margin-bottom:1.5rem}
-.login-logo h1{font-size:22px;font-weight:700}.login-logo h1 span{color:#1D9E75}
+.login-logo h1{font-size:22px;font-weight:700}.login-logo h1 span{color:#185FA5}
 .login-logo p{font-size:13px;color:#888;margin-top:4px}
 .login-box .fg{margin-bottom:1rem}
 .login-box label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:5px}
@@ -21,7 +21,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .login-err{background:#fdf2f2;color:#993C1D;border:1px solid #F5C4B3;border-radius:8px;padding:8px 12px;font-size:13px;margin-top:.75rem;display:none}
 .app{display:none}
 .topbar{background:#fff;border-bottom:1px solid #e5e5e5;padding:.75rem 1.25rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;gap:8px;flex-wrap:wrap}
-.topbar .logo{font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px}.topbar .logo span{color:#1D9E75}
+.topbar .logo{font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px}.topbar .logo span{color:#185FA5}
 .topbar-right{display:flex;align-items:center;gap:10px}
 .user-pill{display:flex;align-items:center;gap:6px;font-size:12px;background:#f5f5f3;padding:5px 10px;border-radius:20px}
 .avatar{width:22px;height:22px;border-radius:50%;background:#1D9E75;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
@@ -125,7 +125,19 @@ table tr:hover td{background:#fafafa}
 <!-- LOGIN -->
 <div class="login-wrap" id="login-wrap">
   <div class="login-box">
-    <div class="login-logo"><h1>🚗 <span>Despachante</span> Sistema</h1><p>Faça login para continuar</p></div>
+    <div class="login-logo"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px"><svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <path d="M4 26 A16 16 0 0 1 32 26" stroke="#185FA5" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <line x1="5.5" y1="23" x2="8" y2="19.5" stroke="#B5D4F4" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="11" y1="13" x2="14" y2="10" stroke="#B5D4F4" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="18" y1="10" x2="18" y2="6" stroke="#B5D4F4" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="25" y1="13" x2="22" y2="10" stroke="#B5D4F4" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="30.5" y1="23" x2="28" y2="19.5" stroke="#B5D4F4" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="18" y1="26" x2="28" y2="16" stroke="#185FA5" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="18" cy="26" r="2.5" fill="#185FA5"/>
+  <rect x="13" y="14" width="10" height="13" rx="1.5" fill="white" stroke="#185FA5" stroke-width="1"/>
+  <line x1="15.5" y1="19" x2="21" y2="19" stroke="#B5D4F4" stroke-width="1" stroke-linecap="round"/>
+  <line x1="15.5" y1="22" x2="21" y2="22" stroke="#B5D4F4" stroke-width="1" stroke-linecap="round"/>
+</svg><h1><span>Velo</span>Doc</h1></div><p>Gestão de documentos automotivos</p></div>
     <div class="fg"><label>Usuário</label><input type="text" id="l-usuario" placeholder="seu usuario" autocomplete="username"></div>
     <div class="fg"><label>Senha</label><input type="password" id="l-senha" placeholder="••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')fazerLogin()"></div>
     <button class="login-btn" onclick="fazerLogin()" id="login-btn">Entrar</button>
@@ -145,7 +157,19 @@ table tr:hover td{background:#fafafa}
 <!-- APP -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🚗 <span>Despachante</span> Sistema</div>
+    <div class="logo"><svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <path d="M4 26 A16 16 0 0 1 32 26" stroke="#185FA5" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <line x1="5.5" y1="23" x2="8" y2="19.5" stroke="#B5D4F4" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="11" y1="13" x2="14" y2="10" stroke="#B5D4F4" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="18" y1="10" x2="18" y2="6" stroke="#B5D4F4" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="25" y1="13" x2="22" y2="10" stroke="#B5D4F4" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="30.5" y1="23" x2="28" y2="19.5" stroke="#B5D4F4" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="18" y1="26" x2="28" y2="16" stroke="#185FA5" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="18" cy="26" r="2.5" fill="#185FA5"/>
+  <rect x="13" y="14" width="10" height="13" rx="1.5" fill="white" stroke="#185FA5" stroke-width="1"/>
+  <line x1="15.5" y1="19" x2="21" y2="19" stroke="#B5D4F4" stroke-width="1" stroke-linecap="round"/>
+  <line x1="15.5" y1="22" x2="21" y2="22" stroke="#B5D4F4" stroke-width="1" stroke-linecap="round"/>
+</svg> <span>Velo</span>Doc</div>
     <div class="topbar-right">
       <div class="conn-pill off" id="conn-pill"><div class="conn-dot"></div><span id="conn-label">Sem conexão</span></div>
       <div class="user-pill"><div class="avatar" id="user-avatar">?</div><span id="user-nome">-</span></div>
@@ -266,7 +290,7 @@ table tr:hover td{background:#fafafa}
       </div>
       <div class="leg"><span><span class="dot green" style="display:inline-block"></span> Casado</span><span><span class="dot red" style="display:inline-block"></span> Aguardando NF</span><span><span class="dot amber" style="display:inline-block"></span> NF sem crédito</span></div>
       <div class="card" style="padding:0;overflow-x:auto">
-        <table><thead><tr><th></th><th>CPF/CNPJ</th><th>Cliente</th><th>Loja</th><th>Vendedor</th><th>Placa</th><th>OC</th><th>IPVA</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Status</th><th>Dt. venda</th><th>Dt. NF</th></tr></thead><tbody id="tbl-casamento"></tbody></table>
+        <table><thead><tr><th></th><th>OC</th><th>Cliente</th><th>CPF/CNPJ</th><th>Loja</th><th>Vendedor</th><th>Placa</th><th>IPVA</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Status</th><th>Dt. venda</th><th>Dt. NF</th></tr></thead><tbody id="tbl-casamento"></tbody></table>
       </div>
     </div>
 
@@ -283,7 +307,7 @@ table tr:hover td{background:#fafafa}
           <select id="rc-status" onchange="renderRegCreditos()"><option value="">Todos</option><option value="ok">Normal</option><option value="cortesia">Cortesia</option><option value="perdida">NF Fora</option><option value="pendente">Pendente</option></select>
           <button class="btn" onclick="carregarDados()">🔄 Atualizar</button>
         </div>
-        <div class="card" style="padding:0;overflow-x:auto"><table><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>OC</th><th>IPVA</th><th>Loja</th><th>Vendedor</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Status</th><th>Data</th><th></th></tr></thead><tbody id="tbl-creditos"></tbody></table></div>
+        <div class="card" style="padding:0;overflow-x:auto"><table><thead><tr><th>OC</th><th>Cliente</th><th>CPF/CNPJ</th><th>Placa</th><th>IPVA</th><th>Loja</th><th>Vendedor</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Status</th><th>Data</th><th></th></tr></thead><tbody id="tbl-creditos"></tbody></table></div>
       </div>
       <div id="reg-nf-sec" style="display:none">
         <div class="search-bar">
@@ -416,7 +440,7 @@ function fmtDoc(fieldId){
 function norm(s){return(s||'').toLowerCase().trim();}
 function getRef(tipo,v){var t=tipo==='0km'?COM_0KM:COM_SEMI;for(var i=t.length-1;i>=0;i--){if(v>=t[i][0])return t[i][1];}return 0;}
 function fmtM(v){return'R$ '+Number(v||0).toFixed(2).replace('.',',');}
-function fmtD(d){if(!d)return'—';if(typeof d==='string'&&d.includes('-')){var p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0];}return String(d);}
+function fmtD(d){if(!d)return'—';if(typeof d==='string'&&d.includes('T')){d=d.split('T')[0];}if(typeof d==='string'&&d.includes('-')){var p=d.split('-');return p[2]+'/'+p[1];}return String(d);}
 function getSem(ds){if(!ds)return'';var d=new Date(ds+'T12:00:00');var j=new Date(d.getFullYear(),0,1);return d.getFullYear()+'-S'+String(Math.ceil(((d-j)/86400000+j.getDay()+1)/7)).padStart(2,'0');}
 function stBadge(s){var m={ok:['ok','Normal'],cortesia:['cortesia','Cortesia'],perdida:['perdida','NF Fora'],pendente:['pendente','Pendente']};var r=m[s]||['',''];return'<span class="badge '+r[0]+'">'+r[1]+'</span>';}
 function dotH(st){if(st==='casado')return'<span class="dot green"></span>';if(st==='sem-nf')return'<span class="dot red"></span>';return'<span class="dot amber"></span>';}
@@ -568,11 +592,11 @@ function renderCasamento(){
   if(loja)gs=gs.filter(function(g){return norm(g.loja)===norm(loja);});
   if(busca)gs=gs.filter(function(g){var c=g.creditos[0];return norm(g.doc).includes(busca)||norm(g.cliente||'').includes(busca)||(c&&norm(c.placa||'').includes(busca))||(c&&norm(c.oc||'').includes(busca));});
   if(filtro)gs=gs.filter(function(g){return casSt(g)===filtro;});
-  document.getElementById('tbl-casamento').innerHTML=gs.length?gs.map(function(g){var st=casSt(g);var c=g.creditos[0];var n=g.nfs[0];return'<tr><td>'+dotH(st)+'</td><td style="font-size:12px;color:#666">'+g.doc+'</td><td style="font-weight:600">'+(g.cliente||'—')+'</td><td>'+g.loja+'</td><td>'+(c?c.vendedor:'—')+'</td><td>'+(c&&c.placa?c.placa:'—')+'</td><td style="font-size:11px;color:#888">'+(c&&c.oc?c.oc:'—')+'</td><td>'+(c?ipvaB(c.ipva):'—')+'</td><td>'+(c?fmtM(c.valor):'—')+'</td><td style="color:#854F0B">'+(c&&c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c&&c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c&&c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+(c?stBadge(c.status):'—')+'</td><td>'+(c?fmtD(c.dtVenda):'—')+'</td><td>'+(n?fmtD(n.dtReceb):'—')+'</td></tr>';}).join(''):'<tr><td colspan="15" class="empty-state">Nenhum registro</td></tr>';
+  document.getElementById('tbl-casamento').innerHTML=gs.length?gs.map(function(g){var st=casSt(g);var c=g.creditos[0];var n=g.nfs[0];return'<tr><td>'+dotH(st)+'</td><td style="font-weight:600;color:#185FA5">'+(c&&c.oc?c.oc:'—')+'</td><td style="font-weight:600">'+(g.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+g.doc+'</td><td>'+g.loja+'</td><td>'+(c?c.vendedor:'—')+'</td><td>'+(c&&c.placa?c.placa:'—')+'</td><td>'+(c?ipvaB(c.ipva):'—')+'</td><td>'+(c?fmtM(c.valor):'—')+'</td><td style="color:#854F0B">'+(c&&c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c&&c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c&&c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+(c?stBadge(c.status):'—')+'</td><td>'+(c?fmtD(c.dtVenda):'—')+'</td><td>'+(n?fmtD(n.dtReceb):'—')+'</td></tr>';}).join(''):'<tr><td colspan="15" class="empty-state">Nenhum registro</td></tr>';
 }
 
 function renderRegistros(){['rc-loja','rn-loja'].forEach(function(id){document.getElementById(id).innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+l+'</option>';}).join('');});renderRegCreditos();}
-function renderRegCreditos(){var busca=(document.getElementById('rc-busca').value||'').toLowerCase();var loja=document.getElementById('rc-loja').value;var status=document.getElementById('rc-status').value;var list=creditos.filter(function(c){if(loja&&norm(c.loja)!==norm(loja))return false;if(status&&c.status!==status)return false;if(busca&&!(norm(c.doc||'')+norm(c.cliente||'')+norm(c.placa||'')+norm(c.oc||'')+norm(c.vendedor||'')).includes(busca))return false;return true;});document.getElementById('tbl-creditos').innerHTML=list.length?list.map(function(c){return'<tr><td style="font-size:12px;color:#666">'+(c.doc||'—')+'</td><td style="font-weight:600">'+(c.cliente||'—')+'</td><td>'+(c.placa||'—')+'</td><td style="font-size:11px;color:#888">'+(c.oc||'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+(c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+stBadge(c.status)+'</td><td>'+fmtD(c.dtVenda)+'</td><td class="tbl-actions"><button onclick="excCred('+c.id+')">🗑</button></td></tr>';}).join(''):'<tr><td colspan="14" class="empty-state">Nenhum crédito</td></tr>';}
+function renderRegCreditos(){var busca=(document.getElementById('rc-busca').value||'').toLowerCase();var loja=document.getElementById('rc-loja').value;var status=document.getElementById('rc-status').value;var list=creditos.filter(function(c){if(loja&&norm(c.loja)!==norm(loja))return false;if(status&&c.status!==status)return false;if(busca&&!(norm(c.doc||'')+norm(c.cliente||'')+norm(c.placa||'')+norm(c.oc||'')+norm(c.vendedor||'')).includes(busca))return false;return true;});document.getElementById('tbl-creditos').innerHTML=list.length?list.map(function(c){return'<tr><td style="font-weight:600;color:#185FA5">'+(c.oc||'—')+'</td><td style="font-weight:600">'+(c.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+(c.doc||'—')+'</td><td>'+(c.placa||'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+(c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+stBadge(c.status)+'</td><td>'+fmtD(c.dtVenda)+'</td><td class="tbl-actions"><button onclick="excCred('+c.id+')">🗑</button></td></tr>';}).join(''):'<tr><td colspan="14" class="empty-state">Nenhum crédito</td></tr>';}
 function renderRegNFs(){var busca=(document.getElementById('rn-busca').value||'').toLowerCase();var loja=document.getElementById('rn-loja').value;var list=nfs.filter(function(n){if(loja&&norm(n.loja)!==norm(loja))return false;if(busca&&!(norm(n.doc||'')+norm(n.cliente||'')).includes(busca))return false;return true;});document.getElementById('tbl-nfs').innerHTML=list.length?list.map(function(n){var tc=creditos.some(function(c){return normDoc(c.doc)===normDoc(n.doc)&&norm(c.loja)===norm(n.loja);});return'<tr><td style="font-size:12px;color:#666">'+(n.doc||'—')+'</td><td style="font-weight:600">'+(n.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+(n.chassi||'—')+'</td><td>'+n.loja+'</td><td>'+fmtD(n.dtFat)+'</td><td>'+fmtD(n.dtReceb)+'</td><td>'+(tc?'<span class="match-ok"><span class="dot green"></span> Casado</span>':'<span class="match-avulso"><span class="dot amber"></span> Sem crédito</span>')+'</td><td class="tbl-actions"><button onclick="excNF('+n.id+')">🗑</button></td></tr>';}).join(''):'<tr><td colspan="8" class="empty-state">Nenhuma NF avulsa</td></tr>';}
 async function excCred(id){if(!confirm('Remover crédito?'))return;try{await api({action:'delete',sheet:'CREDITOS',id:id});}catch(e){alert('Erro: '+e.message);return;}creditos=creditos.filter(function(c){return c.id!=id;});renderRegCreditos();renderPainel();}
 async function excNF(id){if(!confirm('Remover NF?'))return;try{await api({action:'delete',sheet:'NFS',id:id});}catch(e){alert('Erro: '+e.message);return;}nfs=nfs.filter(function(n){return n.id!=id;});renderRegNFs();renderPainel();}
