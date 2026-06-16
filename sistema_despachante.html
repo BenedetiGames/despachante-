@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema Despachante</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;color:#1a1a1a;background:#f5f5f3;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #e5e5e5;padding:0.75rem 1.25rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.topbar .logo{font-size:15px;font-weight:600;color:#1a1a1a;display:flex;align-items:center;gap:8px}
+.topbar .logo span{color:#1D9E75}
+.conn-pill{display:flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px;border-radius:20px;background:#f0faf6;color:#1D9E75;border:1px solid #9FE1CB}
+.conn-pill.off{background:#fdf2f2;color:#E24B4A;border-color:#F7C1C1}
+.conn-pill .dot{width:7px;height:7px;border-radius:50%}
+.conn-pill.on .dot{background:#1D9E75}
+.conn-pill.off .dot{background:#E24B4A}
+.wrapper{max-width:1100px;margin:0 auto;padding:1rem 1rem 2rem}
+.nav{display:flex;gap:4px;margin-bottom:1.25rem;flex-wrap:wrap;background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:6px}
+.nav button{padding:7px 14px;border-radius:7px;border:none;background:transparent;cursor:pointer;font-size:13px;color:#666;display:flex;align-items:center;gap:5px}
+.nav button:hover{background:#f5f5f3;color:#1a1a1a}
+.nav button.active{background:#1D9E75;color:#fff;font-weight:500}
+.section{display:none}.section.active{display:block}
+.card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem}
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1rem}
+.metric{background:#f5f5f3;border-radius:8px;padding:0.75rem 1rem}
+.metric .lbl{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.metric .val{font-size:22px;font-weight:600}
+.val.green{color:#0F6E56}.val.red{color:#993C1D}.val.blue{color:#185FA5}.val.amber{color:#854F0B}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:1rem}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px}
+.fg input,.fg select{border-radius:7px;border:1px solid #ddd;padding:7px 10px;font-size:13px;background:#fff;color:#1a1a1a;transition:border .15s}
+.fg input:focus,.fg select:focus{outline:none;border-color:#1D9E75;box-shadow:0 0 0 3px rgba(29,158,117,.1)}
+.fg .ref{font-size:11px;color:#185FA5;margin-top:2px}
+.fg .hint{font-size:11px;color:#888;margin-top:2px}
+.btn{padding:8px 16px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:13px;color:#333;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn:hover{background:#f5f5f3}
+.btn.primary{background:#1D9E75;color:#fff;border-color:#1D9E75;font-weight:500}
+.btn.primary:hover{background:#0F6E56}
+.btn.success{background:#f0faf6;color:#0F6E56;border-color:#9FE1CB;font-weight:500}
+.btn.success:hover{background:#9FE1CB}
+.btn.danger{background:#fdf2f2;color:#993C1D;border-color:#F5C4B3}
+table{width:100%;border-collapse:collapse;font-size:13px}
+table th{font-weight:600;font-size:11px;color:#888;text-align:left;padding:8px 10px;border-bottom:1px solid #e5e5e5;text-transform:uppercase;letter-spacing:.3px}
+table td{padding:9px 10px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+table tr:last-child td{border-bottom:none}
+table tr:hover td{background:#fafafa}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+.badge.cortesia{background:#e6f1fb;color:#185FA5}
+.badge.perdida{background:#fdf2f2;color:#993C1D}
+.badge.ok{background:#f0faf6;color:#0F6E56}
+.badge.pendente{background:#faeeda;color:#854F0B}
+.badge.ipva{background:#f0faf6;color:#0F6E56}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot.green{background:#1D9E75}.dot.red{background:#E24B4A}.dot.amber{background:#EF9F27}
+.match-ok{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#0F6E56;font-weight:500;background:#f0faf6;padding:5px 10px;border-radius:7px}
+.match-pend{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#993C1D;background:#fdf2f2;padding:5px 10px;border-radius:7px}
+.match-avulso{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#854F0B;background:#faeeda;padding:5px 10px;border-radius:7px}
+.search-bar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+.search-bar input,.search-bar select{border-radius:7px;border:1px solid #ddd;padding:7px 10px;font-size:13px;background:#fff;color:#1a1a1a}
+.search-bar input{flex:1;min-width:150px}
+.section-title{font-size:15px;font-weight:600;margin-bottom:0.75rem;color:#1a1a1a}
+.tabs-inner{display:flex;gap:4px;margin-bottom:1rem}
+.tabs-inner button{padding:6px 14px;border-radius:7px;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:13px;color:#666}
+.tabs-inner button.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:500}
+.calc-box{background:#f5f5f3;border-radius:8px;padding:1rem 1.25rem;margin-bottom:1rem;display:flex;gap:2rem;flex-wrap:wrap;align-items:center}
+.calc-item .lbl{font-size:11px;color:#888;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px}
+.calc-item .num{font-size:20px;font-weight:600}
+.divider-v{width:1px;background:#e5e5e5;align-self:stretch;min-height:40px}
+.leg{display:flex;gap:1rem;flex-wrap:wrap;font-size:12px;color:#888;margin-bottom:0.75rem;align-items:center}
+.sep{border:none;border-top:1px solid #f0f0f0;margin:1rem 0}
+.ipva-toggle{display:flex;align-items:center;gap:10px;padding:9px 14px;border:1.5px solid #ddd;border-radius:8px;cursor:pointer;user-select:none;width:fit-content;transition:all .15s}
+.ipva-toggle:hover{border-color:#1D9E75;background:#f0faf6}
+.ipva-toggle.checked{border-color:#1D9E75;background:#f0faf6}
+.ipva-icon{width:20px;height:20px;border-radius:5px;border:2px solid #ccc;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;font-size:12px;color:#fff}
+.ipva-toggle.checked .ipva-icon{background:#1D9E75;border-color:#1D9E75}
+.ipva-label{font-size:13px;font-weight:500;color:#444}
+.ipva-toggle.checked .ipva-label{color:#0F6E56}
+.url-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.url-row input{flex:1;min-width:200px}
+.alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:0.75rem;display:flex;align-items:center;gap:8px}
+.alert.ok{background:#f0faf6;color:#0F6E56;border:1px solid #9FE1CB}
+.alert.err{background:#fdf2f2;color:#993C1D;border:1px solid #F5C4B3}
+.alert.info{background:#e6f1fb;color:#185FA5;border:1px solid #B5D4F4}
+.alert.warn{background:#faeeda;color:#854F0B;border:1px solid #FAC775}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.chip{background:#f0faf6;color:#0F6E56;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:500}
+.tbl-actions button{border:1px solid #e5e5e5;background:#fff;cursor:pointer;padding:3px 8px;border-radius:6px;font-size:11px;color:#888}
+.tbl-actions button:hover{background:#fdf2f2;color:#993C1D;border-color:#F5C4B3}
+.empty-state{text-align:center;color:#aaa;padding:2rem;font-size:13px}
+h1{font-size:15px;font-weight:600}
+@media(max-width:600px){.nav{gap:3px}.nav button{padding:6px 10px;font-size:12px}.metric .val{font-size:18px}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">🚗 <span>Despachante</span> Sistema</div>
+  <div class="conn-pill off" id="conn-pill"><div class="dot"></div><span id="conn-label">Sem conexão</span></div>
+</div>
+
+<div class="wrapper">
+<div class="nav">
+  <button class="active" onclick="showTab('painel',this)">📊 Painel</button>
+  <button onclick="showTab('lancamento',this)">➕ Lançamento</button>
+  <button onclick="showTab('casamento',this)">🔗 Casamento</button>
+  <button onclick="showTab('notas',this)">📁 Registros</button>
+  <button onclick="showTab('relatorios',this)">📈 Relatórios</button>
+  <button onclick="showTab('config',this)">⚙️ Config.</button>
+</div>
+
+<!-- PAINEL -->
+<div id="sec-painel" class="section active">
+  <div class="metric-grid" id="metrics"></div>
+  <div class="card">
+    <div class="section-title">Pendências de casamento</div>
+    <div class="leg">
+      <span><span class="dot green" style="display:inline-block"></span> Casado</span>
+      <span><span class="dot red" style="display:inline-block"></span> Aguardando NF</span>
+      <span><span class="dot amber" style="display:inline-block"></span> NF sem crédito</span>
+    </div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Cliente</th><th>Loja</th><th>Vendedor</th><th>Placa</th><th>OC</th><th>IPVA</th><th>Valor</th><th>Status</th></tr></thead><tbody id="tbl-painel-pend"></tbody></table></div>
+  </div>
+</div>
+
+<!-- LANÇAMENTO -->
+<div id="sec-lancamento" class="section">
+  <div class="tabs-inner">
+    <button class="active" id="btn-tab-cred" onclick="showInner('credito')">💳 Lançar crédito</button>
+    <button id="btn-tab-nf" onclick="showInner('nf')">📄 Lançar NF</button>
+  </div>
+  <div id="inner-credito">
+    <div class="card">
+      <div class="section-title">Abertura de crédito / venda do documento</div>
+      <div class="form-grid">
+        <div class="fg"><label>Cliente</label><input type="text" id="c-cliente" placeholder="Nome do cliente" oninput="sugerirCred()"></div>
+        <div class="fg"><label>Chassi</label><input type="text" id="c-chassi" placeholder="9BF12345..."></div>
+        <div class="fg"><label>Placa</label><input type="text" id="c-placa" placeholder="ABC1D23" style="text-transform:uppercase"></div>
+        <div class="fg"><label>Nº da OC</label><input type="text" id="c-oc" placeholder="Número do sistema"></div>
+        <div class="fg"><label>Loja</label><select id="c-loja" onchange="sugerirCred()"><option>-- selecione --</option></select></div>
+        <div class="fg"><label>Vendedor</label><select id="c-vendedor"><option>-- selecione --</option></select></div>
+        <div class="fg"><label>Tipo de veículo</label><select id="c-tipo" onchange="calcRef()"><option value="0km">0 km</option><option value="semi">Semi-novo</option></select></div>
+        <div class="fg"><label>Data da venda</label><input type="date" id="c-dtvenda"></div>
+        <div class="fg"><label>Status</label><select id="c-status" onchange="toggleMotivo()"><option value="ok">Normal</option><option value="cortesia">Cortesia</option><option value="perdida">NF Fora</option><option value="pendente">Pendente</option></select></div>
+        <div class="fg" id="c-motivo-g" style="display:none"><label>Motivo NF fora</label><input type="text" id="c-motivo"></div>
+        <div class="fg"><label>Observações</label><input type="text" id="c-obs"></div>
+      </div>
+      <div style="margin-bottom:1rem">
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">IPVA</div>
+        <div class="ipva-toggle" id="ipva-toggle" onclick="toggleIPVA()" role="checkbox" aria-checked="false" tabindex="0">
+          <div class="ipva-icon" id="ipva-icon"></div>
+          <span class="ipva-label" id="ipva-label">IPVA não incluso</span>
+        </div>
+      </div>
+      <hr class="sep">
+      <div style="font-size:13px;font-weight:600;margin-bottom:0.75rem">Valores financeiros</div>
+      <div class="form-grid">
+        <div class="fg"><label>Valor da venda (R$)</label><input type="number" id="c-valor" placeholder="0,00" oninput="calcRef()"></div>
+        <div class="fg"><label>Comissão do vendedor (R$)</label><input type="number" id="c-comissao" placeholder="Digite o valor"><span class="ref" id="c-ref-tabela"></span></div>
+        <div class="fg"><label>Honorários (R$)</label><input type="number" id="c-honorarios" placeholder="Sobra após taxas e comissão" oninput="calcNossaCom()"><span class="hint">Venda − taxas − comissão vendedor</span></div>
+      </div>
+      <div class="calc-box">
+        <div class="calc-item"><div class="lbl">Honorários</div><div class="num" id="box-hon" style="color:#1a1a1a">R$ —</div></div>
+        <div class="divider-v"></div>
+        <div class="calc-item"><div class="lbl">Nossa comissão (10%)</div><div class="num green" id="box-nossa-com">R$ —</div></div>
+        <div class="divider-v"></div>
+        <div class="calc-item" id="box-cort-wrap" style="display:none"><div class="lbl">Saldo cortesia</div><div class="num blue" id="box-cort-saldo">R$ —</div></div>
+      </div>
+      <div id="c-match-hint" style="margin-bottom:0.75rem"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn primary" onclick="salvarCredito()">💾 Salvar crédito</button>
+        <button class="btn" onclick="limparCred()">✕ Limpar</button>
+      </div>
+    </div>
+  </div>
+  <div id="inner-nf" style="display:none">
+    <div class="card">
+      <div class="section-title">Entrada de NF</div>
+      <div class="form-grid">
+        <div class="fg"><label>Cliente</label><input type="text" id="n-cliente" placeholder="Nome do cliente" oninput="sugerirNF()"></div>
+        <div class="fg"><label>Chassi</label><input type="text" id="n-chassi" placeholder="9BF12345..."></div>
+        <div class="fg"><label>Loja</label><select id="n-loja" onchange="sugerirNF()"><option>-- selecione --</option></select></div>
+        <div class="fg"><label>Data faturamento NF</label><input type="date" id="n-dtfat"></div>
+        <div class="fg"><label>Data recebimento NF</label><input type="date" id="n-dtreceb"></div>
+        <div class="fg"><label>Observações</label><input type="text" id="n-obs"></div>
+      </div>
+      <div id="n-match-hint" style="margin-bottom:0.75rem"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn success" onclick="salvarNF()">💾 Salvar NF</button>
+        <button class="btn" onclick="limparNF()">✕ Limpar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CASAMENTO -->
+<div id="sec-casamento" class="section">
+  <div class="search-bar">
+    <input type="text" id="cas-busca" placeholder="Buscar cliente, placa, OC..." oninput="renderCasamento()">
+    <select id="cas-loja" onchange="renderCasamento()"><option value="">Todas as lojas</option></select>
+    <select id="cas-filtro" onchange="renderCasamento()"><option value="">Todos</option><option value="casado">Casados</option><option value="sem-nf">Aguardando NF</option><option value="sem-cred">NF sem crédito</option></select>
+    <button class="btn" onclick="carregarDados()" style="white-space:nowrap">🔄 Atualizar</button>
+  </div>
+  <div class="leg"><span><span class="dot green" style="display:inline-block"></span> Casado</span><span><span class="dot red" style="display:inline-block"></span> Aguardando NF</span><span><span class="dot amber" style="display:inline-block"></span> NF sem crédito</span></div>
+  <div class="card" style="padding:0;overflow-x:auto">
+    <table><thead><tr><th></th><th>Cliente</th><th>Loja</th><th>Vendedor</th><th>Placa</th><th>OC</th><th>IPVA</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Status</th><th>Dt. venda</th><th>Dt. NF</th></tr></thead><tbody id="tbl-casamento"></tbody></table>
+  </div>
+</div>
+
+<!-- REGISTROS -->
+<div id="sec-notas" class="section">
+  <div class="tabs-inner">
+    <button class="active" id="btn-reg-cred" onclick="showRegTab('cred')">Créditos</button>
+    <button id="btn-reg-nf" onclick="showRegTab('nf')">NFs avulsas</button>
+  </div>
+  <div id="reg-cred-sec">
+    <div class="search-bar">
+      <input type="text" id="rc-busca" placeholder="Buscar..." oninput="renderRegCreditos()">
+      <select id="rc-loja" onchange="renderRegCreditos()"><option value="">Todas as lojas</option></select>
+      <select id="rc-status" onchange="renderRegCreditos()"><option value="">Todos os status</option><option value="ok">Normal</option><option value="cortesia">Cortesia</option><option value="perdida">NF Fora</option><option value="pendente">Pendente</option></select>
+      <button class="btn" onclick="carregarDados()">🔄 Atualizar</button>
+    </div>
+    <div class="card" style="padding:0;overflow-x:auto"><table><thead><tr><th>Cliente</th><th>Placa</th><th>OC</th><th>IPVA</th><th>Loja</th><th>Vendedor</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Status</th><th>Data</th><th></th></tr></thead><tbody id="tbl-creditos"></tbody></table></div>
+  </div>
+  <div id="reg-nf-sec" style="display:none">
+    <div class="search-bar">
+      <input type="text" id="rn-busca" placeholder="Buscar..." oninput="renderRegNFs()">
+      <select id="rn-loja" onchange="renderRegNFs()"><option value="">Todas as lojas</option></select>
+    </div>
+    <div class="card" style="padding:0;overflow-x:auto"><table><thead><tr><th>Cliente</th><th>Chassi</th><th>Loja</th><th>Dt. Fat.</th><th>Dt. Receb.</th><th>Pareamento</th><th></th></tr></thead><tbody id="tbl-nfs"></tbody></table></div>
+  </div>
+</div>
+
+<!-- RELATÓRIOS -->
+<div id="sec-relatorios" class="section">
+  <div class="card">
+    <div class="section-title">Filtros</div>
+    <div class="form-grid">
+      <div class="fg"><label>Loja</label><select id="rel-loja"><option value="">Todas as lojas</option></select></div>
+      <div class="fg"><label>Vendedor</label><select id="rel-vendedor"><option value="">Todos os vendedores</option></select></div>
+      <div class="fg"><label>Data inicial</label><input type="date" id="rel-dt-ini"></div>
+      <div class="fg"><label>Data final</label><input type="date" id="rel-dt-fim"></div>
+      <div class="fg"><label>Status</label><select id="rel-status"><option value="">Todos</option><option value="ok">Normal</option><option value="cortesia">Cortesia</option><option value="perdida">NF Fora</option><option value="pendente">Pendente</option></select></div>
+      <div class="fg"><label>IPVA</label><select id="rel-ipva"><option value="">Todos</option><option value="1">Com IPVA</option><option value="0">Sem IPVA</option></select></div>
+    </div>
+    <button class="btn primary" onclick="gerarRelatorio()">📊 Gerar relatório</button>
+  </div>
+  <div id="rel-output"></div>
+</div>
+
+<!-- CONFIG -->
+<div id="sec-config" class="section">
+  <div class="card">
+    <div class="section-title">🔗 Conexão com Google Sheets</div>
+    <p style="font-size:13px;color:#888;margin-bottom:0.75rem">Cole aqui o link gerado pelo Google Apps Script da sua planilha.</p>
+    <div class="url-row">
+      <div class="fg" style="flex:1"><label>URL do Google Apps Script</label><input type="text" id="cfg-url" placeholder="https://script.google.com/macros/s/.../exec"></div>
+      <button class="btn primary" onclick="conectar()">🔌 Conectar</button>
+      <button class="btn" onclick="desconectar()">✕ Desconectar</button>
+    </div>
+    <div id="status-sheets" style="margin-top:0.75rem"></div>
+  </div>
+  <div class="card">
+    <div class="section-title">Lojas</div>
+    <div style="display:flex;gap:8px;margin-bottom:0.75rem;flex-wrap:wrap"><input type="text" id="nova-loja" placeholder="Nome da loja" style="border-radius:7px;border:1px solid #ddd;padding:7px 10px;font-size:13px"><button class="btn primary" onclick="addLoja()">+ Adicionar</button></div>
+    <ul id="lista-lojas" style="list-style:none;display:flex;flex-wrap:wrap;gap:6px"></ul>
+  </div>
+  <div class="card">
+    <div class="section-title">Vendedores</div>
+    <div style="display:flex;gap:8px;margin-bottom:0.75rem;flex-wrap:wrap"><input type="text" id="novo-vendedor" placeholder="Nome do vendedor" style="border-radius:7px;border:1px solid #ddd;padding:7px 10px;font-size:13px"><button class="btn primary" onclick="addVendedor()">+ Adicionar</button></div>
+    <ul id="lista-vendedores" style="list-style:none;display:flex;flex-wrap:wrap;gap:6px"></ul>
+  </div>
+</div>
+</div><!-- end wrapper -->
+
+<script>
+const COM_0KM=[[1750,75],[1850,125],[1950,175],[2150,225],[2202,250],[2402,300],[2502,350]];
+const COM_SEMI=[[1550,75],[1650,125],[1740,175],[1890,225],[2050,300]];
+const CORT_SALDO=178.68,NOSSA=0.10;
+let ipvaAtivo=false,SURL='';
+let creditos=[],nfs=[],lojas=[],vendedores=[];
+
+function salvarLocal(){try{localStorage.setItem('d_url',SURL);localStorage.setItem('d_lojas',JSON.stringify(lojas));localStorage.setItem('d_vend',JSON.stringify(vendedores));}catch(e){}}
+function carregarLocal(){try{SURL=localStorage.getItem('d_url')||'';lojas=JSON.parse(localStorage.getItem('d_lojas')||'["JEEP"]');vendedores=JSON.parse(localStorage.getItem('d_vend')||'[]');}catch(e){}}
+function norm(s){return(s||'').toLowerCase().trim().replace(/\s+/g,' ');}
+function match(a,b){return norm(a)===norm(b)&&norm(a)!=='';}
+function getRef(tipo,v){const t=tipo==='0km'?COM_0KM:COM_SEMI;for(let i=t.length-1;i>=0;i--){if(v>=t[i][0])return t[i][1];}return 0;}
+function fmtM(v){return'R$ '+Number(v||0).toFixed(2).replace('.',',');}
+function fmtD(d){if(!d)return'—';if(typeof d==='string'&&d.includes('-')){const[y,m,dia]=d.split('-');return dia+'/'+m+'/'+y;}return String(d);}
+function getSem(ds){if(!ds)return'';const d=new Date(ds+'T12:00:00');const j=new Date(d.getFullYear(),0,1);return d.getFullYear()+'-S'+String(Math.ceil(((d-j)/86400000+j.getDay()+1)/7)).padStart(2,'0');}
+function stBadge(s){const m={ok:['ok','Normal'],cortesia:['cortesia','Cortesia'],perdida:['perdida','NF Fora'],pendente:['pendente','Pendente']};const[c,l]=m[s]||['',''];return`<span class="badge ${c}">${l}</span>`;}
+function dotH(st){if(st==='casado')return'<span class="dot green"></span>';if(st==='sem-nf')return'<span class="dot red"></span>';return'<span class="dot amber"></span>';}
+function ipvaB(v){return(v===true||v==='TRUE')?'<span class="badge ipva">✓ IPVA</span>':'<span style="color:#ccc;font-size:12px">—</span>';}
+
+async function api(p){if(!SURL)throw new Error('URL não configurada');const r=await fetch(SURL,{method:'POST',body:JSON.stringify(p)});return JSON.parse(await r.text());}
+function setAlert(el,tipo,msg,spin=false){el.innerHTML=`<div class="alert ${tipo}">${spin?'<span class="spinner"></span>':''} ${msg}</div>`;}
+
+function setCon(ok){const p=document.getElementById('conn-pill');const l=document.getElementById('conn-label');p.className='conn-pill '+(ok?'on':'off');l.textContent=ok?'Conectado ao Sheets':'Sem conexão';}
+
+async function conectar(){
+  const url=document.getElementById('cfg-url').value.trim();
+  if(!url){alert('Cole a URL primeiro.');return;}
+  SURL=url;const st=document.getElementById('status-sheets');
+  setAlert(st,'info','Conectando...',true);
+  try{const r=await api({action:'init'});if(r.error)throw new Error(r.error);salvarLocal();setAlert(st,'ok','✓ Conectado! Abas criadas na planilha.');setCon(true);await syncLV();await carregarDados();}
+  catch(e){setAlert(st,'err','Erro: '+e.message);SURL='';}
+}
+function desconectar(){SURL='';try{localStorage.removeItem('d_url');}catch(e){}setCon(false);document.getElementById('status-sheets').innerHTML='';creditos=[];nfs=[];renderPainel();}
+
+async function carregarDados(){
+  if(!SURL)return;
+  try{const[rc,rn]=await Promise.all([api({action:'getAll',sheet:'CREDITOS'}),api({action:'getAll',sheet:'NFS'})]);
+  creditos=rc.data||[];nfs=rn.data||[];renderPainel();
+  if(document.getElementById('sec-notas').classList.contains('active'))renderRegistros();
+  if(document.getElementById('sec-casamento').classList.contains('active'))renderCasamento();}
+  catch(e){console.warn(e);}
+}
+async function syncLV(){if(!SURL)return;try{await Promise.all([api({action:'replaceAll',sheet:'LOJAS',data:lojas.map(n=>({nome:n}))}),api({action:'replaceAll',sheet:'VENDEDORES',data:vendedores.map(n=>({nome:n}))})]);}catch(e){}}
+
+function showTab(t,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sec-'+t).classList.add('active');btn.classList.add('active');
+  if(t==='painel')renderPainel();
+  if(t==='casamento')renderCasamento();
+  if(t==='notas')renderRegistros();
+  if(t==='relatorios')renderRelFiltros();
+  if(t==='config')renderConfig();
+}
+function showInner(v){
+  document.getElementById('inner-credito').style.display=v==='credito'?'block':'none';
+  document.getElementById('inner-nf').style.display=v==='nf'?'block':'none';
+  document.getElementById('btn-tab-cred').classList.toggle('active',v==='credito');
+  document.getElementById('btn-tab-nf').classList.toggle('active',v==='nf');
+}
+function showRegTab(v){
+  document.getElementById('reg-cred-sec').style.display=v==='cred'?'block':'none';
+  document.getElementById('reg-nf-sec').style.display=v==='nf'?'block':'none';
+  document.getElementById('btn-reg-cred').classList.toggle('active',v==='cred');
+  document.getElementById('btn-reg-nf').classList.toggle('active',v==='nf');
+  if(v==='cred')renderRegCreditos();else renderRegNFs();
+}
+
+function buildCas(){const map={};creditos.forEach(c=>{const k=norm(c.loja)+'||'+norm(c.cliente);if(!map[k])map[k]={cliente:c.cliente,loja:c.loja,creditos:[],nfs:[]};map[k].creditos.push(c);});nfs.forEach(n=>{const k=norm(n.loja)+'||'+norm(n.cliente);if(!map[k])map[k]={cliente:n.cliente,loja:n.loja,creditos:[],nfs:[]};map[k].nfs.push(n);});return Object.values(map);}
+function casSt(g){if(g.creditos.length>0&&g.nfs.length>0)return'casado';if(g.creditos.length>0)return'sem-nf';return'sem-cred';}
+
+function renderPainel(){
+  const gs=buildCas();
+  const cas=gs.filter(g=>casSt(g)==='casado').length;
+  const snf=gs.filter(g=>casSt(g)==='sem-nf').length;
+  const sc=gs.filter(g=>casSt(g)==='sem-cred').length;
+  const tHon=creditos.reduce((a,c)=>a+(Number(c.honorarios)||0),0);
+  const tNos=creditos.reduce((a,c)=>a+(Number(c.nossaCom)||0),0);
+  document.getElementById('metrics').innerHTML=`
+    <div class="metric"><div class="lbl">Casados</div><div class="val green">${cas}</div></div>
+    <div class="metric"><div class="lbl">Aguardando NF</div><div class="val red">${snf}</div></div>
+    <div class="metric"><div class="lbl">NF sem crédito</div><div class="val amber">${sc}</div></div>
+    <div class="metric"><div class="lbl">Total honorários</div><div class="val blue">${fmtM(tHon)}</div></div>
+    <div class="metric"><div class="lbl">Nossa comissão</div><div class="val green">${fmtM(tNos)}</div></div>`;
+  const pend=gs.filter(g=>casSt(g)!=='casado').slice(0,10);
+  document.getElementById('tbl-painel-pend').innerHTML=pend.length?pend.map(g=>{const st=casSt(g);const c=g.creditos[0];return`<tr><td>${g.cliente}</td><td>${g.loja}</td><td>${c?c.vendedor:'—'}</td><td>${c&&c.placa?c.placa:'—'}</td><td style="font-size:11px;color:#888">${c&&c.oc?c.oc:'—'}</td><td>${c?ipvaB(c.ipva):'—'}</td><td>${c?fmtM(c.valor):'—'}</td><td>${dotH(st)} <span style="font-size:12px;color:${st==='sem-nf'?'#993C1D':'#854F0B'}">${st==='sem-nf'?'Aguardando NF':'NF sem crédito'}</span></td></tr>`;}).join(''):'<tr><td colspan="8" class="empty-state">Nenhuma pendência 🎉</td></tr>';
+}
+
+function toggleIPVA(){ipvaAtivo=!ipvaAtivo;document.getElementById('ipva-toggle').classList.toggle('checked',ipvaAtivo);document.getElementById('ipva-toggle').setAttribute('aria-checked',ipvaAtivo);document.getElementById('ipva-icon').textContent=ipvaAtivo?'✓':'';document.getElementById('ipva-label').textContent=ipvaAtivo?'IPVA incluso':'IPVA não incluso';}
+function calcRef(){const ref=getRef(document.getElementById('c-tipo').value,parseFloat(document.getElementById('c-valor').value)||0);document.getElementById('c-ref-tabela').textContent=ref?'Tabela sugere: '+fmtM(ref):'';calcNossaCom();}
+function calcNossaCom(){const hon=parseFloat(document.getElementById('c-honorarios').value)||0;const st=document.getElementById('c-status').value;document.getElementById('box-hon').textContent=hon?fmtM(hon):'R$ —';document.getElementById('box-nossa-com').textContent=hon?fmtM(hon*NOSSA):'R$ —';document.getElementById('box-cort-wrap').style.display=st==='cortesia'?'flex':'none';if(st==='cortesia')document.getElementById('box-cort-saldo').textContent=fmtM(CORT_SALDO);}
+function toggleMotivo(){document.getElementById('c-motivo-g').style.display=document.getElementById('c-status').value==='perdida'?'block':'none';calcNossaCom();}
+function sugerirCred(){const cli=document.getElementById('c-cliente').value.trim();const loja=document.getElementById('c-loja').value;const h=document.getElementById('c-match-hint');if(!cli||loja==='-- selecione --'){h.innerHTML='';return;}const f=nfs.filter(n=>match(n.cliente,cli)&&norm(n.loja)===norm(loja));h.innerHTML=f.length?`<span class="match-ok"><span class="dot green"></span> NF já lançada (${fmtD(f[0].dtReceb)}) — será casado ao salvar.</span>`:`<span class="match-pend"><span class="dot red"></span> Nenhuma NF encontrada — ficará aguardando.</span>`;}
+function sugerirNF(){const cli=document.getElementById('n-cliente').value.trim();const loja=document.getElementById('n-loja').value;const h=document.getElementById('n-match-hint');if(!cli||loja==='-- selecione --'){h.innerHTML='';return;}const f=creditos.filter(c=>match(c.cliente,cli)&&norm(c.loja)===norm(loja));h.innerHTML=f.length?`<span class="match-ok"><span class="dot green"></span> Crédito encontrado — ${f[0].vendedor}, ${fmtM(f[0].valor)}. Será casado ao salvar.</span>`:`<span class="match-avulso"><span class="dot amber"></span> Nenhum crédito encontrado — NF ficará sem crédito.</span>`;}
+
+async function salvarCredito(){
+  const cliente=document.getElementById('c-cliente').value.trim();
+  const loja=document.getElementById('c-loja').value;
+  const vendedor=document.getElementById('c-vendedor').value;
+  if(!cliente||loja==='-- selecione --'||vendedor==='-- selecione --'){alert('Preencha cliente, loja e vendedor.');return;}
+  const hon=parseFloat(document.getElementById('c-honorarios').value)||0;
+  const dt=document.getElementById('c-dtvenda').value;
+  const rec={id:Date.now(),cliente,chassi:document.getElementById('c-chassi').value.trim(),placa:document.getElementById('c-placa').value.trim().toUpperCase(),oc:document.getElementById('c-oc').value.trim(),ipva:ipvaAtivo,loja,vendedor,tipo:document.getElementById('c-tipo').value,valor:parseFloat(document.getElementById('c-valor').value)||0,comissao:parseFloat(document.getElementById('c-comissao').value)||0,honorarios:hon,nossaCom:parseFloat((hon*NOSSA).toFixed(2)),status:document.getElementById('c-status').value,motivo:document.getElementById('c-motivo').value,obs:document.getElementById('c-obs').value,dtVenda:dt,semana:getSem(dt||new Date().toISOString().slice(0,10))};
+  if(SURL){try{const r=await api({action:'insert',sheet:'CREDITOS',data:rec});if(r.error)throw new Error(r.error);creditos.unshift(rec);alert('✓ Crédito salvo no Google Sheets!');}catch(e){alert('Erro: '+e.message);return;}}
+  else{creditos.unshift(rec);alert('Crédito salvo localmente.\n⚠️ Configure o Google Sheets em Config. para sincronizar entre computadores.');}
+  limparCred();renderPainel();
+}
+function limparCred(){['c-cliente','c-chassi','c-placa','c-oc','c-valor','c-comissao','c-honorarios','c-obs','c-dtvenda','c-motivo'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});document.getElementById('c-loja').value='-- selecione --';document.getElementById('c-vendedor').value='-- selecione --';document.getElementById('c-status').value='ok';document.getElementById('c-motivo-g').style.display='none';document.getElementById('box-hon').textContent='R$ —';document.getElementById('box-nossa-com').textContent='R$ —';document.getElementById('box-cort-wrap').style.display='none';document.getElementById('c-ref-tabela').textContent='';document.getElementById('c-match-hint').innerHTML='';if(ipvaAtivo)toggleIPVA();}
+
+async function salvarNF(){
+  const cliente=document.getElementById('n-cliente').value.trim();
+  const loja=document.getElementById('n-loja').value;
+  if(!cliente||loja==='-- selecione --'){alert('Preencha cliente e loja.');return;}
+  const rec={id:Date.now(),cliente,chassi:document.getElementById('n-chassi').value.trim(),loja,dtFat:document.getElementById('n-dtfat').value,dtReceb:document.getElementById('n-dtreceb').value,obs:document.getElementById('n-obs').value};
+  if(SURL){try{const r=await api({action:'insert',sheet:'NFS',data:rec});if(r.error)throw new Error(r.error);nfs.unshift(rec);alert('✓ NF salva no Google Sheets!');}catch(e){alert('Erro: '+e.message);return;}}
+  else{nfs.unshift(rec);alert('NF salva localmente.');}
+  limparNF();renderPainel();
+}
+function limparNF(){['n-cliente','n-chassi','n-dtfat','n-dtreceb','n-obs'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});document.getElementById('n-loja').value='-- selecione --';document.getElementById('n-match-hint').innerHTML='';}
+
+function renderCasamento(){
+  const sl=document.getElementById('cas-loja');sl.innerHTML='<option value="">Todas as lojas</option>'+lojas.map(l=>`<option>${l}</option>`).join('');
+  const busca=(document.getElementById('cas-busca').value||'').toLowerCase();const loja=document.getElementById('cas-loja').value;const filtro=document.getElementById('cas-filtro').value;
+  let gs=buildCas();
+  if(loja)gs=gs.filter(g=>norm(g.loja)===norm(loja));
+  if(busca)gs=gs.filter(g=>{const c=g.creditos[0];return norm(g.cliente).includes(busca)||(c&&(c.placa||'').toLowerCase().includes(busca))||(c&&(c.oc||'').toLowerCase().includes(busca));});
+  if(filtro)gs=gs.filter(g=>casSt(g)===filtro);
+  document.getElementById('tbl-casamento').innerHTML=gs.length?gs.map(g=>{const st=casSt(g);const c=g.creditos[0];const n=g.nfs[0];return`<tr><td>${dotH(st)}</td><td style="font-weight:600">${g.cliente}</td><td>${g.loja}</td><td>${c?c.vendedor:'—'}</td><td>${c&&c.placa?c.placa:'—'}</td><td style="font-size:11px;color:#888">${c&&c.oc?c.oc:'—'}</td><td>${c?ipvaB(c.ipva):'—'}</td><td>${c?fmtM(c.valor):'—'}</td><td style="color:#854F0B">${c&&c.comissao?fmtM(c.comissao):'—'}</td><td>${c&&c.honorarios?fmtM(c.honorarios):'—'}</td><td style="color:#0F6E56;font-weight:600">${c&&c.nossaCom?fmtM(c.nossaCom):'—'}</td><td>${c?stBadge(c.status):'—'}</td><td>${c?fmtD(c.dtVenda):'—'}</td><td>${n?fmtD(n.dtReceb):'—'}</td></tr>`;}).join(''):'<tr><td colspan="14" class="empty-state">Nenhum registro encontrado</td></tr>';
+}
+
+function renderRegistros(){['rc-loja','rn-loja'].forEach(id=>{document.getElementById(id).innerHTML='<option value="">Todas as lojas</option>'+lojas.map(l=>`<option>${l}</option>`).join('');});renderRegCreditos();}
+function renderRegCreditos(){const busca=(document.getElementById('rc-busca').value||'').toLowerCase();const loja=document.getElementById('rc-loja').value;const status=document.getElementById('rc-status').value;const list=creditos.filter(c=>{if(loja&&norm(c.loja)!==norm(loja))return false;if(status&&c.status!==status)return false;if(busca&&!`${c.cliente}${c.chassi}${c.placa}${c.oc}${c.vendedor}`.toLowerCase().includes(busca))return false;return true;});document.getElementById('tbl-creditos').innerHTML=list.length?list.map(c=>`<tr><td style="font-weight:600">${c.cliente}</td><td>${c.placa||'—'}</td><td style="font-size:11px;color:#888">${c.oc||'—'}</td><td>${ipvaB(c.ipva)}</td><td>${c.loja}</td><td>${c.vendedor}</td><td>${fmtM(c.valor)}</td><td style="color:#854F0B">${c.comissao?fmtM(c.comissao):'—'}</td><td>${c.honorarios?fmtM(c.honorarios):'—'}</td><td style="color:#0F6E56;font-weight:600">${c.nossaCom?fmtM(c.nossaCom):'—'}</td><td>${stBadge(c.status)}</td><td>${fmtD(c.dtVenda)}</td><td class="tbl-actions"><button onclick="excCred(${c.id})">🗑</button></td></tr>`).join(''):'<tr><td colspan="13" class="empty-state">Nenhum crédito</td></tr>';}
+function renderRegNFs(){const busca=(document.getElementById('rn-busca').value||'').toLowerCase();const loja=document.getElementById('rn-loja').value;const list=nfs.filter(n=>{if(loja&&norm(n.loja)!==norm(loja))return false;if(busca&&!`${n.cliente}${n.chassi}`.toLowerCase().includes(busca))return false;return true;});document.getElementById('tbl-nfs').innerHTML=list.length?list.map(n=>{const tc=creditos.some(c=>match(c.cliente,n.cliente)&&norm(c.loja)===norm(n.loja));return`<tr><td style="font-weight:600">${n.cliente}</td><td style="font-size:11px;color:#888">${n.chassi||'—'}</td><td>${n.loja}</td><td>${fmtD(n.dtFat)}</td><td>${fmtD(n.dtReceb)}</td><td>${tc?'<span class="match-ok"><span class="dot green"></span> Casado</span>':'<span class="match-avulso"><span class="dot amber"></span> Sem crédito</span>'}</td><td class="tbl-actions"><button onclick="excNF(${n.id})">🗑</button></td></tr>`;}).join(''):'<tr><td colspan="7" class="empty-state">Nenhuma NF avulsa</td></tr>';}
+async function excCred(id){if(!confirm('Remover crédito?'))return;if(SURL){try{await api({action:'delete',sheet:'CREDITOS',id});}catch(e){alert('Erro: '+e.message);return;}}creditos=creditos.filter(c=>c.id!=id);renderRegCreditos();renderPainel();}
+async function excNF(id){if(!confirm('Remover NF?'))return;if(SURL){try{await api({action:'delete',sheet:'NFS',id});}catch(e){alert('Erro: '+e.message);return;}}nfs=nfs.filter(n=>n.id!=id);renderRegNFs();renderPainel();}
+
+function renderRelFiltros(){document.getElementById('rel-loja').innerHTML='<option value="">Todas as lojas</option>'+lojas.map(l=>`<option>${l}</option>`).join('');document.getElementById('rel-vendedor').innerHTML='<option value="">Todos os vendedores</option>'+vendedores.map(v=>`<option>${v}</option>`).join('');}
+function gerarRelatorio(){
+  const loja=document.getElementById('rel-loja').value,vend=document.getElementById('rel-vendedor').value,status=document.getElementById('rel-status').value,di=document.getElementById('rel-dt-ini').value,df=document.getElementById('rel-dt-fim').value,ipvaF=document.getElementById('rel-ipva').value;
+  let list=creditos.filter(c=>{if(loja&&norm(c.loja)!==norm(loja))return false;if(vend&&norm(c.vendedor)!==norm(vend))return false;if(status&&c.status!==status)return false;if(di&&c.dtVenda&&c.dtVenda<di)return false;if(df&&c.dtVenda&&c.dtVenda>df)return false;if(ipvaF==='1'&&!(c.ipva===true||c.ipva==='TRUE'))return false;if(ipvaF==='0'&&(c.ipva===true||c.ipva==='TRUE'))return false;return true;});
+  const perd=list.filter(c=>c.status==='perdida'),cort=list.filter(c=>c.status==='cortesia');
+  const tH=list.reduce((a,c)=>a+(Number(c.honorarios)||0),0),tN=list.reduce((a,c)=>a+(Number(c.nossaCom)||0),0),tC=list.reduce((a,c)=>a+(Number(c.comissao)||0),0),tV=list.reduce((a,c)=>a+(Number(c.valor)||0),0);
+  const cIPVA=list.filter(c=>c.ipva===true||c.ipva==='TRUE').length;
+  const cas=list.filter(c=>nfs.some(n=>match(n.cliente,c.cliente)&&norm(n.loja)===norm(c.loja)));
+  const pV={};list.forEach(c=>{if(!pV[c.vendedor])pV[c.vendedor]={q:0,c:0,h:0,n:0};pV[c.vendedor].q++;pV[c.vendedor].c+=Number(c.comissao)||0;pV[c.vendedor].h+=Number(c.honorarios)||0;pV[c.vendedor].n+=Number(c.nossaCom)||0;});
+  const per=di&&df?fmtD(di)+' a '+fmtD(df):di?'a partir de '+fmtD(di):df?'até '+fmtD(df):'';
+  const titulo=[loja,vend,per].filter(Boolean).join(' · ')||'Geral';
+  document.getElementById('rel-output').innerHTML=`<div class="card"><div class="section-title" style="margin-bottom:1rem">Relatório: ${titulo}</div>
+  <div class="metric-grid" style="margin-bottom:1.25rem">
+    <div class="metric"><div class="lbl">Créditos</div><div class="val blue">${list.length}</div></div>
+    <div class="metric"><div class="lbl">Casados</div><div class="val green">${cas.length}</div></div>
+    <div class="metric"><div class="lbl">NF perdidas</div><div class="val red">${perd.length}</div></div>
+    <div class="metric"><div class="lbl">Cortesias</div><div class="val">${cort.length}</div></div>
+    <div class="metric"><div class="lbl">Com IPVA</div><div class="val blue">${cIPVA}</div></div>
+    <div class="metric"><div class="lbl">Total vendas</div><div class="val blue">${fmtM(tV)}</div></div>
+    <div class="metric"><div class="lbl">Com. vendedores</div><div class="val amber">${fmtM(tC)}</div></div>
+    <div class="metric"><div class="lbl">Total honorários</div><div class="val">${fmtM(tH)}</div></div>
+    <div class="metric"><div class="lbl">Nossa comissão</div><div class="val green">${fmtM(tN)}</div></div>
+  </div>
+  ${Object.keys(pV).length?`<div class="section-title" style="margin-bottom:0.5rem">Por vendedor</div><table style="margin-bottom:1rem"><thead><tr><th>Vendedor</th><th>NFs</th><th>Com. vendedor</th><th>Honorários</th><th>Nossa com.</th></tr></thead><tbody>${Object.entries(pV).sort((a,b)=>b[1].n-a[1].n).map(([v,d])=>`<tr><td style="font-weight:600">${v}</td><td>${d.q}</td><td style="color:#854F0B">${fmtM(d.c)}</td><td>${fmtM(d.h)}</td><td style="color:#0F6E56;font-weight:600">${fmtM(d.n)}</td></tr>`).join('')}</tbody></table>`:''}
+  <div class="section-title" style="margin-bottom:0.5rem">Detalhamento</div>
+  <div style="overflow-x:auto"><table><thead><tr><th>Cliente</th><th>Placa</th><th>OC</th><th>IPVA</th><th>Loja</th><th>Vendedor</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Status</th><th>Data</th></tr></thead><tbody>${list.length?list.map(c=>`<tr><td>${c.cliente}</td><td>${c.placa||'—'}</td><td style="font-size:11px;color:#888">${c.oc||'—'}</td><td>${ipvaB(c.ipva)}</td><td>${c.loja}</td><td>${c.vendedor}</td><td>${fmtM(c.valor)}</td><td style="color:#854F0B">${c.comissao?fmtM(c.comissao):'—'}</td><td>${c.honorarios?fmtM(c.honorarios):'—'}</td><td style="color:#0F6E56;font-weight:600">${c.nossaCom?fmtM(c.nossaCom):'—'}</td><td>${stBadge(c.status)}</td><td>${fmtD(c.dtVenda)}</td></tr>`).join(''):'<tr><td colspan="12" class="empty-state">Nenhum resultado</td></tr>'}</tbody></table></div></div>`;
+}
+
+function renderConfig(){document.getElementById('cfg-url').value=SURL||'';document.getElementById('lista-lojas').innerHTML=lojas.map(l=>`<li style="display:flex;align-items:center;gap:4px;background:#f5f5f3;padding:4px 12px;border-radius:20px;font-size:13px">${l}<button onclick="removeLoja('${l}')" style="border:none;background:none;cursor:pointer;color:#aaa;font-size:14px;line-height:1" title="Remover">×</button></li>`).join('');document.getElementById('lista-vendedores').innerHTML=vendedores.map(v=>`<li style="display:flex;align-items:center;gap:4px;background:#f5f5f3;padding:4px 12px;border-radius:20px;font-size:13px">${v}<button onclick="removeVendedor('${v}')" style="border:none;background:none;cursor:pointer;color:#aaa;font-size:14px;line-height:1" title="Remover">×</button></li>`).join('');}
+function addLoja(){const v=document.getElementById('nova-loja').value.trim().toUpperCase();if(!v||lojas.includes(v))return;lojas.push(v);salvarLocal();syncLV();document.getElementById('nova-loja').value='';renderConfig();atualizarSelects();}
+function removeLoja(l){lojas=lojas.filter(x=>x!==l);salvarLocal();syncLV();renderConfig();atualizarSelects();}
+function addVendedor(){const v=document.getElementById('novo-vendedor').value.trim();if(!v||vendedores.includes(v))return;vendedores.push(v);salvarLocal();syncLV();document.getElementById('novo-vendedor').value='';renderConfig();atualizarSelects();}
+function removeVendedor(v){vendedores=vendedores.filter(x=>x!==v);salvarLocal();syncLV();renderConfig();atualizarSelects();}
+function atualizarSelects(){['c-loja','n-loja'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML='<option>-- selecione --</option>'+lojas.map(l=>`<option>${l}</option>`).join('');});const cv=document.getElementById('c-vendedor');if(cv)cv.innerHTML='<option>-- selecione --</option>'+vendedores.map(v=>`<option>${v}</option>`).join('');}
+
+carregarLocal();
+atualizarSelects();
+if(SURL){setCon(true);carregarDados();}
+renderPainel();
+</script>
+</body>
+</html>
