@@ -133,7 +133,11 @@ table tr:hover td{background:#fafafa}
     <div style="margin-top:1rem;padding:10px;background:#faeeda;border-radius:8px;font-size:12px;color:#854F0B">
       ⚠️ Primeiro acesso: cole a URL do Apps Script abaixo.<br>
       <input type="text" id="l-url" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%;margin-top:6px;border-radius:6px;border:1px solid #FAC775;padding:6px 8px;font-size:12px;background:#fff">
-      <button onclick="salvarURL()" style="margin-top:6px;padding:5px 12px;border-radius:6px;border:none;background:#854F0B;color:#fff;font-size:12px;cursor:pointer">Salvar URL</button>
+      <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+        <button onclick="salvarURL()" style="padding:5px 12px;border-radius:6px;border:none;background:#854F0B;color:#fff;font-size:12px;cursor:pointer">Salvar URL</button>
+        <button onclick="limparURL()" style="padding:5px 12px;border-radius:6px;border:1px solid #854F0B;background:#fff;color:#854F0B;font-size:12px;cursor:pointer">Limpar URL</button>
+      </div>
+      <div id="url-status" style="margin-top:4px;font-size:11px"></div>
     </div>
   </div>
 </div>
@@ -423,7 +427,25 @@ function lojasDoUsuario(){if(isAdm())return lojas;return usuarioLogado&&usuarioL
 async function api(p){if(!SURL)throw new Error('URL não configurada');var r=await fetch(SURL,{method:'POST',body:JSON.stringify(p)});return JSON.parse(await r.text());}
 function setAlert(el,tipo,msg,spin){el.innerHTML='<div class="alert '+tipo+'">'+(spin?'<span class="spinner"></span> ':'')+msg+'</div>';}
 function setCon(ok){var p=document.getElementById('conn-pill');p.className='conn-pill '+(ok?'on':'off');document.getElementById('conn-label').textContent=ok?'Conectado':'Sem conexão';}
-function salvarURL(){var url=document.getElementById('l-url').value.trim();if(!url){alert('Cole a URL primeiro.');return;}SURL=url;salvarLocal();alert('URL salva! Agora faça o login.');}
+function salvarURL(){
+  var url=document.getElementById('l-url').value.trim();
+  if(!url){alert('Cole a URL primeiro.');return;}
+  if(url.indexOf('/macros/s/')<0 || url.indexOf('/exec')<0){
+    alert('URL invalida!\nA URL correta deve conter /macros/s/ e terminar em /exec');
+    return;
+  }
+  SURL=url;
+  try{localStorage.setItem('d_url',SURL);}catch(e){}
+  var st=document.getElementById('url-status');
+  if(st)st.innerHTML='<span style="color:#0F6E56">Salvo!</span>';
+}
+function limparURL(){
+  SURL='';
+  try{localStorage.removeItem('d_url');}catch(e){}
+  document.getElementById('l-url').value='';
+  var st=document.getElementById('url-status');
+  if(st)st.innerHTML='<span style="color:#854F0B">Removida. Cole a nova URL.</span>';
+}
 
 async function fazerLogin(){
   var usuario=document.getElementById('l-usuario').value.trim();
