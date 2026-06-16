@@ -465,8 +465,15 @@ function entrarNoApp(){
   document.getElementById('user-nome').textContent=usuarioLogado.nome;
   document.getElementById('user-avatar').textContent=usuarioLogado.nome.charAt(0).toUpperCase();
   setCon(true);
-  document.querySelectorAll('.adm-only').forEach(function(el){el.style.display=isAdm()?'':'none';});
-  atualizarSelects();carregarDados();
+  // Força exibição das abas adm com pequeno delay para garantir que DOM está pronto
+  setTimeout(function(){
+    var adm=String(usuarioLogado.perfil||'').trim().toLowerCase()==='adm';
+    document.querySelectorAll('.adm-only').forEach(function(el){
+      el.style.display=adm?'inline-flex':'none';
+    });
+  }, 100);
+  atualizarSelects();
+  carregarDados();
 }
 
 function sair(){usuarioLogado=null;creditos=[];nfs=[];document.getElementById('app').style.display='none';document.getElementById('login-wrap').style.display='flex';document.getElementById('l-senha').value='';document.getElementById('login-err').style.display='none';document.getElementById('login-btn').textContent='Entrar';document.getElementById('login-btn').disabled=false;setCon(false);}
