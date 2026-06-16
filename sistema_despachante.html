@@ -160,7 +160,7 @@ table tr:hover td{background:#fafafa}
       <button onclick="showTab('notas',this)">📁 Registros</button>
       <button onclick="showTab('relatorios',this)">📈 Relatórios</button>
       <button class="adm-only" onclick="showTab('usuarios',this)">👥 Usuários</button>
-      <button class="adm-only" onclick="showTab('config',this)">⚙️ Config.</button>
+      <button onclick="showTab('config',this)">⚙️ Config.</button>
     </div>
 
     <!-- PAINEL -->
@@ -324,7 +324,7 @@ table tr:hover td{background:#fafafa}
 
     <!-- CONFIG -->
     <div id="sec-config" class="section">
-      <div class="card">
+      <div class="card" id="cfg-conexao-card">
         <div class="section-title">🔗 Conexão com Google Sheets</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
           <div class="fg" style="flex:1"><label>URL do Google Apps Script</label><input type="text" id="cfg-url" placeholder="https://script.google.com/macros/s/.../exec"></div>
@@ -599,7 +599,7 @@ function fecharModal(){document.getElementById('modal-usuario').classList.remove
 async function salvarUsuario(){var nome=document.getElementById('m-nome').value.trim();var usuario=document.getElementById('m-usuario').value.trim();var senha=document.getElementById('m-senha').value;var perfil=document.getElementById('m-perfil').value;if(!nome||!usuario||!senha){alert('Preencha nome, usuário e senha.');return;}var checks=document.querySelectorAll('#m-lojas-check input:checked');var lojasU=Array.from(checks).map(function(c){return c.value;});var data={nome:nome,usuario:usuario,senha:senha,perfil:perfil,lojas:lojasU.join(',')};var idVal=document.getElementById('m-id').value;if(idVal)data.id=idVal;try{var r=await api({action:'saveUsuario',data:data});if(r.error)throw new Error(r.error);fecharModal();await carregarUsuarios();alert('✓ Usuário salvo!');}catch(e){alert('Erro: '+e.message);}}
 async function removerUsuario(id){if(!confirm('Remover usuário?'))return;try{var r=await api({action:'deleteUsuario',id:id});if(r.error)throw new Error(r.error);await carregarUsuarios();}catch(e){alert('Erro: '+e.message);}}
 
-function renderConfig(){document.getElementById('cfg-url').value=SURL||'';document.getElementById('lista-lojas').innerHTML=lojas.map(function(l){return'<li style="display:flex;align-items:center;gap:4px;background:#f5f5f3;padding:4px 12px;border-radius:20px;font-size:13px">'+l+'<button onclick="removeLoja(\''+l+'\')" style="border:none;background:none;cursor:pointer;color:#aaa;font-size:14px;line-height:1">×</button></li>';}).join('');document.getElementById('lista-vendedores').innerHTML=vendedores.map(function(v){return'<li style="display:flex;align-items:center;gap:4px;background:#f5f5f3;padding:4px 12px;border-radius:20px;font-size:13px">'+v+'<button onclick="removeVendedor(\''+v+'\')" style="border:none;background:none;cursor:pointer;color:#aaa;font-size:14px;line-height:1">×</button></li>';}).join('');}
+function renderConfig(){document.getElementById('cfg-url').value=SURL||'';var cc=document.getElementById('cfg-conexao-card');if(cc)cc.style.display=isAdm()?'block':'none';document.getElementById('lista-lojas').innerHTML=lojas.map(function(l){return'<li style="display:flex;align-items:center;gap:4px;background:#f5f5f3;padding:4px 12px;border-radius:20px;font-size:13px">'+l+'<button onclick="removeLoja(\''+l+'\')" style="border:none;background:none;cursor:pointer;color:#aaa;font-size:14px;line-height:1">×</button></li>';}).join('');document.getElementById('lista-vendedores').innerHTML=vendedores.map(function(v){return'<li style="display:flex;align-items:center;gap:4px;background:#f5f5f3;padding:4px 12px;border-radius:20px;font-size:13px">'+v+'<button onclick="removeVendedor(\''+v+'\')" style="border:none;background:none;cursor:pointer;color:#aaa;font-size:14px;line-height:1">×</button></li>';}).join('');}
 async function reconectar(){var url=document.getElementById('cfg-url').value.trim();if(!url){alert('Cole a URL.');return;}SURL=url;salvarLocal();var st=document.getElementById('status-sheets');setAlert(st,'info','Conectando...',true);try{var r=await api({action:'init'});if(r.error)throw new Error(r.error);setAlert(st,'ok','✓ Conectado!');setCon(true);await syncLV();await carregarDados();}catch(e){setAlert(st,'err','Erro: '+e.message);}}
 function addLoja(){var v=document.getElementById('nova-loja').value.trim();if(!v||lojas.indexOf(v)>=0)return;lojas.push(v);salvarLocal();syncLV();document.getElementById('nova-loja').value='';renderConfig();atualizarSelects();}
 function removeLoja(l){lojas=lojas.filter(function(x){return x!==l;});salvarLocal();syncLV();renderConfig();atualizarSelects();}
