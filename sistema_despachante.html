@@ -1,246 +1,585 @@
-// ============================================================
-//  SISTEMA DESPACHANTE — Google Apps Script v2 (com usuários)
-// ============================================================
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema Despachante</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;color:#1a1a1a;background:#f5f5f3;min-height:100vh}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+.login-box{background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:2rem;width:100%;max-width:370px}
+.login-logo{text-align:center;margin-bottom:1.5rem}
+.login-logo h1{font-size:22px;font-weight:700}.login-logo h1 span{color:#1D9E75}
+.login-logo p{font-size:13px;color:#888;margin-top:4px}
+.login-box .fg{margin-bottom:1rem}
+.login-box label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:5px}
+.login-box input{width:100%;border-radius:8px;border:1px solid #ddd;padding:9px 12px;font-size:14px;color:#1a1a1a;transition:border .15s}
+.login-box input:focus{outline:none;border-color:#1D9E75;box-shadow:0 0 0 3px rgba(29,158,117,.1)}
+.login-btn{width:100%;padding:10px;border-radius:8px;border:none;background:#1D9E75;color:#fff;font-size:14px;font-weight:600;cursor:pointer;margin-top:.5rem}
+.login-btn:hover{background:#0F6E56}
+.login-err{background:#fdf2f2;color:#993C1D;border:1px solid #F5C4B3;border-radius:8px;padding:8px 12px;font-size:13px;margin-top:.75rem;display:none}
+.app{display:none}
+.topbar{background:#fff;border-bottom:1px solid #e5e5e5;padding:.75rem 1.25rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;gap:8px;flex-wrap:wrap}
+.topbar .logo{font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px}.topbar .logo span{color:#1D9E75}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.user-pill{display:flex;align-items:center;gap:6px;font-size:12px;background:#f5f5f3;padding:5px 10px;border-radius:20px}
+.avatar{width:22px;height:22px;border-radius:50%;background:#1D9E75;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.conn-pill{display:flex;align-items:center;gap:5px;font-size:11px;padding:4px 10px;border-radius:20px;background:#f0faf6;color:#0F6E56;border:1px solid #9FE1CB}
+.conn-pill.off{background:#fdf2f2;color:#993C1D;border-color:#F5C4B3}
+.conn-dot{width:6px;height:6px;border-radius:50%}
+.conn-pill.on .conn-dot{background:#1D9E75}.conn-pill.off .conn-dot{background:#E24B4A}
+.btn-sair{padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:12px;color:#666}
+.btn-sair:hover{background:#fdf2f2;color:#993C1D}
+.wrapper{max-width:1100px;margin:0 auto;padding:1rem 1rem 2rem}
+.nav{display:flex;gap:4px;margin-bottom:1.25rem;flex-wrap:wrap;background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:6px}
+.nav button{padding:7px 14px;border-radius:7px;border:none;background:transparent;cursor:pointer;font-size:13px;color:#666}
+.nav button:hover{background:#f5f5f3;color:#1a1a1a}
+.nav button.active{background:#1D9E75;color:#fff;font-weight:500}
+.nav button.adm-only{display:none}
+.section{display:none}.section.active{display:block}
+.card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem}
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1rem}
+.metric{background:#f5f5f3;border-radius:8px;padding:.75rem 1rem}
+.metric .lbl{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.metric .val{font-size:22px;font-weight:600}
+.val.green{color:#0F6E56}.val.red{color:#993C1D}.val.blue{color:#185FA5}.val.amber{color:#854F0B}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:1rem}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px}
+.fg input,.fg select{border-radius:7px;border:1px solid #ddd;padding:7px 10px;font-size:13px;background:#fff;color:#1a1a1a;transition:border .15s}
+.fg input:focus,.fg select:focus{outline:none;border-color:#1D9E75;box-shadow:0 0 0 3px rgba(29,158,117,.1)}
+.fg .ref{font-size:11px;color:#185FA5;margin-top:2px}
+.fg .hint{font-size:11px;color:#888;margin-top:2px}
+.btn{padding:8px 16px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:13px;color:#333;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn:hover{background:#f5f5f3}
+.btn.primary{background:#1D9E75;color:#fff;border-color:#1D9E75;font-weight:500}
+.btn.primary:hover{background:#0F6E56}
+.btn.success{background:#f0faf6;color:#0F6E56;border-color:#9FE1CB;font-weight:500}
+table{width:100%;border-collapse:collapse;font-size:13px}
+table th{font-weight:600;font-size:11px;color:#888;text-align:left;padding:8px 10px;border-bottom:1px solid #e5e5e5;text-transform:uppercase;letter-spacing:.3px}
+table td{padding:9px 10px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+table tr:last-child td{border-bottom:none}
+table tr:hover td{background:#fafafa}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+.badge.cortesia{background:#e6f1fb;color:#185FA5}
+.badge.perdida{background:#fdf2f2;color:#993C1D}
+.badge.ok{background:#f0faf6;color:#0F6E56}
+.badge.pendente{background:#faeeda;color:#854F0B}
+.badge.ipva{background:#f0faf6;color:#0F6E56}
+.badge.adm{background:#1a1a1a;color:#fff}
+.badge.usuario{background:#f5f5f3;color:#666}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot.green{background:#1D9E75}.dot.red{background:#E24B4A}.dot.amber{background:#EF9F27}
+.match-ok{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#0F6E56;font-weight:500;background:#f0faf6;padding:5px 10px;border-radius:7px}
+.match-pend{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#993C1D;background:#fdf2f2;padding:5px 10px;border-radius:7px}
+.match-avulso{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#854F0B;background:#faeeda;padding:5px 10px;border-radius:7px}
+.search-bar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+.search-bar input,.search-bar select{border-radius:7px;border:1px solid #ddd;padding:7px 10px;font-size:13px;background:#fff;color:#1a1a1a}
+.search-bar input{flex:1;min-width:150px}
+.section-title{font-size:15px;font-weight:600;margin-bottom:.75rem;color:#1a1a1a}
+.tabs-inner{display:flex;gap:4px;margin-bottom:1rem}
+.tabs-inner button{padding:6px 14px;border-radius:7px;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:13px;color:#666}
+.tabs-inner button.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:500}
+.calc-box{background:#f5f5f3;border-radius:8px;padding:1rem 1.25rem;margin-bottom:1rem;display:flex;gap:2rem;flex-wrap:wrap;align-items:center}
+.calc-item .lbl{font-size:11px;color:#888;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px}
+.calc-item .num{font-size:20px;font-weight:600}
+.divider-v{width:1px;background:#e5e5e5;align-self:stretch;min-height:40px}
+.leg{display:flex;gap:1rem;flex-wrap:wrap;font-size:12px;color:#888;margin-bottom:.75rem;align-items:center}
+.sep{border:none;border-top:1px solid #f0f0f0;margin:1rem 0}
+.ipva-toggle{display:flex;align-items:center;gap:10px;padding:9px 14px;border:1.5px solid #ddd;border-radius:8px;cursor:pointer;user-select:none;width:fit-content}
+.ipva-toggle:hover,.ipva-toggle.checked{border-color:#1D9E75;background:#f0faf6}
+.ipva-icon{width:20px;height:20px;border-radius:5px;border:2px solid #ccc;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;color:#fff}
+.ipva-toggle.checked .ipva-icon{background:#1D9E75;border-color:#1D9E75}
+.ipva-label{font-size:13px;font-weight:500;color:#444}
+.ipva-toggle.checked .ipva-label{color:#0F6E56}
+.alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:.75rem;display:flex;align-items:center;gap:8px}
+.alert.ok{background:#f0faf6;color:#0F6E56;border:1px solid #9FE1CB}
+.alert.err{background:#fdf2f2;color:#993C1D;border:1px solid #F5C4B3}
+.alert.info{background:#e6f1fb;color:#185FA5;border:1px solid #B5D4F4}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tbl-actions button{border:1px solid #e5e5e5;background:#fff;cursor:pointer;padding:3px 8px;border-radius:6px;font-size:11px;color:#888;margin-right:3px}
+.tbl-actions button:hover{background:#fdf2f2;color:#993C1D}
+.empty-state{text-align:center;color:#aaa;padding:2rem;font-size:13px}
+.doc-match{padding:8px 12px;border-radius:8px;font-size:12px;margin-top:4px;display:none}
+.doc-match.found{background:#f0faf6;color:#0F6E56;border:1px solid #9FE1CB;display:block}
+.doc-match.notfound{background:#faeeda;color:#854F0B;border:1px solid #FAC775;display:block}
+.doc-type-badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;margin-left:4px}
+.doc-type-badge.cpf{background:#e6f1fb;color:#185FA5}
+.doc-type-badge.cnpj{background:#faeeda;color:#854F0B}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center;padding:1rem}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:16px;padding:1.5rem;width:100%;max-width:460px;max-height:90vh;overflow-y:auto}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+.modal-header h2{font-size:16px;font-weight:600}
+.modal-close{border:none;background:none;cursor:pointer;font-size:20px;color:#888;line-height:1}
+.lojas-check{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.lojas-check label{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#f5f5f3;padding:5px 10px;border-radius:20px;border:1px solid #e5e5e5}
+.lojas-check input[type=checkbox]{accent-color:#1D9E75}
+@media(max-width:600px){.nav button{padding:6px 10px;font-size:12px}.metric .val{font-size:18px}}
+</style>
+</head>
+<body>
 
-var SHEET_CREDITOS   = "CREDITOS";
-var SHEET_NFS        = "NFS";
-var SHEET_LOJAS      = "LOJAS";
-var SHEET_VENDEDORES = "VENDEDORES";
-var SHEET_USUARIOS   = "USUARIOS";
+<!-- LOGIN -->
+<div class="login-wrap" id="login-wrap">
+  <div class="login-box">
+    <div class="login-logo"><h1>🚗 <span>Despachante</span> Sistema</h1><p>Faça login para continuar</p></div>
+    <div class="fg"><label>Usuário</label><input type="text" id="l-usuario" placeholder="seu usuario" autocomplete="username"></div>
+    <div class="fg"><label>Senha</label><input type="password" id="l-senha" placeholder="••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')fazerLogin()"></div>
+    <button class="login-btn" onclick="fazerLogin()" id="login-btn">Entrar</button>
+    <div class="login-err" id="login-err"></div>
+    <div style="margin-top:1rem;padding:10px;background:#faeeda;border-radius:8px;font-size:12px;color:#854F0B">
+      ⚠️ Primeiro acesso: cole a URL do Apps Script abaixo.<br>
+      <input type="text" id="l-url" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%;margin-top:6px;border-radius:6px;border:1px solid #FAC775;padding:6px 8px;font-size:12px;background:#fff">
+      <button onclick="salvarURL()" style="margin-top:6px;padding:5px 12px;border-radius:6px;border:none;background:#854F0B;color:#fff;font-size:12px;cursor:pointer">Salvar URL</button>
+    </div>
+  </div>
+</div>
 
-var HEADERS_CREDITOS   = ["id","cliente","chassi","placa","oc","ipva","loja","vendedor","tipo","valor","comissao","honorarios","nossaCom","status","motivo","obs","dtVenda","semana"];
-var HEADERS_NFS        = ["id","cliente","chassi","loja","dtFat","dtReceb","obs"];
-var HEADERS_LOJAS      = ["nome"];
-var HEADERS_VENDEDORES = ["nome"];
-var HEADERS_USUARIOS   = ["id","nome","usuario","senha","perfil","lojas"];
-// perfil: "adm" ou "usuario"
-// lojas: nomes separados por vírgula ex: "JEEP,FIAT,BYD"
+<!-- APP -->
+<div class="app" id="app">
+  <div class="topbar">
+    <div class="logo">🚗 <span>Despachante</span> Sistema</div>
+    <div class="topbar-right">
+      <div class="conn-pill off" id="conn-pill"><div class="conn-dot"></div><span id="conn-label">Sem conexão</span></div>
+      <div class="user-pill"><div class="avatar" id="user-avatar">?</div><span id="user-nome">-</span></div>
+      <button class="btn-sair" onclick="sair()">Sair</button>
+    </div>
+  </div>
+  <div class="wrapper">
+    <div class="nav">
+      <button class="active" onclick="showTab('painel',this)">📊 Painel</button>
+      <button onclick="showTab('lancamento',this)">➕ Lançamento</button>
+      <button onclick="showTab('casamento',this)">🔗 Casamento</button>
+      <button onclick="showTab('notas',this)">📁 Registros</button>
+      <button onclick="showTab('relatorios',this)">📈 Relatórios</button>
+      <button class="adm-only" onclick="showTab('usuarios',this)">👥 Usuários</button>
+      <button class="adm-only" onclick="showTab('config',this)">⚙️ Config.</button>
+    </div>
 
-// ------------------------------------------------------------
-//  ENTRADA
-// ------------------------------------------------------------
-function doGet(e) {
-  try {
-    var action = e && e.parameter && e.parameter.action ? e.parameter.action : "";
-    var sheet  = e && e.parameter && e.parameter.sheet  ? e.parameter.sheet  : "";
-    var result;
-    if      (action === "init")    result = initSheets();
-    else if (action === "getAll")  result = getAll(sheet);
-    else                           result = { status: "ok", message: "Sistema Despachante v2 ativo!" };
-    return resposta(result);
-  } catch(err) { return resposta({ error: err.toString() }); }
-}
+    <!-- PAINEL -->
+    <div id="sec-painel" class="section active">
+      <div class="metric-grid" id="metrics"></div>
+      <div class="card">
+        <div class="section-title">Pendências de casamento</div>
+        <div class="leg"><span><span class="dot green" style="display:inline-block"></span> Casado</span><span><span class="dot red" style="display:inline-block"></span> Aguardando NF</span><span><span class="dot amber" style="display:inline-block"></span> NF sem crédito</span></div>
+        <div style="overflow-x:auto"><table><thead><tr><th>Cliente</th><th>CPF/CNPJ</th><th>Loja</th><th>Vendedor</th><th>Placa</th><th>OC</th><th>Valor</th><th>Status</th></tr></thead><tbody id="tbl-painel-pend"></tbody></table></div>
+      </div>
+    </div>
 
-function doPost(e) {
-  try {
-    var body   = JSON.parse(e.postData.contents);
-    var action = body.action;
-    var result;
-    if      (action === "init")       result = initSheets();
-    else if (action === "getAll")     result = getAll(body.sheet);
-    else if (action === "insert")     result = insert(body.sheet, body.data);
-    else if (action === "delete")     result = deleteRow(body.sheet, body.id);
-    else if (action === "replaceAll") result = replaceAll(body.sheet, body.data);
-    else if (action === "login")      result = login(body.usuario, body.senha);
-    else if (action === "saveUsuario") result = saveUsuario(body.data);
-    else if (action === "deleteUsuario") result = deleteUsuario(body.id);
-    else                              result = { error: "Acao desconhecida: " + action };
-    return resposta(result);
-  } catch(err) { return resposta({ error: err.toString() }); }
-}
+    <!-- LANÇAMENTO -->
+    <div id="sec-lancamento" class="section">
+      <div class="tabs-inner">
+        <button class="active" id="btn-tab-cred" onclick="showInner('credito')">💳 Lançar crédito</button>
+        <button id="btn-tab-nf" onclick="showInner('nf')">📄 Lançar NF</button>
+      </div>
 
-function resposta(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
-}
+      <!-- CRÉDITO -->
+      <div id="inner-credito">
+        <div class="card">
+          <div class="section-title">Abertura de crédito / venda do documento</div>
+          <div class="form-grid">
+            <div class="fg">
+              <label>CPF ou CNPJ do cliente</label>
+              <input type="text" id="c-doc" placeholder="000.000.000-00 ou 00.000.000/0000-00" oninput="fmtDoc('c-doc');sugerirCred()" maxlength="18">
+              <span class="ref" id="c-doc-tipo"></span>
+              <div class="doc-match" id="c-doc-match"></div>
+            </div>
+            <div class="fg"><label>Nome do cliente</label><input type="text" id="c-cliente" placeholder="Nome do cliente"></div>
+            <div class="fg"><label>Placa</label><input type="text" id="c-placa" placeholder="ABC1D23" style="text-transform:uppercase"></div>
+            <div class="fg"><label>Nº da OC</label><input type="text" id="c-oc" placeholder="Número do sistema"></div>
+            <div class="fg"><label>Loja</label><select id="c-loja"><option>-- selecione --</option></select></div>
+            <div class="fg"><label>Vendedor</label><select id="c-vendedor"><option>-- selecione --</option></select></div>
+            <div class="fg"><label>Tipo de veículo</label><select id="c-tipo" onchange="calcRef()"><option value="0km">0 km</option><option value="semi">Semi-novo</option></select></div>
+            <div class="fg"><label>Data da venda</label><input type="date" id="c-dtvenda"></div>
+            <div class="fg"><label>Status</label><select id="c-status" onchange="toggleMotivo()"><option value="ok">Normal</option><option value="cortesia">Cortesia</option><option value="perdida">NF Fora</option><option value="pendente">Pendente</option></select></div>
+            <div class="fg" id="c-motivo-g" style="display:none"><label>Motivo NF fora</label><input type="text" id="c-motivo"></div>
+            <div class="fg"><label>Observações</label><input type="text" id="c-obs"></div>
+          </div>
+          <div style="margin-bottom:1rem">
+            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">IPVA</div>
+            <div class="ipva-toggle" id="ipva-toggle" onclick="toggleIPVA()" role="checkbox" aria-checked="false" tabindex="0">
+              <div class="ipva-icon" id="ipva-icon"></div>
+              <span class="ipva-label" id="ipva-label">IPVA não incluso</span>
+            </div>
+          </div>
+          <hr class="sep">
+          <div style="font-size:13px;font-weight:600;margin-bottom:.75rem">Valores financeiros</div>
+          <div class="form-grid">
+            <div class="fg"><label>Valor da venda (R$)</label><input type="number" id="c-valor" placeholder="0,00" oninput="calcRef()"></div>
+            <div class="fg"><label>Comissão do vendedor (R$)</label><input type="number" id="c-comissao" placeholder="Digite o valor"><span class="ref" id="c-ref-tabela"></span></div>
+            <div class="fg"><label>Honorários (R$)</label><input type="number" id="c-honorarios" placeholder="Sobra após taxas e comissão" oninput="calcNossaCom()"><span class="hint">Venda − taxas − comissão vendedor</span></div>
+          </div>
+          <div class="calc-box">
+            <div class="calc-item"><div class="lbl">Honorários</div><div class="num" id="box-hon" style="color:#1a1a1a">R$ —</div></div>
+            <div class="divider-v"></div>
+            <div class="calc-item"><div class="lbl">Nossa comissão (10%)</div><div class="num green" id="box-nossa-com">R$ —</div></div>
+            <div class="divider-v"></div>
+            <div class="calc-item" id="box-cort-wrap" style="display:none"><div class="lbl">Saldo cortesia</div><div class="num blue" id="box-cort-saldo">R$ —</div></div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn primary" onclick="salvarCredito()">💾 Salvar crédito</button>
+            <button class="btn" onclick="limparCred()">✕ Limpar</button>
+          </div>
+        </div>
+      </div>
 
-// ------------------------------------------------------------
-//  LOGIN
-// ------------------------------------------------------------
-function login(usuario, senha) {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(SHEET_USUARIOS);
-  if (!sheet) return { error: "Aba USUARIOS não encontrada." };
+      <!-- NF -->
+      <div id="inner-nf" style="display:none">
+        <div class="card">
+          <div class="section-title">Entrada de NF</div>
+          <div class="form-grid">
+            <div class="fg">
+              <label>CPF ou CNPJ do cliente</label>
+              <input type="text" id="n-doc" placeholder="000.000.000-00 ou 00.000.000/0000-00" oninput="fmtDoc('n-doc');sugerirNF()" maxlength="18">
+              <span class="ref" id="n-doc-tipo"></span>
+              <div class="doc-match" id="n-doc-match"></div>
+            </div>
+            <div class="fg"><label>Nome do cliente</label><input type="text" id="n-cliente" placeholder="Preenchido automaticamente" readonly style="background:#f5f5f3;color:#888"></div>
+            <div class="fg"><label>Chassi</label><input type="text" id="n-chassi" placeholder="9BF12345..."></div>
+            <div class="fg"><label>Loja</label><select id="n-loja"><option>-- selecione --</option></select></div>
+            <div class="fg"><label>Data faturamento NF</label><input type="date" id="n-dtfat"></div>
+            <div class="fg"><label>Data recebimento NF</label><input type="date" id="n-dtreceb"></div>
+            <div class="fg"><label>Observações</label><input type="text" id="n-obs"></div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn success" onclick="salvarNF()">💾 Salvar NF</button>
+            <button class="btn" onclick="limparNF()">✕ Limpar</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  var values  = sheet.getDataRange().getValues();
-  var headers = values[0];
-  var rows    = values.slice(1);
+    <!-- CASAMENTO -->
+    <div id="sec-casamento" class="section">
+      <div class="search-bar">
+        <input type="text" id="cas-busca" placeholder="Buscar CPF/CNPJ, cliente, placa..." oninput="renderCasamento()">
+        <select id="cas-loja" onchange="renderCasamento()"><option value="">Todas as lojas</option></select>
+        <select id="cas-filtro" onchange="renderCasamento()"><option value="">Todos</option><option value="casado">Casados</option><option value="sem-nf">Aguardando NF</option><option value="sem-cred">NF sem crédito</option></select>
+        <button class="btn" onclick="carregarDados()">🔄 Atualizar</button>
+      </div>
+      <div class="leg"><span><span class="dot green" style="display:inline-block"></span> Casado</span><span><span class="dot red" style="display:inline-block"></span> Aguardando NF</span><span><span class="dot amber" style="display:inline-block"></span> NF sem crédito</span></div>
+      <div class="card" style="padding:0;overflow-x:auto">
+        <table><thead><tr><th></th><th>CPF/CNPJ</th><th>Cliente</th><th>Loja</th><th>Vendedor</th><th>Placa</th><th>OC</th><th>IPVA</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Status</th><th>Dt. venda</th><th>Dt. NF</th></tr></thead><tbody id="tbl-casamento"></tbody></table>
+      </div>
+    </div>
 
-  var iUsuario = headers.indexOf("usuario");
-  var iSenha   = headers.indexOf("senha");
-  var iPerfil  = headers.indexOf("perfil");
-  var iLojas   = headers.indexOf("lojas");
-  var iNome    = headers.indexOf("nome");
-  var iId      = headers.indexOf("id");
+    <!-- REGISTROS -->
+    <div id="sec-notas" class="section">
+      <div class="tabs-inner">
+        <button class="active" id="btn-reg-cred" onclick="showRegTab('cred')">Créditos</button>
+        <button id="btn-reg-nf" onclick="showRegTab('nf')">NFs avulsas</button>
+      </div>
+      <div id="reg-cred-sec">
+        <div class="search-bar">
+          <input type="text" id="rc-busca" placeholder="Buscar CPF/CNPJ, cliente, placa..." oninput="renderRegCreditos()">
+          <select id="rc-loja" onchange="renderRegCreditos()"><option value="">Todas as lojas</option></select>
+          <select id="rc-status" onchange="renderRegCreditos()"><option value="">Todos</option><option value="ok">Normal</option><option value="cortesia">Cortesia</option><option value="perdida">NF Fora</option><option value="pendente">Pendente</option></select>
+          <button class="btn" onclick="carregarDados()">🔄 Atualizar</button>
+        </div>
+        <div class="card" style="padding:0;overflow-x:auto"><table><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>OC</th><th>IPVA</th><th>Loja</th><th>Vendedor</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Status</th><th>Data</th><th></th></tr></thead><tbody id="tbl-creditos"></tbody></table></div>
+      </div>
+      <div id="reg-nf-sec" style="display:none">
+        <div class="search-bar">
+          <input type="text" id="rn-busca" placeholder="Buscar CPF/CNPJ, cliente..." oninput="renderRegNFs()">
+          <select id="rn-loja" onchange="renderRegNFs()"><option value="">Todas as lojas</option></select>
+        </div>
+        <div class="card" style="padding:0;overflow-x:auto"><table><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Chassi</th><th>Loja</th><th>Dt. Fat.</th><th>Dt. Receb.</th><th>Pareamento</th><th></th></tr></thead><tbody id="tbl-nfs"></tbody></table></div>
+      </div>
+    </div>
 
-  for (var i = 0; i < rows.length; i++) {
-    if (String(rows[i][iUsuario]).toLowerCase() === String(usuario).toLowerCase() &&
-        String(rows[i][iSenha]) === String(senha)) {
-      return {
-        status: "ok",
-        user: {
-          id:      rows[i][iId],
-          nome:    rows[i][iNome],
-          usuario: rows[i][iUsuario],
-          perfil:  rows[i][iPerfil],
-          lojas:   rows[i][iLojas] ? String(rows[i][iLojas]).split(",").map(function(l){return l.trim();}) : []
-        }
-      };
-    }
+    <!-- RELATÓRIOS -->
+    <div id="sec-relatorios" class="section">
+      <div class="card">
+        <div class="section-title">Filtros</div>
+        <div class="form-grid">
+          <div class="fg"><label>Loja</label><select id="rel-loja"><option value="">Todas as lojas</option></select></div>
+          <div class="fg"><label>Vendedor</label><select id="rel-vendedor"><option value="">Todos os vendedores</option></select></div>
+          <div class="fg"><label>Data inicial</label><input type="date" id="rel-dt-ini"></div>
+          <div class="fg"><label>Data final</label><input type="date" id="rel-dt-fim"></div>
+          <div class="fg"><label>Status</label><select id="rel-status"><option value="">Todos</option><option value="ok">Normal</option><option value="cortesia">Cortesia</option><option value="perdida">NF Fora</option><option value="pendente">Pendente</option></select></div>
+          <div class="fg"><label>IPVA</label><select id="rel-ipva"><option value="">Todos</option><option value="1">Com IPVA</option><option value="0">Sem IPVA</option></select></div>
+        </div>
+        <button class="btn primary" onclick="gerarRelatorio()">📊 Gerar relatório</button>
+      </div>
+      <div id="rel-output"></div>
+    </div>
+
+    <!-- USUÁRIOS -->
+    <div id="sec-usuarios" class="section">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+        <div class="section-title" style="margin:0">Usuários do sistema</div>
+        <button class="btn primary" onclick="abrirModalUsuario()">+ Novo usuário</button>
+      </div>
+      <div class="card" style="padding:0;overflow-x:auto">
+        <table><thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Lojas atribuídas</th><th></th></tr></thead><tbody id="tbl-usuarios"></tbody></table>
+      </div>
+    </div>
+
+    <!-- CONFIG -->
+    <div id="sec-config" class="section">
+      <div class="card">
+        <div class="section-title">🔗 Conexão com Google Sheets</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+          <div class="fg" style="flex:1"><label>URL do Google Apps Script</label><input type="text" id="cfg-url" placeholder="https://script.google.com/macros/s/.../exec"></div>
+          <button class="btn primary" onclick="reconectar()">🔌 Reconectar</button>
+        </div>
+        <div id="status-sheets" style="margin-top:.75rem"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Lojas</div>
+        <div style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap"><input type="text" id="nova-loja" placeholder="Nome da loja" style="border-radius:7px;border:1px solid #ddd;padding:7px 10px;font-size:13px"><button class="btn primary" onclick="addLoja()">+ Adicionar</button></div>
+        <ul id="lista-lojas" style="list-style:none;display:flex;flex-wrap:wrap;gap:6px"></ul>
+      </div>
+      <div class="card">
+        <div class="section-title">Vendedores</div>
+        <div style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap"><input type="text" id="novo-vendedor" placeholder="Nome do vendedor" style="border-radius:7px;border:1px solid #ddd;padding:7px 10px;font-size:13px"><button class="btn primary" onclick="addVendedor()">+ Adicionar</button></div>
+        <ul id="lista-vendedores" style="list-style:none;display:flex;flex-wrap:wrap;gap:6px"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL USUÁRIO -->
+<div class="modal-bg" id="modal-usuario">
+  <div class="modal">
+    <div class="modal-header"><h2 id="modal-titulo">Novo usuário</h2><button class="modal-close" onclick="fecharModal()">×</button></div>
+    <input type="hidden" id="m-id">
+    <div class="form-grid">
+      <div class="fg"><label>Nome completo</label><input type="text" id="m-nome" placeholder="Ex: Everton Silva"></div>
+      <div class="fg"><label>Usuário (login)</label><input type="text" id="m-usuario" placeholder="Ex: everton"></div>
+      <div class="fg"><label>Senha</label><input type="password" id="m-senha" placeholder="Senha de acesso"></div>
+      <div class="fg"><label>Perfil</label><select id="m-perfil"><option value="usuario">Usuário comum</option><option value="adm">Administrador</option></select></div>
+    </div>
+    <div class="fg" style="margin-bottom:1rem">
+      <label>Lojas que este usuário pode acessar</label>
+      <div class="lojas-check" id="m-lojas-check"></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn primary" onclick="salvarUsuario()">💾 Salvar</button>
+      <button class="btn" onclick="fecharModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var COM_0KM=[[1750,75],[1850,125],[1950,175],[2150,225],[2202,250],[2402,300],[2502,350]];
+var COM_SEMI=[[1550,75],[1650,125],[1740,175],[1890,225],[2050,300]];
+var CORT_SALDO=178.68,NOSSA=0.10;
+var ipvaAtivo=false,SURL='';
+var creditos=[],nfs=[],usuarios=[];
+var usuarioLogado=null;
+
+var lojas=['LeapMotor','Fiat Orozimbo','Jeep Orozimbo'];
+var vendedores=[
+  'Claudio Fiat','Anderson Fiat','Renan Fiat','Vanessa Fiat','Paulo Fiat',
+  'Douglas Fiat','Dayse Fiat','Atilas Fiat','Bruno Fiat','Daniela Fiat',
+  'Fabio Fiat','Wesley Fiat',
+  'Pedro Leap','Andrei Leap','Luana Leap','Cesar Leap','Keila Leap','Roberto Leap',
+  'Leo Jeep','Kamille Jeep','Rosangela Jeep','Robertão Jeep','Lucimara Jeep',
+  'Carlos Jeep','Pamela Jeep','Natalia Jeep','Marcelão Jeep','Ivan Jeep',
+  'Darli Jeep','Rodrigo Iorio Jeep','Fernanda Jeep','Juliana Jeep','Leticia Jeep'
+];
+
+function salvarLocal(){try{localStorage.setItem('d_url',SURL);localStorage.setItem('d_lojas',JSON.stringify(lojas));localStorage.setItem('d_vend',JSON.stringify(vendedores));}catch(e){}}
+function carregarLocal(){try{SURL=localStorage.getItem('d_url')||'';var ls=localStorage.getItem('d_lojas');if(ls)lojas=JSON.parse(ls);var lv=localStorage.getItem('d_vend');if(lv)vendedores=JSON.parse(lv);}catch(e){}}
+
+// ---- CPF / CNPJ ----
+function normDoc(s){return(s||'').replace(/\D/g,'');}
+function tipoDoc(s){var d=normDoc(s);if(d.length===11)return'cpf';if(d.length===14)return'cnpj';return'';}
+function fmtDoc(fieldId){
+  var el=document.getElementById(fieldId);
+  var v=normDoc(el.value);
+  var tipoEl=document.getElementById(fieldId.replace('doc','doc-tipo'));
+  if(v.length<=11){
+    if(v.length>3)v=v.slice(0,3)+'.'+v.slice(3);
+    if(v.length>7)v=v.slice(0,7)+'.'+v.slice(7);
+    if(v.length>11)v=v.slice(0,11)+'-'+v.slice(11);
+    el.value=v.slice(0,14);
+    if(tipoEl)tipoEl.innerHTML=normDoc(el.value).length===11?'<span class="doc-type-badge cpf">CPF</span>':'';
+  }else{
+    if(v.length>2)v=v.slice(0,2)+'.'+v.slice(2);
+    if(v.length>6)v=v.slice(0,6)+'.'+v.slice(6);
+    if(v.length>10)v=v.slice(0,10)+'/'+v.slice(10);
+    if(v.length>15)v=v.slice(0,15)+'-'+v.slice(15);
+    el.value=v.slice(0,18);
+    if(tipoEl)tipoEl.innerHTML=normDoc(el.value).length===14?'<span class="doc-type-badge cnpj">CNPJ</span>':'';
   }
-  return { error: "Usuário ou senha incorretos." };
 }
 
-// ------------------------------------------------------------
-//  SALVAR USUÁRIO (insert ou update)
-// ------------------------------------------------------------
-function saveUsuario(data) {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(SHEET_USUARIOS);
-  if (!sheet) return { error: "Aba USUARIOS não encontrada." };
+function norm(s){return(s||'').toLowerCase().trim();}
+function getRef(tipo,v){var t=tipo==='0km'?COM_0KM:COM_SEMI;for(var i=t.length-1;i>=0;i--){if(v>=t[i][0])return t[i][1];}return 0;}
+function fmtM(v){return'R$ '+Number(v||0).toFixed(2).replace('.',',');}
+function fmtD(d){if(!d)return'—';if(typeof d==='string'&&d.includes('-')){var p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0];}return String(d);}
+function getSem(ds){if(!ds)return'';var d=new Date(ds+'T12:00:00');var j=new Date(d.getFullYear(),0,1);return d.getFullYear()+'-S'+String(Math.ceil(((d-j)/86400000+j.getDay()+1)/7)).padStart(2,'0');}
+function stBadge(s){var m={ok:['ok','Normal'],cortesia:['cortesia','Cortesia'],perdida:['perdida','NF Fora'],pendente:['pendente','Pendente']};var r=m[s]||['',''];return'<span class="badge '+r[0]+'">'+r[1]+'</span>';}
+function dotH(st){if(st==='casado')return'<span class="dot green"></span>';if(st==='sem-nf')return'<span class="dot red"></span>';return'<span class="dot amber"></span>';}
+function ipvaB(v){return(v===true||v==='TRUE')?'<span class="badge ipva">✓ IPVA</span>':'<span style="color:#ccc;font-size:12px">—</span>';}
+function isAdm(){return usuarioLogado&&usuarioLogado.perfil==='adm';}
+function lojasDoUsuario(){if(isAdm())return lojas;return usuarioLogado&&usuarioLogado.lojas&&usuarioLogado.lojas.length?usuarioLogado.lojas.filter(function(l){return lojas.indexOf(l)>=0;}):[];}
 
-  var values  = sheet.getDataRange().getValues();
-  var headers = values[0];
-  var iId     = headers.indexOf("id");
+async function api(p){if(!SURL)throw new Error('URL não configurada');var r=await fetch(SURL,{method:'POST',body:JSON.stringify(p)});return JSON.parse(await r.text());}
+function setAlert(el,tipo,msg,spin){el.innerHTML='<div class="alert '+tipo+'">'+(spin?'<span class="spinner"></span> ':'')+msg+'</div>';}
+function setCon(ok){var p=document.getElementById('conn-pill');p.className='conn-pill '+(ok?'on':'off');document.getElementById('conn-label').textContent=ok?'Conectado':'Sem conexão';}
+function salvarURL(){var url=document.getElementById('l-url').value.trim();if(!url){alert('Cole a URL primeiro.');return;}SURL=url;salvarLocal();alert('URL salva! Agora faça o login.');}
 
-  // Se tem id, tenta atualizar linha existente
-  if (data.id) {
-    for (var i = 1; i < values.length; i++) {
-      if (String(values[i][iId]) === String(data.id)) {
-        var row = headers.map(function(h) {
-          if (h === "lojas" && Array.isArray(data[h])) return data[h].join(",");
-          return data[h] !== undefined ? data[h] : "";
-        });
-        sheet.getRange(i + 1, 1, 1, row.length).setValues([row]);
-        return { status: "ok", action: "updated" };
-      }
-    }
-  }
-
-  // Senão insere novo
-  data.id = Date.now();
-  var row = headers.map(function(h) {
-    if (h === "lojas" && Array.isArray(data[h])) return data[h].join(",");
-    return data[h] !== undefined ? data[h] : "";
-  });
-  sheet.insertRowAfter(1);
-  sheet.getRange(2, 1, 1, row.length).setValues([row]);
-  return { status: "ok", action: "inserted", id: data.id };
+async function fazerLogin(){
+  var usuario=document.getElementById('l-usuario').value.trim();
+  var senha=document.getElementById('l-senha').value;
+  var err=document.getElementById('login-err');
+  var btn=document.getElementById('login-btn');
+  if(!usuario||!senha){err.style.display='block';err.textContent='Preencha usuário e senha.';return;}
+  if(!SURL){err.style.display='block';err.textContent='Configure a URL do Apps Script primeiro.';return;}
+  btn.textContent='Entrando...';btn.disabled=true;err.style.display='none';
+  try{var r=await api({action:'login',usuario:usuario,senha:senha});if(r.error){err.style.display='block';err.textContent=r.error;btn.textContent='Entrar';btn.disabled=false;return;}usuarioLogado=r.user;entrarNoApp();}
+  catch(e){err.style.display='block';err.textContent='Erro de conexão: '+e.message;btn.textContent='Entrar';btn.disabled=false;}
 }
 
-// ------------------------------------------------------------
-//  DELETAR USUÁRIO
-// ------------------------------------------------------------
-function deleteUsuario(id) {
-  return deleteRow(SHEET_USUARIOS, id);
+function entrarNoApp(){
+  document.getElementById('login-wrap').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('user-nome').textContent=usuarioLogado.nome;
+  document.getElementById('user-avatar').textContent=usuarioLogado.nome.charAt(0).toUpperCase();
+  setCon(true);
+  document.querySelectorAll('.adm-only').forEach(function(el){el.style.display=isAdm()?'':'none';});
+  atualizarSelects();carregarDados();
 }
 
-// ------------------------------------------------------------
-//  INIT
-// ------------------------------------------------------------
-function initSheets() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  criarAba(ss, SHEET_CREDITOS,   HEADERS_CREDITOS);
-  criarAba(ss, SHEET_NFS,        HEADERS_NFS);
-  criarAba(ss, SHEET_LOJAS,      HEADERS_LOJAS);
-  criarAba(ss, SHEET_VENDEDORES, HEADERS_VENDEDORES);
-  criarAba(ss, SHEET_USUARIOS,   HEADERS_USUARIOS);
+function sair(){usuarioLogado=null;creditos=[];nfs=[];document.getElementById('app').style.display='none';document.getElementById('login-wrap').style.display='flex';document.getElementById('l-senha').value='';document.getElementById('login-err').style.display='none';document.getElementById('login-btn').textContent='Entrar';document.getElementById('login-btn').disabled=false;setCon(false);}
 
-  // Cria adm padrão se não houver nenhum usuário
-  var sheetU = ss.getSheetByName(SHEET_USUARIOS);
-  if (sheetU.getLastRow() <= 1) {
-    sheetU.appendRow([Date.now(), "Administrador", "adm", "1234", "adm", ""]);
-  }
+async function carregarDados(){
+  if(!SURL)return;
+  try{
+    var res=await Promise.all([api({action:'getAll',sheet:'CREDITOS'}),api({action:'getAll',sheet:'NFS'})]);
+    var ml=lojasDoUsuario().map(function(l){return norm(l);});
+    var ac=res[0].data||[];var an=res[1].data||[];
+    if(isAdm()){creditos=ac;nfs=an;}
+    else{creditos=ac.filter(function(c){return ml.indexOf(norm(c.loja))>=0;});nfs=an.filter(function(n){return ml.indexOf(norm(n.loja))>=0;});}
+    renderPainel();
+  }catch(e){console.warn(e);}
+}
+async function carregarUsuarios(){try{var r=await api({action:'getAll',sheet:'USUARIOS'});usuarios=r.data||[];renderTblUsuarios();}catch(e){}}
+async function syncLV(){if(!SURL)return;try{await Promise.all([api({action:'replaceAll',sheet:'LOJAS',data:lojas.map(function(n){return{nome:n};})}),api({action:'replaceAll',sheet:'VENDEDORES',data:vendedores.map(function(n){return{nome:n};})})]);} catch(e){}}
 
-  return { status: "ok", message: "Abas criadas. Login padrão: usuario=adm / senha=1234" };
+function showTab(t,btn){document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});document.querySelectorAll('.nav button').forEach(function(b){b.classList.remove('active');});document.getElementById('sec-'+t).classList.add('active');btn.classList.add('active');if(t==='painel')renderPainel();if(t==='casamento')renderCasamento();if(t==='notas')renderRegistros();if(t==='relatorios')renderRelFiltros();if(t==='usuarios')carregarUsuarios();if(t==='config')renderConfig();}
+function showInner(v){document.getElementById('inner-credito').style.display=v==='credito'?'block':'none';document.getElementById('inner-nf').style.display=v==='nf'?'block':'none';document.getElementById('btn-tab-cred').classList.toggle('active',v==='credito');document.getElementById('btn-tab-nf').classList.toggle('active',v==='nf');}
+function showRegTab(v){document.getElementById('reg-cred-sec').style.display=v==='cred'?'block':'none';document.getElementById('reg-nf-sec').style.display=v==='nf'?'block':'none';document.getElementById('btn-reg-cred').classList.toggle('active',v==='cred');document.getElementById('btn-reg-nf').classList.toggle('active',v==='nf');if(v==='cred')renderRegCreditos();else renderRegNFs();}
+
+function buildCas(){var map={};creditos.forEach(function(c){var k=normDoc(c.doc)+'||'+norm(c.loja);if(!map[k])map[k]={doc:c.doc,cliente:c.cliente,loja:c.loja,creditos:[],nfs:[]};map[k].creditos.push(c);});nfs.forEach(function(n){var k=normDoc(n.doc)+'||'+norm(n.loja);if(!map[k])map[k]={doc:n.doc,cliente:n.cliente,loja:n.loja,creditos:[],nfs:[]};map[k].nfs.push(n);});return Object.values(map);}
+function casSt(g){if(g.creditos.length>0&&g.nfs.length>0)return'casado';if(g.creditos.length>0)return'sem-nf';return'sem-cred';}
+
+function sugerirCred(){
+  var doc=normDoc(document.getElementById('c-doc').value);
+  var hint=document.getElementById('c-doc-match');
+  var nomeEl=document.getElementById('c-cliente');
+  if(doc.length<11){hint.className='doc-match';return;}
+  var fNF=nfs.filter(function(n){return normDoc(n.doc)===doc;});
+  var fC=creditos.filter(function(c){return normDoc(c.doc)===doc;});
+  if(fC.length&&!nomeEl.value)nomeEl.value=fC[0].cliente||'';
+  if(fNF.length){hint.className='doc-match found';hint.textContent='✓ NF já lançada para este documento ('+fmtD(fNF[0].dtReceb)+') — será casado ao salvar.';}
+  else if(fC.length){hint.className='doc-match notfound';hint.textContent='ℹ️ Documento já tem crédito: '+fC[0].cliente+'.';}
+  else{hint.className='doc-match';}
+}
+function sugerirNF(){
+  var doc=normDoc(document.getElementById('n-doc').value);
+  var hint=document.getElementById('n-doc-match');
+  var nomeEl=document.getElementById('n-cliente');
+  if(doc.length<11){hint.className='doc-match';nomeEl.value='';return;}
+  var f=creditos.filter(function(c){return normDoc(c.doc)===doc;});
+  if(f.length){nomeEl.value=f[0].cliente||'';hint.className='doc-match found';hint.textContent='✓ Crédito encontrado — '+f[0].cliente+', '+f[0].loja+', '+fmtM(f[0].valor)+'. Será casado ao salvar.';}
+  else{nomeEl.value='';hint.className='doc-match notfound';hint.textContent='⚠️ Nenhum crédito encontrado para este documento. NF ficará sem crédito associado.';}
 }
 
-function criarAba(ss, nome, headers) {
-  var sheet = ss.getSheetByName(nome);
-  if (!sheet) {
-    sheet = ss.insertSheet(nome);
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#1D9E75").setFontColor("#ffffff");
-    sheet.setFrozenRows(1);
-  }
-  return sheet;
+function toggleIPVA(){ipvaAtivo=!ipvaAtivo;document.getElementById('ipva-toggle').classList.toggle('checked',ipvaAtivo);document.getElementById('ipva-toggle').setAttribute('aria-checked',ipvaAtivo);document.getElementById('ipva-icon').textContent=ipvaAtivo?'✓':'';document.getElementById('ipva-label').textContent=ipvaAtivo?'IPVA incluso':'IPVA não incluso';}
+function calcRef(){var ref=getRef(document.getElementById('c-tipo').value,parseFloat(document.getElementById('c-valor').value)||0);document.getElementById('c-ref-tabela').textContent=ref?'Tabela sugere: '+fmtM(ref):'';calcNossaCom();}
+function calcNossaCom(){var hon=parseFloat(document.getElementById('c-honorarios').value)||0;var st=document.getElementById('c-status').value;document.getElementById('box-hon').textContent=hon?fmtM(hon):'R$ —';document.getElementById('box-nossa-com').textContent=hon?fmtM(hon*NOSSA):'R$ —';document.getElementById('box-cort-wrap').style.display=st==='cortesia'?'flex':'none';if(st==='cortesia')document.getElementById('box-cort-saldo').textContent=fmtM(CORT_SALDO);}
+function toggleMotivo(){document.getElementById('c-motivo-g').style.display=document.getElementById('c-status').value==='perdida'?'block':'none';calcNossaCom();}
+
+async function salvarCredito(){
+  var doc=normDoc(document.getElementById('c-doc').value);
+  var cliente=document.getElementById('c-cliente').value.trim();
+  var loja=document.getElementById('c-loja').value;
+  var vendedor=document.getElementById('c-vendedor').value;
+  if(doc.length<11){alert('CPF ou CNPJ inválido.');return;}
+  if(!cliente||loja==='-- selecione --'||vendedor==='-- selecione --'){alert('Preencha nome, loja e vendedor.');return;}
+  var hon=parseFloat(document.getElementById('c-honorarios').value)||0;var dt=document.getElementById('c-dtvenda').value;
+  var rec={id:Date.now(),doc:document.getElementById('c-doc').value,cliente:cliente,placa:document.getElementById('c-placa').value.trim().toUpperCase(),oc:document.getElementById('c-oc').value.trim(),ipva:ipvaAtivo,loja:loja,vendedor:vendedor,tipo:document.getElementById('c-tipo').value,valor:parseFloat(document.getElementById('c-valor').value)||0,comissao:parseFloat(document.getElementById('c-comissao').value)||0,honorarios:hon,nossaCom:parseFloat((hon*NOSSA).toFixed(2)),status:document.getElementById('c-status').value,motivo:document.getElementById('c-motivo').value,obs:document.getElementById('c-obs').value,dtVenda:dt,semana:getSem(dt||new Date().toISOString().slice(0,10))};
+  try{var r=await api({action:'insert',sheet:'CREDITOS',data:rec});if(r.error)throw new Error(r.error);creditos.unshift(rec);alert('✓ Crédito salvo!');limparCred();renderPainel();}catch(e){alert('Erro: '+e.message);}
+}
+function limparCred(){['c-doc','c-cliente','c-placa','c-oc','c-valor','c-comissao','c-honorarios','c-obs','c-dtvenda','c-motivo'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('c-loja').value='-- selecione --';document.getElementById('c-vendedor').value='-- selecione --';document.getElementById('c-status').value='ok';document.getElementById('c-motivo-g').style.display='none';document.getElementById('box-hon').textContent='R$ —';document.getElementById('box-nossa-com').textContent='R$ —';document.getElementById('box-cort-wrap').style.display='none';document.getElementById('c-ref-tabela').textContent='';document.getElementById('c-doc-match').className='doc-match';document.getElementById('c-doc-tipo').innerHTML='';if(ipvaAtivo)toggleIPVA();}
+
+async function salvarNF(){
+  var doc=normDoc(document.getElementById('n-doc').value);
+  var loja=document.getElementById('n-loja').value;
+  if(doc.length<11){alert('CPF ou CNPJ inválido.');return;}
+  if(loja==='-- selecione --'){alert('Selecione a loja.');return;}
+  var rec={id:Date.now(),doc:document.getElementById('n-doc').value,cliente:document.getElementById('n-cliente').value.trim(),chassi:document.getElementById('n-chassi').value.trim(),loja:loja,dtFat:document.getElementById('n-dtfat').value,dtReceb:document.getElementById('n-dtreceb').value,obs:document.getElementById('n-obs').value};
+  try{var r=await api({action:'insert',sheet:'NFS',data:rec});if(r.error)throw new Error(r.error);nfs.unshift(rec);alert('✓ NF salva!');limparNF();renderPainel();}catch(e){alert('Erro: '+e.message);}
+}
+function limparNF(){['n-doc','n-cliente','n-chassi','n-dtfat','n-dtreceb','n-obs'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('n-loja').value='-- selecione --';document.getElementById('n-doc-match').className='doc-match';document.getElementById('n-doc-tipo').innerHTML='';}
+
+function renderPainel(){
+  var gs=buildCas();
+  var cas=gs.filter(function(g){return casSt(g)==='casado';}).length;
+  var snf=gs.filter(function(g){return casSt(g)==='sem-nf';}).length;
+  var sc=gs.filter(function(g){return casSt(g)==='sem-cred';}).length;
+  var tH=creditos.reduce(function(a,c){return a+(Number(c.honorarios)||0);},0);
+  var tN=creditos.reduce(function(a,c){return a+(Number(c.nossaCom)||0);},0);
+  document.getElementById('metrics').innerHTML='<div class="metric"><div class="lbl">Casados</div><div class="val green">'+cas+'</div></div><div class="metric"><div class="lbl">Aguardando NF</div><div class="val red">'+snf+'</div></div><div class="metric"><div class="lbl">NF sem crédito</div><div class="val amber">'+sc+'</div></div><div class="metric"><div class="lbl">Total honorários</div><div class="val blue">'+fmtM(tH)+'</div></div><div class="metric"><div class="lbl">Nossa comissão</div><div class="val green">'+fmtM(tN)+'</div></div>';
+  var pend=gs.filter(function(g){return casSt(g)!=='casado';}).slice(0,10);
+  document.getElementById('tbl-painel-pend').innerHTML=pend.length?pend.map(function(g){var st=casSt(g);var c=g.creditos[0];return'<tr><td>'+(g.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+g.doc+'</td><td>'+g.loja+'</td><td>'+(c?c.vendedor:'—')+'</td><td>'+(c&&c.placa?c.placa:'—')+'</td><td style="font-size:11px;color:#888">'+(c&&c.oc?c.oc:'—')+'</td><td>'+(c?fmtM(c.valor):'—')+'</td><td>'+dotH(st)+' <span style="font-size:12px;color:'+(st==='sem-nf'?'#993C1D':'#854F0B')+'">'+(st==='sem-nf'?'Aguardando NF':'NF sem crédito')+'</span></td></tr>';}).join(''):'<tr><td colspan="8" class="empty-state">Nenhuma pendência 🎉</td></tr>';
 }
 
-// ------------------------------------------------------------
-//  GET ALL
-// ------------------------------------------------------------
-function getAll(sheetName) {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName);
-  if (!sheet) return { data: [] };
-  var values = sheet.getDataRange().getValues();
-  if (values.length <= 1) return { data: [] };
-  var headers = values[0];
-  var rows = values.slice(1).map(function(row) {
-    var obj = {};
-    headers.forEach(function(h, i) {
-      if      (row[i] === "TRUE"  || row[i] === true)  obj[h] = true;
-      else if (row[i] === "FALSE" || row[i] === false) obj[h] = false;
-      else obj[h] = row[i];
-    });
-    return obj;
-  });
-  return { data: rows };
+function renderCasamento(){
+  var sl=document.getElementById('cas-loja');sl.innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+l+'</option>';}).join('');
+  var busca=(document.getElementById('cas-busca').value||'').toLowerCase();var loja=document.getElementById('cas-loja').value;var filtro=document.getElementById('cas-filtro').value;
+  var gs=buildCas();
+  if(loja)gs=gs.filter(function(g){return norm(g.loja)===norm(loja);});
+  if(busca)gs=gs.filter(function(g){var c=g.creditos[0];return norm(g.doc).includes(busca)||norm(g.cliente||'').includes(busca)||(c&&norm(c.placa||'').includes(busca))||(c&&norm(c.oc||'').includes(busca));});
+  if(filtro)gs=gs.filter(function(g){return casSt(g)===filtro;});
+  document.getElementById('tbl-casamento').innerHTML=gs.length?gs.map(function(g){var st=casSt(g);var c=g.creditos[0];var n=g.nfs[0];return'<tr><td>'+dotH(st)+'</td><td style="font-size:12px;color:#666">'+g.doc+'</td><td style="font-weight:600">'+(g.cliente||'—')+'</td><td>'+g.loja+'</td><td>'+(c?c.vendedor:'—')+'</td><td>'+(c&&c.placa?c.placa:'—')+'</td><td style="font-size:11px;color:#888">'+(c&&c.oc?c.oc:'—')+'</td><td>'+(c?ipvaB(c.ipva):'—')+'</td><td>'+(c?fmtM(c.valor):'—')+'</td><td style="color:#854F0B">'+(c&&c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c&&c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c&&c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+(c?stBadge(c.status):'—')+'</td><td>'+(c?fmtD(c.dtVenda):'—')+'</td><td>'+(n?fmtD(n.dtReceb):'—')+'</td></tr>';}).join(''):'<tr><td colspan="15" class="empty-state">Nenhum registro</td></tr>';
 }
 
-// ------------------------------------------------------------
-//  INSERT
-// ------------------------------------------------------------
-function insert(sheetName, data) {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName);
-  if (!sheet) return { error: "Aba nao encontrada: " + sheetName };
-  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  var row = headers.map(function(h) {
-    var val = data[h];
-    if (val === undefined || val === null) return "";
-    if (typeof val === "boolean") return val ? "TRUE" : "FALSE";
-    return val;
-  });
-  sheet.insertRowAfter(1);
-  sheet.getRange(2, 1, 1, row.length).setValues([row]);
-  return { status: "ok", id: data.id };
+function renderRegistros(){['rc-loja','rn-loja'].forEach(function(id){document.getElementById(id).innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+l+'</option>';}).join('');});renderRegCreditos();}
+function renderRegCreditos(){var busca=(document.getElementById('rc-busca').value||'').toLowerCase();var loja=document.getElementById('rc-loja').value;var status=document.getElementById('rc-status').value;var list=creditos.filter(function(c){if(loja&&norm(c.loja)!==norm(loja))return false;if(status&&c.status!==status)return false;if(busca&&!(norm(c.doc||'')+norm(c.cliente||'')+norm(c.placa||'')+norm(c.oc||'')+norm(c.vendedor||'')).includes(busca))return false;return true;});document.getElementById('tbl-creditos').innerHTML=list.length?list.map(function(c){return'<tr><td style="font-size:12px;color:#666">'+(c.doc||'—')+'</td><td style="font-weight:600">'+(c.cliente||'—')+'</td><td>'+(c.placa||'—')+'</td><td style="font-size:11px;color:#888">'+(c.oc||'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+(c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+stBadge(c.status)+'</td><td>'+fmtD(c.dtVenda)+'</td><td class="tbl-actions"><button onclick="excCred('+c.id+')">🗑</button></td></tr>';}).join(''):'<tr><td colspan="14" class="empty-state">Nenhum crédito</td></tr>';}
+function renderRegNFs(){var busca=(document.getElementById('rn-busca').value||'').toLowerCase();var loja=document.getElementById('rn-loja').value;var list=nfs.filter(function(n){if(loja&&norm(n.loja)!==norm(loja))return false;if(busca&&!(norm(n.doc||'')+norm(n.cliente||'')).includes(busca))return false;return true;});document.getElementById('tbl-nfs').innerHTML=list.length?list.map(function(n){var tc=creditos.some(function(c){return normDoc(c.doc)===normDoc(n.doc)&&norm(c.loja)===norm(n.loja);});return'<tr><td style="font-size:12px;color:#666">'+(n.doc||'—')+'</td><td style="font-weight:600">'+(n.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+(n.chassi||'—')+'</td><td>'+n.loja+'</td><td>'+fmtD(n.dtFat)+'</td><td>'+fmtD(n.dtReceb)+'</td><td>'+(tc?'<span class="match-ok"><span class="dot green"></span> Casado</span>':'<span class="match-avulso"><span class="dot amber"></span> Sem crédito</span>')+'</td><td class="tbl-actions"><button onclick="excNF('+n.id+')">🗑</button></td></tr>';}).join(''):'<tr><td colspan="8" class="empty-state">Nenhuma NF avulsa</td></tr>';}
+async function excCred(id){if(!confirm('Remover crédito?'))return;try{await api({action:'delete',sheet:'CREDITOS',id:id});}catch(e){alert('Erro: '+e.message);return;}creditos=creditos.filter(function(c){return c.id!=id;});renderRegCreditos();renderPainel();}
+async function excNF(id){if(!confirm('Remover NF?'))return;try{await api({action:'delete',sheet:'NFS',id:id});}catch(e){alert('Erro: '+e.message);return;}nfs=nfs.filter(function(n){return n.id!=id;});renderRegNFs();renderPainel();}
+
+function renderRelFiltros(){document.getElementById('rel-loja').innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+l+'</option>';}).join('');document.getElementById('rel-vendedor').innerHTML='<option value="">Todos os vendedores</option>'+vendedores.map(function(v){return'<option>'+v+'</option>';}).join('');}
+function gerarRelatorio(){
+  var loja=document.getElementById('rel-loja').value,vend=document.getElementById('rel-vendedor').value,status=document.getElementById('rel-status').value,di=document.getElementById('rel-dt-ini').value,df=document.getElementById('rel-dt-fim').value,ipvaF=document.getElementById('rel-ipva').value;
+  var list=creditos.filter(function(c){if(loja&&norm(c.loja)!==norm(loja))return false;if(vend&&norm(c.vendedor)!==norm(vend))return false;if(status&&c.status!==status)return false;if(di&&c.dtVenda&&c.dtVenda<di)return false;if(df&&c.dtVenda&&c.dtVenda>df)return false;if(ipvaF==='1'&&!(c.ipva===true||c.ipva==='TRUE'))return false;if(ipvaF==='0'&&(c.ipva===true||c.ipva==='TRUE'))return false;return true;});
+  var perd=list.filter(function(c){return c.status==='perdida';});var cort=list.filter(function(c){return c.status==='cortesia';});
+  var tH=list.reduce(function(a,c){return a+(Number(c.honorarios)||0);},0),tN=list.reduce(function(a,c){return a+(Number(c.nossaCom)||0);},0),tC=list.reduce(function(a,c){return a+(Number(c.comissao)||0);},0),tV=list.reduce(function(a,c){return a+(Number(c.valor)||0);},0);
+  var cIPVA=list.filter(function(c){return c.ipva===true||c.ipva==='TRUE';}).length;
+  var cas=list.filter(function(c){return nfs.some(function(n){return normDoc(n.doc)===normDoc(c.doc)&&norm(n.loja)===norm(c.loja);});});
+  var pV={};list.forEach(function(c){if(!pV[c.vendedor])pV[c.vendedor]={q:0,c:0,h:0,n:0};pV[c.vendedor].q++;pV[c.vendedor].c+=Number(c.comissao)||0;pV[c.vendedor].h+=Number(c.honorarios)||0;pV[c.vendedor].n+=Number(c.nossaCom)||0;});
+  var per=di&&df?fmtD(di)+' a '+fmtD(df):di?'a partir de '+fmtD(di):df?'até '+fmtD(df):'';
+  var titulo=[loja,vend,per].filter(Boolean).join(' · ')||'Geral';
+  document.getElementById('rel-output').innerHTML='<div class="card"><div class="section-title" style="margin-bottom:1rem">Relatório: '+titulo+'</div><div class="metric-grid" style="margin-bottom:1.25rem"><div class="metric"><div class="lbl">Créditos</div><div class="val blue">'+list.length+'</div></div><div class="metric"><div class="lbl">Casados</div><div class="val green">'+cas.length+'</div></div><div class="metric"><div class="lbl">NF perdidas</div><div class="val red">'+perd.length+'</div></div><div class="metric"><div class="lbl">Cortesias</div><div class="val">'+cort.length+'</div></div><div class="metric"><div class="lbl">Com IPVA</div><div class="val blue">'+cIPVA+'</div></div><div class="metric"><div class="lbl">Total vendas</div><div class="val blue">'+fmtM(tV)+'</div></div><div class="metric"><div class="lbl">Com. vendedores</div><div class="val amber">'+fmtM(tC)+'</div></div><div class="metric"><div class="lbl">Total honorários</div><div class="val">'+fmtM(tH)+'</div></div><div class="metric"><div class="lbl">Nossa comissão</div><div class="val green">'+fmtM(tN)+'</div></div></div>'+(Object.keys(pV).length?'<div class="section-title" style="margin-bottom:.5rem">Por vendedor</div><table style="margin-bottom:1rem"><thead><tr><th>Vendedor</th><th>NFs</th><th>Com. vendedor</th><th>Honorários</th><th>Nossa com.</th></tr></thead><tbody>'+Object.entries(pV).sort(function(a,b){return b[1].n-a[1].n;}).map(function(e){return'<tr><td style="font-weight:600">'+e[0]+'</td><td>'+e[1].q+'</td><td style="color:#854F0B">'+fmtM(e[1].c)+'</td><td>'+fmtM(e[1].h)+'</td><td style="color:#0F6E56;font-weight:600">'+fmtM(e[1].n)+'</td></tr>';}).join('')+'</tbody></table>':'')+'<div class="section-title" style="margin-bottom:.5rem">Detalhamento</div><div style="overflow-x:auto"><table><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>OC</th><th>IPVA</th><th>Loja</th><th>Vendedor</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Status</th><th>Data</th></tr></thead><tbody>'+(list.length?list.map(function(c){return'<tr><td style="font-size:11px;color:#888">'+(c.doc||'—')+'</td><td>'+c.cliente+'</td><td>'+(c.placa||'—')+'</td><td style="font-size:11px;color:#888">'+(c.oc||'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+(c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+stBadge(c.status)+'</td><td>'+fmtD(c.dtVenda)+'</td></tr>';}).join(''):'<tr><td colspan="13" class="empty-state">Nenhum resultado</td></tr>')+'</tbody></table></div></div>';
 }
 
-// ------------------------------------------------------------
-//  DELETE
-// ------------------------------------------------------------
-function deleteRow(sheetName, id) {
-  var ss     = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet  = ss.getSheetByName(sheetName);
-  if (!sheet) return { error: "Aba nao encontrada: " + sheetName };
-  var values  = sheet.getDataRange().getValues();
-  var headers = values[0];
-  var idCol   = headers.indexOf("id");
-  if (idCol === -1) return { error: "Coluna id nao encontrada." };
-  for (var i = 1; i < values.length; i++) {
-    if (String(values[i][idCol]) === String(id)) {
-      sheet.deleteRow(i + 1);
-      return { status: "ok", deleted: id };
-    }
-  }
-  return { error: "Registro nao encontrado: " + id };
-}
+function renderTblUsuarios(){document.getElementById('tbl-usuarios').innerHTML=usuarios.length?usuarios.map(function(u){var ll=u.lojas?String(u.lojas).split(',').filter(Boolean).join(', '):'Todas';return'<tr><td style="font-weight:600">'+u.nome+'</td><td style="color:#888">'+u.usuario+'</td><td><span class="badge '+(u.perfil==='adm'?'adm':'usuario')+'">'+u.perfil+'</span></td><td style="font-size:12px;color:#666">'+ll+'</td><td class="tbl-actions"><button onclick="editarUsuario(\''+u.id+'\')">✏️</button><button onclick="removerUsuario(\''+u.id+'\')">🗑</button></td></tr>';}).join(''):'<tr><td colspan="5" class="empty-state">Nenhum usuário</td></tr>';}
+function abrirModalUsuario(){document.getElementById('modal-titulo').textContent='Novo usuário';['m-id','m-nome','m-usuario','m-senha'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('m-perfil').value='usuario';renderLojasCheck([]);document.getElementById('modal-usuario').classList.add('open');}
+function editarUsuario(id){var u=usuarios.find(function(x){return String(x.id)===String(id);});if(!u)return;document.getElementById('modal-titulo').textContent='Editar usuário';document.getElementById('m-id').value=u.id;document.getElementById('m-nome').value=u.nome||'';document.getElementById('m-usuario').value=u.usuario||'';document.getElementById('m-senha').value=u.senha||'';document.getElementById('m-perfil').value=u.perfil||'usuario';renderLojasCheck(u.lojas?String(u.lojas).split(',').map(function(l){return l.trim();}).filter(Boolean):[]);document.getElementById('modal-usuario').classList.add('open');}
+function renderLojasCheck(sel){document.getElementById('m-lojas-check').innerHTML=lojas.map(function(l){return'<label><input type="checkbox" value="'+l+'" '+(sel.indexOf(l)>=0?'checked':'')+'>'+l+'</label>';}).join('');}
+function fecharModal(){document.getElementById('modal-usuario').classList.remove('open');}
+async function salvarUsuario(){var nome=document.getElementById('m-nome').value.trim();var usuario=document.getElementById('m-usuario').value.trim();var senha=document.getElementById('m-senha').value;var perfil=document.getElementById('m-perfil').value;if(!nome||!usuario||!senha){alert('Preencha nome, usuário e senha.');return;}var checks=document.querySelectorAll('#m-lojas-check input:checked');var lojasU=Array.from(checks).map(function(c){return c.value;});var data={nome:nome,usuario:usuario,senha:senha,perfil:perfil,lojas:lojasU.join(',')};var idVal=document.getElementById('m-id').value;if(idVal)data.id=idVal;try{var r=await api({action:'saveUsuario',data:data});if(r.error)throw new Error(r.error);fecharModal();await carregarUsuarios();alert('✓ Usuário salvo!');}catch(e){alert('Erro: '+e.message);}}
+async function removerUsuario(id){if(!confirm('Remover usuário?'))return;try{var r=await api({action:'deleteUsuario',id:id});if(r.error)throw new Error(r.error);await carregarUsuarios();}catch(e){alert('Erro: '+e.message);}}
 
-// ------------------------------------------------------------
-//  REPLACE ALL
-// ------------------------------------------------------------
-function replaceAll(sheetName, data) {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName);
-  if (!sheet) return { error: "Aba nao encontrada: " + sheetName };
-  var lastRow = sheet.getLastRow();
-  if (lastRow > 1) sheet.deleteRows(2, lastRow - 1);
-  if (data && data.length > 0) {
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    var rows = data.map(function(item) {
-      return headers.map(function(h) { return item[h] || ""; });
-    });
-    sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
-  }
-  return { status: "ok" };
-}
+function renderConfig(){document.getElementById('cfg-url').value=SURL||'';document.getElementById('lista-lojas').innerHTML=lojas.map(function(l){return'<li style="display:flex;align-items:center;gap:4px;background:#f5f5f3;padding:4px 12px;border-radius:20px;font-size:13px">'+l+'<button onclick="removeLoja(\''+l+'\')" style="border:none;background:none;cursor:pointer;color:#aaa;font-size:14px;line-height:1">×</button></li>';}).join('');document.getElementById('lista-vendedores').innerHTML=vendedores.map(function(v){return'<li style="display:flex;align-items:center;gap:4px;background:#f5f5f3;padding:4px 12px;border-radius:20px;font-size:13px">'+v+'<button onclick="removeVendedor(\''+v+'\')" style="border:none;background:none;cursor:pointer;color:#aaa;font-size:14px;line-height:1">×</button></li>';}).join('');}
+async function reconectar(){var url=document.getElementById('cfg-url').value.trim();if(!url){alert('Cole a URL.');return;}SURL=url;salvarLocal();var st=document.getElementById('status-sheets');setAlert(st,'info','Conectando...',true);try{var r=await api({action:'init'});if(r.error)throw new Error(r.error);setAlert(st,'ok','✓ Conectado!');setCon(true);await syncLV();await carregarDados();}catch(e){setAlert(st,'err','Erro: '+e.message);}}
+function addLoja(){var v=document.getElementById('nova-loja').value.trim();if(!v||lojas.indexOf(v)>=0)return;lojas.push(v);salvarLocal();syncLV();document.getElementById('nova-loja').value='';renderConfig();atualizarSelects();}
+function removeLoja(l){lojas=lojas.filter(function(x){return x!==l;});salvarLocal();syncLV();renderConfig();atualizarSelects();}
+function addVendedor(){var v=document.getElementById('novo-vendedor').value.trim();if(!v||vendedores.indexOf(v)>=0)return;vendedores.push(v);salvarLocal();syncLV();document.getElementById('novo-vendedor').value='';renderConfig();atualizarSelects();}
+function removeVendedor(v){vendedores=vendedores.filter(function(x){return x!==v;});salvarLocal();syncLV();renderConfig();atualizarSelects();}
+function atualizarSelects(){var minhas=lojasDoUsuario();['c-loja','n-loja'].forEach(function(id){var e=document.getElementById(id);if(e)e.innerHTML='<option>-- selecione --</option>'+minhas.map(function(l){return'<option>'+l+'</option>';}).join('');});var cv=document.getElementById('c-vendedor');if(cv)cv.innerHTML='<option>-- selecione --</option>'+vendedores.map(function(v){return'<option>'+v+'</option>';}).join('');}
+
+carregarLocal();
+if(SURL){document.getElementById('l-url').value=SURL;}
+</script>
+</body>
+</html>
