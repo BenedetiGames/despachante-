@@ -417,7 +417,7 @@ function getSem(ds){if(!ds)return'';var d=new Date(ds+'T12:00:00');var j=new Dat
 function stBadge(s){var m={ok:['ok','Normal'],cortesia:['cortesia','Cortesia'],perdida:['perdida','NF Fora'],pendente:['pendente','Pendente']};var r=m[s]||['',''];return'<span class="badge '+r[0]+'">'+r[1]+'</span>';}
 function dotH(st){if(st==='casado')return'<span class="dot green"></span>';if(st==='sem-nf')return'<span class="dot red"></span>';return'<span class="dot amber"></span>';}
 function ipvaB(v){return(v===true||v==='TRUE')?'<span class="badge ipva">✓ IPVA</span>':'<span style="color:#ccc;font-size:12px">—</span>';}
-function isAdm(){return usuarioLogado&&usuarioLogado.perfil==='adm';}
+function isAdm(){return usuarioLogado&&String(usuarioLogado.perfil||'').trim().toLowerCase()==='adm';}
 function lojasDoUsuario(){if(isAdm())return lojas;return usuarioLogado&&usuarioLogado.lojas&&usuarioLogado.lojas.length?usuarioLogado.lojas.filter(function(l){return lojas.indexOf(l)>=0;}):[];}
 
 async function api(p){if(!SURL)throw new Error('URL não configurada');var r=await fetch(SURL,{method:'POST',body:JSON.stringify(p)});return JSON.parse(await r.text());}
