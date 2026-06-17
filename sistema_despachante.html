@@ -31,7 +31,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 .conn-pill.on .conn-dot{background:#1D9E75}.conn-pill.off .conn-dot{background:#E24B4A}
 .btn-sair{padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:12px;color:#666}
 .btn-sair:hover{background:#fdf2f2;color:#993C1D}
-.wrapper{max-width:1100px;margin:0 auto;padding:1rem 1rem 2rem}
+.wrapper{max-width:1400px;margin:0 auto;padding:1rem 1rem 2rem}
 .nav{display:flex;gap:4px;margin-bottom:1.25rem;flex-wrap:wrap;background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:6px}
 .nav button{padding:7px 14px;border-radius:7px;border:none;background:transparent;cursor:pointer;font-size:13px;color:#666}
 .nav button:hover{background:#f5f5f3;color:#1a1a1a}
@@ -287,7 +287,7 @@ table tr:hover td{background:#fafafa}
               <span class="ref" id="n-doc-tipo"></span>
               <div class="doc-match" id="n-doc-match"></div>
             </div>
-            <div class="fg"><label>Nome do cliente</label><input type="text" id="n-cliente" placeholder="Preenchido automaticamente" readonly style="background:#f5f5f3;color:#888"></div>
+            <div class="fg"><label>Nome do cliente</label><input type="text" id="n-cliente" placeholder="Nome do cliente (preenche automático se achar o CPF/CNPJ)"></div>
             <div class="fg"><label>Chassi</label><input type="text" id="n-chassi" placeholder="9BF12345..."></div>
             <div class="fg"><label>Loja</label><select id="n-loja"><option>-- selecione --</option></select></div>
             <div class="fg"><label>Data faturamento NF</label><input type="date" id="n-dtfat"></div>
@@ -305,7 +305,10 @@ table tr:hover td{background:#fafafa}
     <!-- CASAMENTO -->
     <div id="sec-vinculo" class="section">
       <div class="search-bar">
-        <input type="text" id="vin-busca" placeholder="Buscar CPF/CNPJ, cliente, placa..." oninput="renderVinculo()">
+        <div style="position:relative;flex:1;min-width:150px">
+          <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#aaa;font-size:13px;pointer-events:none">🔍</span>
+          <input type="text" id="vin-busca" placeholder="Buscar CPF/CNPJ, cliente, placa..." oninput="renderVinculo()" style="width:100%;padding-left:30px;border-radius:7px;border:1px solid #ddd;padding-top:7px;padding-bottom:7px;padding-right:10px;font-size:13px">
+        </div>
         <select id="vin-loja" onchange="renderVinculo()"><option value="">Todas as lojas</option></select>
         <select id="vin-filtro" onchange="renderVinculo()"><option value="">Todos</option><option value="casado">Casados</option><option value="sem-nf">Aguardando NF</option><option value="sem-cred">NF sem crédito</option></select>
         <button class="btn" onclick="carregarDados()">🔄 Atualizar</button>
@@ -324,7 +327,10 @@ table tr:hover td{background:#fafafa}
       </div>
       <div id="reg-cred-sec">
         <div class="search-bar">
-          <input type="text" id="rc-busca" placeholder="Buscar CPF/CNPJ, cliente, placa..." oninput="renderRegCreditos()">
+          <div style="position:relative;flex:1;min-width:150px">
+            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#aaa;font-size:13px;pointer-events:none">🔍</span>
+            <input type="text" id="rc-busca" placeholder="Buscar CPF/CNPJ, cliente, placa..." oninput="renderRegCreditos()" style="width:100%;padding-left:30px;border-radius:7px;border:1px solid #ddd;padding-top:7px;padding-bottom:7px;padding-right:10px;font-size:13px">
+          </div>
           <select id="rc-loja" onchange="renderRegCreditos()"><option value="">Todas as lojas</option></select>
           <select id="rc-status" onchange="renderRegCreditos()"><option value="">Todos os status</option><option value="ok">Normal</option><option value="pendente">Pendente</option><option value="cortesia">Cortesia</option><option value="perdida">NF Fora</option><option value="abaixo">Abaixo do custo</option></select>
           <button class="btn" onclick="carregarDados()">🔄 Atualizar</button>
@@ -333,7 +339,10 @@ table tr:hover td{background:#fafafa}
       </div>
       <div id="reg-nf-sec" style="display:none">
         <div class="search-bar">
-          <input type="text" id="rn-busca" placeholder="Buscar CPF/CNPJ, cliente..." oninput="renderRegNFs()">
+          <div style="position:relative;flex:1;min-width:150px">
+            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#aaa;font-size:13px;pointer-events:none">🔍</span>
+            <input type="text" id="rn-busca" placeholder="Buscar CPF/CNPJ, cliente..." oninput="renderRegNFs()" style="width:100%;padding-left:30px;border-radius:7px;border:1px solid #ddd;padding-top:7px;padding-bottom:7px;padding-right:10px;font-size:13px">
+          </div>
           <select id="rn-loja" onchange="renderRegNFs()"><option value="">Todas as lojas</option></select>
         </div>
         <div class="card" style="padding:0;overflow-x:auto"><table><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Chassi</th><th>Loja</th><th>Dt. Fat.</th><th>Dt. Receb.</th><th>Pareamento</th><th></th></tr></thead><tbody id="tbl-nfs"></tbody></table></div>
@@ -499,7 +508,7 @@ function norm(s){return(s||'').toLowerCase().trim();}
 function diasDesde(dataStr){if(!dataStr)return 0;var d=new Date(dataStr+'T00:00:00');var hoje=new Date();return Math.floor((hoje-d)/86400000);}
 function isPendenciaAntiga(c){return diasDesde(c.dtVenda)>=60;}
 function getRef(tipo,v){var t=tipo==='0km'?COM_0KM:COM_SEMI;for(var i=t.length-1;i>=0;i--){if(v>=t[i][0])return t[i][1];}return 0;}
-function fmtM(v){return'R$ '+Number(v||0).toFixed(2).replace('.',',');}
+function fmtM(v){var n=Number(v);if(isNaN(n))n=0;return'R$ '+n.toFixed(2).replace('.',',');}
 function fmtD(d){if(!d)return'—';if(typeof d==='string'&&d.includes('T')){d=d.split('T')[0];}if(typeof d==='string'&&d.includes('-')){var p=d.split('-');return p[2]+'/'+p[1];}return String(d);}
 function getSem(ds){if(!ds)return'';var d=new Date(ds+'T12:00:00');var j=new Date(d.getFullYear(),0,1);return d.getFullYear()+'-S'+String(Math.ceil(((d-j)/86400000+j.getDay()+1)/7)).padStart(2,'0');}
 function stBadge(s){var m={ok:['ok','Normal'],cortesia:['cortesia','Cortesia'],perdida:['perdida','NF Fora'],pendente:['pendente','Pendente'],abaixo:['abaixo','Abaixo custo']};var r=m[s]||['',''];return'<span class="badge '+r[0]+'">'+r[1]+'</span>';}
@@ -581,10 +590,16 @@ function sugerirNF(){
   var doc=normDoc(document.getElementById('n-doc').value);
   var hint=document.getElementById('n-doc-match');
   var nomeEl=document.getElementById('n-cliente');
-  if(doc.length<11){hint.className='doc-match';nomeEl.value='';return;}
+  if(doc.length<11){hint.className='doc-match';return;}
   var f=creditos.filter(function(c){return normDoc(c.doc)===doc;});
-  if(f.length){nomeEl.value=f[0].cliente||'';hint.className='doc-match found';hint.textContent='✓ Crédito encontrado — '+f[0].cliente+', '+f[0].loja+', '+fmtM(f[0].valor)+'. Será casado ao salvar.';}
-  else{nomeEl.value='';hint.className='doc-match notfound';hint.textContent='⚠️ Nenhum crédito encontrado para este documento. NF ficará sem crédito associado.';}
+  if(f.length){
+    if(!nomeEl.value.trim())nomeEl.value=f[0].cliente||'';
+    hint.className='doc-match found';
+    hint.textContent='✓ Crédito encontrado — '+f[0].cliente+', '+f[0].loja+', '+fmtM(f[0].valor)+'. Será casado ao salvar.';
+  }else{
+    hint.className='doc-match notfound';
+    hint.textContent='⚠️ Nenhum crédito encontrado para este documento. Pode preencher o nome manualmente.';
+  }
 }
 
 function toggleIPVA(){ipvaAtivo=!ipvaAtivo;document.getElementById('ipva-toggle').classList.toggle('checked',ipvaAtivo);document.getElementById('ipva-toggle').setAttribute('aria-checked',ipvaAtivo);document.getElementById('ipva-icon').textContent=ipvaAtivo?'✓':'';document.getElementById('ipva-label').textContent=ipvaAtivo?'IPVA incluso':'IPVA não incluso';}
@@ -887,7 +902,7 @@ function renderVinculo(){
 }
 
 function renderRegistros(){['rc-loja','rn-loja'].forEach(function(id){document.getElementById(id).innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+l+'</option>';}).join('');});renderRegCreditos();}
-function renderRegCreditos(){var busca=(document.getElementById('rc-busca').value||'').toLowerCase();var loja=document.getElementById('rc-loja').value;var status=document.getElementById('rc-status').value;var list=creditos.filter(function(c){if(loja&&norm(c.loja)!==norm(loja))return false;if(status&&c.status!==status)return false;if(busca&&!(norm(c.doc||'')+norm(c.cliente||'')+norm(c.placa||'')+norm(c.oc||'')+norm(c.vendedor||'')).includes(busca))return false;return true;});document.getElementById('tbl-creditos').innerHTML=list.length?list.map(function(c){var quemLancou=(c.editadoPor?c.editadoPor+' <span style="color:#aaa">(edit)</span>':(c.criadoPor||'—'));return'<tr><td style="font-weight:600;color:#185FA5">'+(c.oc||'—')+'</td><td style="font-weight:600">'+(c.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+(c.doc||'—')+'</td><td>'+(c.placa||'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+(c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+stBadge(c.status)+'</td><td>'+fmtD(c.dtVenda)+'</td><td style="font-size:12px;color:#666">'+quemLancou+'</td><td class="tbl-actions"><button onclick="editarCredito('+c.id+')">✏️</button><button onclick="excCred('+c.id+')">🗑</button></td></tr>';}).join(''):'<tr><td colspan="15" class="empty-state">Nenhum crédito</td></tr>';}
+function renderRegCreditos(){var busca=(document.getElementById('rc-busca').value||'').toLowerCase();var loja=document.getElementById('rc-loja').value;var status=document.getElementById('rc-status').value;var list=creditos.filter(function(c){if(loja&&norm(c.loja)!==norm(loja))return false;if(status&&c.status!==status)return false;if(busca&&!(norm(c.doc||'')+norm(c.cliente||'')+norm(c.placa||'')+norm(c.oc||'')+norm(c.vendedor||'')).includes(busca))return false;return true;});document.getElementById('tbl-creditos').innerHTML=list.length?list.map(function(c){var quemLancou=(c.editadoPor?c.editadoPor+' <span style="color:#aaa">(edit)</span>':(c.criadoPor||'—'));return'<tr><td style="font-weight:600;color:#185FA5">'+(c.oc||'—')+'</td><td style="font-weight:600">'+(c.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+(c.doc||'—')+'</td><td>'+(c.placa||'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+(c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom&&!isNaN(Number(c.nossaCom))?fmtM(c.nossaCom):'—')+'</td><td>'+stBadge(c.status)+'</td><td>'+fmtD(c.dtVenda)+'</td><td style="font-size:12px;color:#666">'+quemLancou+'</td><td class="tbl-actions"><button onclick="editarCredito('+c.id+')">✏️</button><button onclick="excCred('+c.id+')">🗑</button></td></tr>';}).join(''):'<tr><td colspan="15" class="empty-state">Nenhum crédito</td></tr>';}
 function renderRegNFs(){var busca=(document.getElementById('rn-busca').value||'').toLowerCase();var loja=document.getElementById('rn-loja').value;var list=nfs.filter(function(n){if(loja&&norm(n.loja)!==norm(loja))return false;if(busca&&!(norm(n.doc||'')+norm(n.cliente||'')).includes(busca))return false;return true;});document.getElementById('tbl-nfs').innerHTML=list.length?list.map(function(n){var tc=creditos.some(function(c){return normDoc(c.doc)===normDoc(n.doc)&&norm(c.loja)===norm(n.loja);});return'<tr><td style="font-size:12px;color:#666">'+(n.doc||'—')+'</td><td style="font-weight:600">'+(n.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+(n.chassi||'—')+'</td><td>'+n.loja+'</td><td>'+fmtD(n.dtFat)+'</td><td>'+fmtD(n.dtReceb)+'</td><td>'+(tc?'<span class="match-ok"><span class="dot green"></span> Casado</span>':'<span class="match-avulso"><span class="dot amber"></span> Sem crédito</span>')+'</td><td class="tbl-actions"><button onclick="excNF('+n.id+')">🗑</button></td></tr>';}).join(''):'<tr><td colspan="8" class="empty-state">Nenhuma NF avulsa</td></tr>';}
 function editarCredito(id){
   var c=creditos.find(function(x){return x.id==id;});
