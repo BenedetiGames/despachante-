@@ -69,6 +69,7 @@ table tr:hover td{background:#fafafa}
 .badge.ipva{background:#f0faf6;color:#0F6E56}
 .badge.adm{background:#1a1a1a;color:#fff}
 .badge.usuario{background:#f5f5f3;color:#666}
+.badge.abaixo{background:#f3e8ff;color:#6b21a8}
 .dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
 .dot.green{background:#1D9E75}.dot.red{background:#E24B4A}.dot.amber{background:#EF9F27}
 .match-ok{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#0F6E56;font-weight:500;background:#f0faf6;padding:5px 10px;border-radius:7px}
@@ -117,6 +118,11 @@ table tr:hover td{background:#fafafa}
 .lojas-check{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
 .lojas-check label{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#f5f5f3;padding:5px 10px;border-radius:20px;border:1px solid #e5e5e5}
 .lojas-check input[type=checkbox]{accent-color:#1D9E75}
+.edit-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center;padding:1rem}
+.edit-modal-bg.open{display:flex}
+.edit-modal{background:#fff;border-radius:16px;padding:1.5rem;width:100%;max-width:600px;max-height:90vh;overflow-y:auto}
+.edit-modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+.edit-modal-header h2{font-size:16px;font-weight:600}
 @media(max-width:600px){.nav button{padding:6px 10px;font-size:12px}.metric .val{font-size:18px}}
 </style>
 </head>
@@ -222,7 +228,7 @@ table tr:hover td{background:#fafafa}
             <div class="fg"><label>Vendedor</label><select id="c-vendedor"><option>-- selecione --</option></select></div>
             <div class="fg"><label>Tipo de veículo</label><select id="c-tipo" onchange="calcRef()"><option value="0km">0 km</option><option value="semi">Semi-novo</option></select></div>
             <div class="fg"><label>Data da venda</label><input type="date" id="c-dtvenda"></div>
-            <div class="fg"><label>Status</label><select id="c-status" onchange="toggleMotivo()"><option value="ok">Normal</option><option value="cortesia">Cortesia</option><option value="perdida">NF Fora</option><option value="pendente">Pendente</option></select></div>
+            <div class="fg"><label>Status</label><select id="c-status" onchange="toggleMotivo()"><option value="ok">Normal</option><option value="pendente">Pendente</option><option value="cortesia">Cortesia</option><option value="perdida">NF Fora</option><option value="abaixo">Abaixo do custo</option></select></div>
             <div class="fg" id="c-motivo-g" style="display:none"><label>Motivo NF fora</label><input type="text" id="c-motivo"></div>
             <div class="fg"><label>Observações</label><input type="text" id="c-obs"></div>
           </div>
@@ -304,7 +310,7 @@ table tr:hover td{background:#fafafa}
         <div class="search-bar">
           <input type="text" id="rc-busca" placeholder="Buscar CPF/CNPJ, cliente, placa..." oninput="renderRegCreditos()">
           <select id="rc-loja" onchange="renderRegCreditos()"><option value="">Todas as lojas</option></select>
-          <select id="rc-status" onchange="renderRegCreditos()"><option value="">Todos</option><option value="ok">Normal</option><option value="cortesia">Cortesia</option><option value="perdida">NF Fora</option><option value="pendente">Pendente</option></select>
+          <select id="rc-status" onchange="renderRegCreditos()"><option value="">Todos os status</option><option value="ok">Normal</option><option value="pendente">Pendente</option><option value="cortesia">Cortesia</option><option value="perdida">NF Fora</option><option value="abaixo">Abaixo do custo</option></select>
           <button class="btn" onclick="carregarDados()">🔄 Atualizar</button>
         </div>
         <div class="card" style="padding:0;overflow-x:auto"><table><thead><tr><th>OC</th><th>Cliente</th><th>CPF/CNPJ</th><th>Placa</th><th>IPVA</th><th>Loja</th><th>Vendedor</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Status</th><th>Data</th><th></th></tr></thead><tbody id="tbl-creditos"></tbody></table></div>
@@ -327,7 +333,7 @@ table tr:hover td{background:#fafafa}
           <div class="fg"><label>Vendedor</label><select id="rel-vendedor"><option value="">Todos os vendedores</option></select></div>
           <div class="fg"><label>Data inicial</label><input type="date" id="rel-dt-ini"></div>
           <div class="fg"><label>Data final</label><input type="date" id="rel-dt-fim"></div>
-          <div class="fg"><label>Status</label><select id="rel-status"><option value="">Todos</option><option value="ok">Normal</option><option value="cortesia">Cortesia</option><option value="perdida">NF Fora</option><option value="pendente">Pendente</option></select></div>
+          <div class="fg"><label>Status</label><select id="rel-status"><option value="">Todos os status</option><option value="ok">Normal</option><option value="pendente">Pendente</option><option value="cortesia">Cortesia</option><option value="perdida">NF Fora</option><option value="abaixo">Abaixo do custo</option></select></div>
           <div class="fg"><label>IPVA</label><select id="rel-ipva"><option value="">Todos</option><option value="1">Com IPVA</option><option value="0">Sem IPVA</option></select></div>
         </div>
         <button class="btn primary" onclick="gerarRelatorio()">📊 Gerar relatório</button>
@@ -366,6 +372,40 @@ table tr:hover td{background:#fafafa}
         <div style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap"><input type="text" id="novo-vendedor" placeholder="Nome do vendedor" style="border-radius:7px;border:1px solid #ddd;padding:7px 10px;font-size:13px"><button class="btn primary" onclick="addVendedor()">+ Adicionar</button></div>
         <ul id="lista-vendedores" style="list-style:none;display:flex;flex-wrap:wrap;gap:6px"></ul>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDIÇÃO LANÇAMENTO -->
+<div class="edit-modal-bg" id="modal-editar">
+  <div class="edit-modal">
+    <div class="edit-modal-header">
+      <h2>Editar lançamento</h2>
+      <button style="border:none;background:none;cursor:pointer;font-size:20px;color:#888;line-height:1" onclick="fecharModalEditar()">×</button>
+    </div>
+    <input type="hidden" id="e-id">
+    <div class="form-grid">
+      <div class="fg"><label>CPF ou CNPJ</label><input type="text" id="e-doc" oninput="fmtDoc('e-doc')" maxlength="18"></div>
+      <div class="fg"><label>Nome do cliente</label><input type="text" id="e-cliente"></div>
+      <div class="fg"><label>Placa</label><input type="text" id="e-placa" style="text-transform:uppercase"></div>
+      <div class="fg"><label>Nº da OC</label><input type="text" id="e-oc"></div>
+      <div class="fg"><label>Loja</label><select id="e-loja"><option>-- selecione --</option></select></div>
+      <div class="fg"><label>Vendedor</label><select id="e-vendedor"><option>-- selecione --</option></select></div>
+      <div class="fg"><label>Tipo</label><select id="e-tipo"><option value="0km">0 km</option><option value="semi">Semi-novo</option></select></div>
+      <div class="fg"><label>Data da venda</label><input type="date" id="e-dtvenda"></div>
+      <div class="fg"><label>Status</label><select id="e-status"><option value="ok">Normal</option><option value="pendente">Pendente</option><option value="cortesia">Cortesia</option><option value="perdida">NF Fora</option><option value="abaixo">Abaixo do custo</option></select></div>
+      <div class="fg"><label>Motivo NF fora</label><input type="text" id="e-motivo" placeholder="Se NF Fora, informe o motivo"></div>
+      <div class="fg"><label>Observações</label><input type="text" id="e-obs"></div>
+    </div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:.75rem;margin-top:.5rem">Valores financeiros</div>
+    <div class="form-grid">
+      <div class="fg"><label>Valor da venda (R$)</label><input type="number" id="e-valor"></div>
+      <div class="fg"><label>Comissão do vendedor (R$)</label><input type="number" id="e-comissao"></div>
+      <div class="fg"><label>Honorários (R$)</label><input type="number" id="e-honorarios" oninput="calcEditCom()"><span class="hint" id="e-nossa-com-hint"></span></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:.5rem;flex-wrap:wrap">
+      <button class="btn primary" onclick="salvarEdicao()">💾 Salvar alterações</button>
+      <button class="btn" onclick="fecharModalEditar()">Cancelar</button>
     </div>
   </div>
 </div>
@@ -442,7 +482,7 @@ function getRef(tipo,v){var t=tipo==='0km'?COM_0KM:COM_SEMI;for(var i=t.length-1
 function fmtM(v){return'R$ '+Number(v||0).toFixed(2).replace('.',',');}
 function fmtD(d){if(!d)return'—';if(typeof d==='string'&&d.includes('T')){d=d.split('T')[0];}if(typeof d==='string'&&d.includes('-')){var p=d.split('-');return p[2]+'/'+p[1];}return String(d);}
 function getSem(ds){if(!ds)return'';var d=new Date(ds+'T12:00:00');var j=new Date(d.getFullYear(),0,1);return d.getFullYear()+'-S'+String(Math.ceil(((d-j)/86400000+j.getDay()+1)/7)).padStart(2,'0');}
-function stBadge(s){var m={ok:['ok','Normal'],cortesia:['cortesia','Cortesia'],perdida:['perdida','NF Fora'],pendente:['pendente','Pendente']};var r=m[s]||['',''];return'<span class="badge '+r[0]+'">'+r[1]+'</span>';}
+function stBadge(s){var m={ok:['ok','Normal'],cortesia:['cortesia','Cortesia'],perdida:['perdida','NF Fora'],pendente:['pendente','Pendente'],abaixo:['abaixo','Abaixo custo']};var r=m[s]||['',''];return'<span class="badge '+r[0]+'">'+r[1]+'</span>';}
 function dotH(st){if(st==='casado')return'<span class="dot green"></span>';if(st==='sem-nf')return'<span class="dot red"></span>';return'<span class="dot amber"></span>';}
 function ipvaB(v){return(v===true||v==='TRUE')?'<span class="badge ipva">✓ IPVA</span>':'<span style="color:#ccc;font-size:12px">—</span>';}
 function isAdm(){return usuarioLogado&&String(usuarioLogado.perfil||'').trim().toLowerCase()==='adm';}
@@ -596,8 +636,68 @@ function renderCasamento(){
 }
 
 function renderRegistros(){['rc-loja','rn-loja'].forEach(function(id){document.getElementById(id).innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+l+'</option>';}).join('');});renderRegCreditos();}
-function renderRegCreditos(){var busca=(document.getElementById('rc-busca').value||'').toLowerCase();var loja=document.getElementById('rc-loja').value;var status=document.getElementById('rc-status').value;var list=creditos.filter(function(c){if(loja&&norm(c.loja)!==norm(loja))return false;if(status&&c.status!==status)return false;if(busca&&!(norm(c.doc||'')+norm(c.cliente||'')+norm(c.placa||'')+norm(c.oc||'')+norm(c.vendedor||'')).includes(busca))return false;return true;});document.getElementById('tbl-creditos').innerHTML=list.length?list.map(function(c){return'<tr><td style="font-weight:600;color:#185FA5">'+(c.oc||'—')+'</td><td style="font-weight:600">'+(c.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+(c.doc||'—')+'</td><td>'+(c.placa||'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+(c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+stBadge(c.status)+'</td><td>'+fmtD(c.dtVenda)+'</td><td class="tbl-actions"><button onclick="excCred('+c.id+')">🗑</button></td></tr>';}).join(''):'<tr><td colspan="14" class="empty-state">Nenhum crédito</td></tr>';}
+function renderRegCreditos(){var busca=(document.getElementById('rc-busca').value||'').toLowerCase();var loja=document.getElementById('rc-loja').value;var status=document.getElementById('rc-status').value;var list=creditos.filter(function(c){if(loja&&norm(c.loja)!==norm(loja))return false;if(status&&c.status!==status)return false;if(busca&&!(norm(c.doc||'')+norm(c.cliente||'')+norm(c.placa||'')+norm(c.oc||'')+norm(c.vendedor||'')).includes(busca))return false;return true;});document.getElementById('tbl-creditos').innerHTML=list.length?list.map(function(c){return'<tr><td style="font-weight:600;color:#185FA5">'+(c.oc||'—')+'</td><td style="font-weight:600">'+(c.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+(c.doc||'—')+'</td><td>'+(c.placa||'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+(c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+stBadge(c.status)+'</td><td>'+fmtD(c.dtVenda)+'</td><td class="tbl-actions"><button onclick="editarCredito('+c.id+')">✏️</button><button onclick="excCred('+c.id+')">🗑</button></td></tr>';}).join(''):'<tr><td colspan="14" class="empty-state">Nenhum crédito</td></tr>';}
 function renderRegNFs(){var busca=(document.getElementById('rn-busca').value||'').toLowerCase();var loja=document.getElementById('rn-loja').value;var list=nfs.filter(function(n){if(loja&&norm(n.loja)!==norm(loja))return false;if(busca&&!(norm(n.doc||'')+norm(n.cliente||'')).includes(busca))return false;return true;});document.getElementById('tbl-nfs').innerHTML=list.length?list.map(function(n){var tc=creditos.some(function(c){return normDoc(c.doc)===normDoc(n.doc)&&norm(c.loja)===norm(n.loja);});return'<tr><td style="font-size:12px;color:#666">'+(n.doc||'—')+'</td><td style="font-weight:600">'+(n.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+(n.chassi||'—')+'</td><td>'+n.loja+'</td><td>'+fmtD(n.dtFat)+'</td><td>'+fmtD(n.dtReceb)+'</td><td>'+(tc?'<span class="match-ok"><span class="dot green"></span> Casado</span>':'<span class="match-avulso"><span class="dot amber"></span> Sem crédito</span>')+'</td><td class="tbl-actions"><button onclick="excNF('+n.id+')">🗑</button></td></tr>';}).join(''):'<tr><td colspan="8" class="empty-state">Nenhuma NF avulsa</td></tr>';}
+function editarCredito(id){
+  var c=creditos.find(function(x){return x.id==id;});
+  if(!c)return;
+  document.getElementById('e-id').value=c.id;
+  document.getElementById('e-doc').value=c.doc||'';
+  document.getElementById('e-cliente').value=c.cliente||'';
+  document.getElementById('e-placa').value=c.placa||'';
+  document.getElementById('e-oc').value=c.oc||'';
+  document.getElementById('e-tipo').value=c.tipo||'0km';
+  document.getElementById('e-dtvenda').value=c.dtVenda||'';
+  document.getElementById('e-status').value=c.status||'ok';
+  document.getElementById('e-motivo').value=c.motivo||'';
+  document.getElementById('e-obs').value=c.obs||'';
+  document.getElementById('e-valor').value=c.valor||'';
+  document.getElementById('e-comissao').value=c.comissao||'';
+  document.getElementById('e-honorarios').value=c.honorarios||'';
+  calcEditCom();
+  var eloja=document.getElementById('e-loja');
+  eloja.innerHTML='<option>-- selecione --</option>'+lojas.map(function(l){return'<option'+(c.loja===l?' selected':'')+'>'+l+'</option>';}).join('');
+  var evend=document.getElementById('e-vendedor');
+  evend.innerHTML='<option>-- selecione --</option>'+vendedores.map(function(v){return'<option'+(c.vendedor===v?' selected':'')+'>'+v+'</option>';}).join('');
+  document.getElementById('modal-editar').classList.add('open');
+}
+function fecharModalEditar(){document.getElementById('modal-editar').classList.remove('open');}
+function calcEditCom(){
+  var hon=parseFloat(document.getElementById('e-honorarios').value)||0;
+  var hint=document.getElementById('e-nossa-com-hint');
+  if(hint)hint.textContent=hon?'Nossa comissão: R$ '+(hon*0.10).toFixed(2).replace('.',','):'';
+}
+async function salvarEdicao(){
+  var id=document.getElementById('e-id').value;
+  var c=creditos.find(function(x){return x.id==id;});
+  if(!c){alert('Registro não encontrado.');return;}
+  var hon=parseFloat(document.getElementById('e-honorarios').value)||0;
+  c.doc=document.getElementById('e-doc').value;
+  c.cliente=document.getElementById('e-cliente').value.trim();
+  c.placa=document.getElementById('e-placa').value.trim().toUpperCase();
+  c.oc=document.getElementById('e-oc').value.trim();
+  c.loja=document.getElementById('e-loja').value;
+  c.vendedor=document.getElementById('e-vendedor').value;
+  c.tipo=document.getElementById('e-tipo').value;
+  c.dtVenda=document.getElementById('e-dtvenda').value;
+  c.status=document.getElementById('e-status').value;
+  c.motivo=document.getElementById('e-motivo').value;
+  c.obs=document.getElementById('e-obs').value;
+  c.valor=parseFloat(document.getElementById('e-valor').value)||0;
+  c.comissao=parseFloat(document.getElementById('e-comissao').value)||0;
+  c.honorarios=hon;
+  c.nossaCom=parseFloat((hon*0.10).toFixed(2));
+  if(SURL){
+    try{
+      await api({action:'delete',sheet:'CREDITOS',id:id});
+      await api({action:'insert',sheet:'CREDITOS',data:c});
+    }catch(e){alert('Erro ao salvar: '+e.message);return;}
+  }
+  fecharModalEditar();
+  renderRegCreditos();
+  renderPainel();
+  alert('✓ Lançamento atualizado!');
+}
 async function excCred(id){if(!confirm('Remover crédito?'))return;try{await api({action:'delete',sheet:'CREDITOS',id:id});}catch(e){alert('Erro: '+e.message);return;}creditos=creditos.filter(function(c){return c.id!=id;});renderRegCreditos();renderPainel();}
 async function excNF(id){if(!confirm('Remover NF?'))return;try{await api({action:'delete',sheet:'NFS',id:id});}catch(e){alert('Erro: '+e.message);return;}nfs=nfs.filter(function(n){return n.id!=id;});renderRegNFs();renderPainel();}
 
