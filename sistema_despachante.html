@@ -216,9 +216,31 @@ table tr:hover td{background:#fafafa}
         </div>
         <div id="grafico-evolucao" style="min-height:220px"></div>
       </div>
+
+      <!-- RANKING DE VENDEDORES -->
+      <div class="card" id="card-ranking-vend">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:1rem">
+          <div class="section-title" style="margin:0">🏆 Ranking de vendedores</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="rank-vend-sel" onchange="renderRankingVendedores()" style="border-radius:7px;border:1px solid #ddd;padding:6px 10px;font-size:13px;color:#333">
+              <option value="">Todos os vendedores</option>
+            </select>
+            <span style="font-size:12px;color:#888">De:</span>
+            <input type="date" id="rank-dt-ini" onchange="renderRankingVendedores()" style="border-radius:7px;border:1px solid #ddd;padding:6px 8px;font-size:13px">
+            <span style="font-size:12px;color:#888">até:</span>
+            <input type="date" id="rank-dt-fim" onchange="renderRankingVendedores()" style="border-radius:7px;border:1px solid #ddd;padding:6px 8px;font-size:13px">
+            <button class="btn" onclick="rankPeriodo('mes')" id="rank-btn-mes" style="font-size:12px;padding:5px 10px">Este mês</button>
+            <button class="btn" onclick="rankPeriodo('semana')" id="rank-btn-sem" style="font-size:12px;padding:5px 10px">Esta semana</button>
+            <button class="btn" onclick="rankPeriodo('tudo')" id="rank-btn-tudo" style="font-size:12px;padding:5px 10px">Tudo</button>
+          </div>
+        </div>
+        <div id="ranking-vend-corpo"></div>
+      </div>
+
       <div class="card">
         <div class="section-title">Pendências de vínculo</div>
-        <div class="leg"><span><span class="dot green" style="display:inline-block"></span> Vinculado</span><span><span class="dot red" style="display:inline-block"></span> Aguardando NF</span><span><span class="dot amber" style="display:inline-block"></span> NF sem crédito</span><span><span class="dot" style="background:#aaa;display:inline-block"></span> Semi-novo</span></div><th>Cliente</th><th>CPF/CNPJ</th><th>Loja</th><th>Vendedor</th><th>Placa</th><th>Valor</th><th>Status</th></tr></thead><tbody id="tbl-painel-pend"></tbody></table></div>
+        <div class="leg"><span><span class="dot green" style="display:inline-block"></span> Vinculado</span><span><span class="dot red" style="display:inline-block"></span> Aguardando NF</span><span><span class="dot amber" style="display:inline-block"></span> NF sem crédito</span><span><span class="dot" style="background:#aaa;display:inline-block"></span> Semi-novo</span></div>
+        <div style="overflow-x:auto"><table><thead><tr><th>OC</th><th>Cliente</th><th>CPF/CNPJ</th><th>Loja</th><th>Vendedor</th><th>Placa</th><th>Valor</th><th>Status</th></tr></thead><tbody id="tbl-painel-pend"></tbody></table></div>
       </div>
     </div>
 
@@ -1017,6 +1039,96 @@ function renderPainel(){
     }
     return'<tr><td style="font-weight:600;color:#185FA5">'+(c&&c.oc?c.oc:'—')+'</td><td>'+(g.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+g.doc+'</td><td>'+g.loja+'</td><td>'+(c?c.vendedor:'—')+'</td><td>'+(c&&c.placa?c.placa:'—')+'</td><td>'+(c?fmtM(c.valor):'—')+'</td><td>'+dotH(st)+' <span style="font-size:12px;color:'+corStatus+'">'+statusTxt+'</span>'+alertaHtml+'</td></tr>';
   }).join(''):'<tr><td colspan="8" class="empty-state">Nenhuma pendência 🎉</td></tr>';
+  // Popular select de vendedores no ranking e renderizar
+  popularSelectRank();
+  // Inicializar com mês atual se ainda não tiver data definida
+  if(!document.getElementById('rank-dt-ini').value){rankPeriodo('mes');}
+  else{renderRankingVendedores();}
+}
+
+// ── RANKING DE VENDEDORES ──────────────────────────────────────────
+function popularSelectRank(){
+  var sel=document.getElementById('rank-vend-sel');
+  if(!sel)return;
+  var atual=sel.value;
+  sel.innerHTML='<option value="">Todos os vendedores</option>'+vendedores.map(function(v){return'<option'+(v===atual?' selected':'')+'>'+v+'</option>';}).join('');
+}
+function rankPeriodo(tipo){
+  var hoje=new Date();
+  var ini='',fim='';
+  if(tipo==='mes'){
+    ini=hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0')+'-01';
+    var ult=new Date(hoje.getFullYear(),hoje.getMonth()+1,0);
+    fim=hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0')+'-'+String(ult.getDate()).padStart(2,'0');
+  } else if(tipo==='semana'){
+    var dia=hoje.getDay()||7;
+    var seg=new Date(hoje);seg.setDate(hoje.getDate()-(dia-1));
+    var dom=new Date(seg);dom.setDate(seg.getDate()+6);
+    ini=seg.toISOString().slice(0,10);
+    fim=dom.toISOString().slice(0,10);
+  }
+  document.getElementById('rank-dt-ini').value=ini;
+  document.getElementById('rank-dt-fim').value=fim;
+  ['mes','sem','tudo'].forEach(function(t){
+    var btn=document.getElementById('rank-btn-'+t);
+    if(btn)btn.classList.toggle('primary',t===tipo);
+  });
+  renderRankingVendedores();
+}
+function renderRankingVendedores(){
+  var filtroVend=(document.getElementById('rank-vend-sel')||{value:''}).value;
+  var ini=(document.getElementById('rank-dt-ini')||{value:''}).value;
+  var fim=(document.getElementById('rank-dt-fim')||{value:''}).value;
+  // Filtrar créditos pelo período
+  var lista=creditos.filter(function(c){
+    if(ini&&c.dtVenda&&c.dtVenda<ini)return false;
+    if(fim&&c.dtVenda&&c.dtVenda>fim)return false;
+    return true;
+  });
+  // Agrupar por vendedor
+  var map={};
+  lista.forEach(function(c){
+    var v=c.vendedor||'—';
+    if(!map[v])map[v]={vendedor:v,qtd:0,hon:0,com:0,nossaCom:0,cortesias:0,vd:0};
+    map[v].qtd++;
+    map[v].hon+=Number(c.honorarios)||0;
+    map[v].com+=Number(c.comissao)||0;
+    map[v].nossaCom+=Number(c.nossaCom)||0;
+    if(isCortesia(c))map[v].cortesias++;
+    if(c.vendaDireta===true||c.vendaDireta==='TRUE')map[v].vd++;
+  });
+  var ranking=Object.values(map).sort(function(a,b){return b.hon-a.hon;});
+  var maxHon=ranking.length?ranking[0].hon:1;
+  // Filtrar por vendedor selecionado (expande só esse)
+  var corpo=document.getElementById('ranking-vend-corpo');
+  if(!corpo)return;
+  if(!ranking.length){corpo.innerHTML='<div class="empty-state" style="padding:1.5rem;text-align:center;color:#aaa">Nenhum dado no período</div>';return;}
+  corpo.innerHTML=ranking.map(function(r,idx){
+    var pct=maxHon>0?Math.round((r.hon/maxHon)*100):0;
+    var expandido=filtroVend&&norm(filtroVend)===norm(r.vendedor);
+    var medalha=idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':'<span style="display:inline-block;width:22px;text-align:center;font-size:12px;color:#999">'+(idx+1)+'</span>';
+    var detalhe=expandido?
+      '<div style="margin-top:10px;padding:10px 0 4px 0;border-top:1px solid #f0f0f0;display:flex;flex-wrap:wrap;gap:10px">'+
+        '<div style="background:#f5f5f3;border-radius:8px;padding:8px 14px;min-width:90px"><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.3px">Honorários</div><div style="font-weight:700;color:#185FA5;font-size:15px">'+fmtM(r.hon)+'</div></div>'+
+        '<div style="background:#f5f5f3;border-radius:8px;padding:8px 14px;min-width:90px"><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.3px">Com. vendedor</div><div style="font-weight:700;color:#854F0B;font-size:15px">'+fmtM(r.com)+'</div></div>'+
+        '<div style="background:#f5f5f3;border-radius:8px;padding:8px 14px;min-width:90px"><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.3px">Nossa com.</div><div style="font-weight:700;color:#1D9E75;font-size:15px">'+fmtM(r.nossaCom)+'</div></div>'+
+        '<div style="background:#f5f5f3;border-radius:8px;padding:8px 14px;min-width:70px"><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.3px">Créditos</div><div style="font-weight:700;font-size:15px">'+r.qtd+'</div></div>'+
+        (r.cortesias?'<div style="background:#e6f1fb;border-radius:8px;padding:8px 14px;min-width:70px"><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.3px">Cortesias</div><div style="font-weight:700;color:#185FA5;font-size:15px">'+r.cortesias+'</div></div>':'')+
+        (r.vd?'<div style="background:#fef9c3;border-radius:8px;padding:8px 14px;min-width:70px"><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.3px">Venda direta</div><div style="font-weight:700;color:#854D0E;font-size:15px">'+r.vd+'</div></div>':'')+
+      '</div>':'';
+    return'<div style="padding:10px 0;border-bottom:1px solid #f5f5f3;cursor:pointer" onclick="document.getElementById(\'rank-vend-sel\').value=\''+r.vendedor.replace(/'/g,"\\'")+'\'+(document.getElementById(\'rank-vend-sel\').value===\''+r.vendedor.replace(/'/g,"\\'")+'\' ? \'\' : \'\');document.getElementById(\'rank-vend-sel\').value=document.getElementById(\'rank-vend-sel\').value===\''+r.vendedor.replace(/'/g,"\\'")+'\' ? \'\' : \''+r.vendedor.replace(/'/g,"\\'")+'\';renderRankingVendedores()">'+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:5px">'+
+        '<span style="font-size:18px;min-width:28px">'+medalha+'</span>'+
+        '<span style="font-weight:600;font-size:14px;flex:1">'+r.vendedor+'</span>'+
+        '<span style="font-size:13px;color:#185FA5;font-weight:600">'+fmtM(r.hon)+'</span>'+
+        '<span style="font-size:12px;color:#888;margin-left:8px">'+r.qtd+' venda'+(r.qtd!==1?'s':'')+'</span>'+
+      '</div>'+
+      '<div style="background:#eee;border-radius:99px;height:6px;overflow:hidden">'+
+        '<div style="background:linear-gradient(90deg,#185FA5,#1D9E75);height:6px;border-radius:99px;width:'+pct+'%;transition:width .4s"></div>'+
+      '</div>'+
+      detalhe+
+    '</div>';
+  }).join('');
 }
 
 async function classificarPendencia(id,valor){
