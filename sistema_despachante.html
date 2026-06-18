@@ -70,6 +70,9 @@ table tr:hover td{background:#fafafa}
 .badge.adm{background:#1a1a1a;color:#fff}
 .badge.usuario{background:#f5f5f3;color:#666}
 .badge.abaixo{background:#f3e8ff;color:#6b21a8}
+.badge.revenda{background:#fce7f3;color:#9d174d}
+.badge.diretoria{background:#1a1a1a;color:#fff}
+.badge.fora_estado{background:#fef3c7;color:#92400e}
 .dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
 .dot.green{background:#1D9E75}.dot.red{background:#E24B4A}.dot.amber{background:#EF9F27}
 .match-ok{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#0F6E56;font-weight:500;background:#f0faf6;padding:5px 10px;border-radius:7px}
@@ -244,15 +247,23 @@ table tr:hover td{background:#fafafa}
             <div class="fg"><label>Vendedor</label><select id="c-vendedor"><option>-- selecione --</option></select></div>
             <div class="fg"><label>Tipo de veículo</label><select id="c-tipo" onchange="calcRef()"><option value="0km">0 km</option><option value="semi">Semi-novo</option></select></div>
             <div class="fg"><label>Data da venda</label><input type="date" id="c-dtvenda"></div>
-            <div class="fg"><label>Status</label><select id="c-status" onchange="toggleMotivo()"><option value="ok">Normal</option><option value="pendente">Pendente</option><option value="cortesia">Cortesia</option><option value="perdida">NF Fora</option><option value="abaixo">Abaixo do custo</option></select></div>
-            <div class="fg" id="c-motivo-g" style="display:none"><label>Motivo NF fora</label><input type="text" id="c-motivo"></div>
+            <div class="fg"><label>Status</label><select id="c-status"><option value="ok">Normal</option><option value="pendente">Pendente</option><option value="revenda">Revenda</option><option value="diretoria">Diretoria</option><option value="fora_estado">Fora do Estado</option><option value="abaixo">Abaixo do custo</option></select></div>
             <div class="fg"><label>Observações</label><input type="text" id="c-obs"></div>
           </div>
-          <div style="margin-bottom:1rem">
-            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">IPVA</div>
-            <div class="ipva-toggle" id="ipva-toggle" onclick="toggleIPVA()" role="checkbox" aria-checked="false" tabindex="0">
-              <div class="ipva-icon" id="ipva-icon"></div>
-              <span class="ipva-label" id="ipva-label">IPVA não incluso</span>
+          <div style="margin-bottom:1rem;display:flex;gap:14px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">IPVA</div>
+              <div class="ipva-toggle" id="ipva-toggle" onclick="toggleIPVA()" role="checkbox" aria-checked="false" tabindex="0">
+                <div class="ipva-icon" id="ipva-icon"></div>
+                <span class="ipva-label" id="ipva-label">IPVA não incluso</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">Cortesia</div>
+              <div class="ipva-toggle" id="cortesia-toggle" onclick="toggleCortesia()" role="checkbox" aria-checked="false" tabindex="0">
+                <div class="ipva-icon" id="cortesia-icon"></div>
+                <span class="ipva-label" id="cortesia-label">Não é cortesia</span>
+              </div>
             </div>
           </div>
           <hr class="sep">
@@ -266,8 +277,6 @@ table tr:hover td{background:#fafafa}
             <div class="calc-item"><div class="lbl">Honorários</div><div class="num" id="box-hon" style="color:#1a1a1a">R$ —</div></div>
             <div class="divider-v"></div>
             <div class="calc-item"><div class="lbl">Nossa comissão (10%)</div><div class="num green" id="box-nossa-com">R$ —</div></div>
-            <div class="divider-v"></div>
-            <div class="calc-item" id="box-cort-wrap" style="display:none"><div class="lbl">Saldo cortesia</div><div class="num blue" id="box-cort-saldo">R$ —</div></div>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn primary" onclick="salvarCredito()">💾 Salvar crédito</button>
@@ -294,6 +303,14 @@ table tr:hover td{background:#fafafa}
             <div class="fg"><label>Data recebimento NF</label><input type="date" id="n-dtreceb"></div>
             <div class="fg"><label>Observações</label><input type="text" id="n-obs"></div>
           </div>
+          <div style="margin-bottom:1rem">
+            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">NF Fora</div>
+            <div class="ipva-toggle" id="nfFora-toggle" onclick="toggleNfFora()" role="checkbox" aria-checked="false" tabindex="0">
+              <div class="ipva-icon" id="nfFora-icon"></div>
+              <span class="ipva-label" id="nfFora-label">NF não ficou fora</span>
+            </div>
+          </div>
+          <div class="fg" id="n-motivo-g" style="display:none;margin-bottom:1rem;max-width:400px"><label>Motivo da NF fora</label><input type="text" id="n-motivo" placeholder="Ex: sem atendimento, cliente desistiu..."></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn success" onclick="salvarNF()">💾 Salvar NF</button>
             <button class="btn" onclick="limparNF()">✕ Limpar</button>
@@ -332,7 +349,8 @@ table tr:hover td{background:#fafafa}
             <input type="text" id="rc-busca" placeholder="Buscar CPF/CNPJ, cliente, placa..." oninput="renderRegCreditos()" style="width:100%;padding-left:30px;border-radius:7px;border:1px solid #ddd;padding-top:7px;padding-bottom:7px;padding-right:10px;font-size:13px">
           </div>
           <select id="rc-loja" onchange="renderRegCreditos()"><option value="">Todas as lojas</option></select>
-          <select id="rc-status" onchange="renderRegCreditos()"><option value="">Todos os status</option><option value="ok">Normal</option><option value="pendente">Pendente</option><option value="cortesia">Cortesia</option><option value="perdida">NF Fora</option><option value="abaixo">Abaixo do custo</option></select>
+          <select id="rc-status" onchange="renderRegCreditos()"><option value="">Todos os status</option><option value="ok">Normal</option><option value="pendente">Pendente</option><option value="abaixo">Abaixo do custo</option><option value="revenda">Revenda</option><option value="diretoria">Diretoria</option><option value="fora_estado">Fora do Estado</option></select>
+          <select id="rc-cortesia" onchange="renderRegCreditos()"><option value="">Cortesia: todos</option><option value="1">Só cortesias</option><option value="0">Sem cortesia</option></select>
           <button class="btn" onclick="carregarDados()">🔄 Atualizar</button>
         </div>
         <div class="card" style="padding:0;overflow-x:auto"><table><thead><tr><th>OC</th><th>Cliente</th><th>CPF/CNPJ</th><th>Placa</th><th>IPVA</th><th>Loja</th><th>Vendedor</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Status</th><th>Data</th><th>Lançado por</th><th></th></tr></thead><tbody id="tbl-creditos"></tbody></table></div>
@@ -345,7 +363,7 @@ table tr:hover td{background:#fafafa}
           </div>
           <select id="rn-loja" onchange="renderRegNFs()"><option value="">Todas as lojas</option></select>
         </div>
-        <div class="card" style="padding:0;overflow-x:auto"><table><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Chassi</th><th>Loja</th><th>Dt. Fat.</th><th>Dt. Receb.</th><th>Pareamento</th><th></th></tr></thead><tbody id="tbl-nfs"></tbody></table></div>
+        <div class="card" style="padding:0;overflow-x:auto"><table><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Chassi</th><th>Loja</th><th>Dt. Fat.</th><th>Dt. Receb.</th><th>NF Fora</th><th>Pareamento</th><th></th></tr></thead><tbody id="tbl-nfs"></tbody></table></div>
       </div>
     </div>
 
@@ -358,7 +376,8 @@ table tr:hover td{background:#fafafa}
           <div class="fg"><label>Vendedor</label><select id="rel-vendedor"><option value="">Todos os vendedores</option></select></div>
           <div class="fg"><label>Data inicial</label><input type="date" id="rel-dt-ini"></div>
           <div class="fg"><label>Data final</label><input type="date" id="rel-dt-fim"></div>
-          <div class="fg"><label>Status</label><select id="rel-status"><option value="">Todos os status</option><option value="ok">Normal</option><option value="pendente">Pendente</option><option value="cortesia">Cortesia</option><option value="perdida">NF Fora</option><option value="abaixo">Abaixo do custo</option></select></div>
+          <div class="fg"><label>Status</label><select id="rel-status"><option value="">Todos os status</option><option value="ok">Normal</option><option value="pendente">Pendente</option><option value="abaixo">Abaixo do custo</option><option value="revenda">Revenda</option><option value="diretoria">Diretoria</option><option value="fora_estado">Fora do Estado</option></select></div>
+          <div class="fg"><label>Cortesia</label><select id="rel-cortesia"><option value="">Todos</option><option value="1">Só cortesias</option><option value="0">Sem cortesia</option></select></div>
           <div class="fg"><label>IPVA</label><select id="rel-ipva"><option value="">Todos</option><option value="1">Com IPVA</option><option value="0">Sem IPVA</option></select></div>
         </div>
         <button class="btn primary" onclick="gerarRelatorio()">📊 Gerar relatório</button>
@@ -419,9 +438,16 @@ table tr:hover td{background:#fafafa}
       <div class="fg"><label>Vendedor</label><select id="e-vendedor"><option>-- selecione --</option></select></div>
       <div class="fg"><label>Tipo</label><select id="e-tipo"><option value="0km">0 km</option><option value="semi">Semi-novo</option></select></div>
       <div class="fg"><label>Data da venda</label><input type="date" id="e-dtvenda"></div>
-      <div class="fg"><label>Status</label><select id="e-status"><option value="ok">Normal</option><option value="pendente">Pendente</option><option value="cortesia">Cortesia</option><option value="perdida">NF Fora</option><option value="abaixo">Abaixo do custo</option></select></div>
-      <div class="fg"><label>Motivo NF fora</label><input type="text" id="e-motivo" placeholder="Se NF Fora, informe o motivo"></div>
+      <div class="fg"><label>Status</label><select id="e-status"><option value="ok">Normal</option><option value="pendente">Pendente</option><option value="abaixo">Abaixo do custo</option><option value="revenda">Revenda</option><option value="diretoria">Diretoria</option><option value="fora_estado">Fora do Estado</option></select></div>
       <div class="fg"><label>Observações</label><input type="text" id="e-obs"></div>
+    </div>
+    <div style="display:flex;gap:14px;margin-bottom:1rem;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#f5f5f3;padding:7px 12px;border-radius:8px;border:1px solid #e5e5e5">
+        <input type="checkbox" id="e-ipva" style="accent-color:#1D9E75"> IPVA incluso
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#f5f5f3;padding:7px 12px;border-radius:8px;border:1px solid #e5e5e5">
+        <input type="checkbox" id="e-cortesia" style="accent-color:#1D9E75"> É cortesia
+      </label>
     </div>
     <div style="font-size:13px;font-weight:600;margin-bottom:.75rem;margin-top:.5rem">Valores financeiros</div>
     <div class="form-grid">
@@ -432,6 +458,36 @@ table tr:hover td{background:#fafafa}
     <div style="display:flex;gap:8px;margin-top:.5rem;flex-wrap:wrap">
       <button class="btn primary" onclick="salvarEdicao()">💾 Salvar alterações</button>
       <button class="btn" onclick="fecharModalEditar()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDIÇÃO NF -->
+<div class="edit-modal-bg" id="modal-editar-nf">
+  <div class="edit-modal">
+    <div class="edit-modal-header">
+      <h2>Editar NF</h2>
+      <button style="border:none;background:none;cursor:pointer;font-size:20px;color:#888;line-height:1" onclick="fecharModalEditarNF()">×</button>
+    </div>
+    <input type="hidden" id="en-id">
+    <div class="form-grid">
+      <div class="fg"><label>CPF ou CNPJ</label><input type="text" id="en-doc" oninput="fmtDoc('en-doc')" maxlength="18"></div>
+      <div class="fg"><label>Nome do cliente</label><input type="text" id="en-cliente"></div>
+      <div class="fg"><label>Chassi</label><input type="text" id="en-chassi"></div>
+      <div class="fg"><label>Loja</label><select id="en-loja"><option>-- selecione --</option></select></div>
+      <div class="fg"><label>Data faturamento NF</label><input type="date" id="en-dtfat"></div>
+      <div class="fg"><label>Data recebimento NF</label><input type="date" id="en-dtreceb"></div>
+      <div class="fg"><label>Observações</label><input type="text" id="en-obs"></div>
+    </div>
+    <div style="margin-bottom:1rem">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#f5f5f3;padding:7px 12px;border-radius:8px;border:1px solid #e5e5e5;width:fit-content">
+        <input type="checkbox" id="en-nfFora" onchange="document.getElementById('en-motivo-g').style.display=this.checked?'block':'none'" style="accent-color:#1D9E75"> NF ficou fora
+      </label>
+    </div>
+    <div class="fg" id="en-motivo-g" style="display:none;margin-bottom:1rem;max-width:400px"><label>Motivo da NF fora</label><input type="text" id="en-motivo" placeholder="Ex: sem atendimento, cliente desistiu..."></div>
+    <div style="display:flex;gap:8px;margin-top:.5rem;flex-wrap:wrap">
+      <button class="btn success" onclick="salvarEdicaoNF()">💾 Salvar alterações</button>
+      <button class="btn" onclick="fecharModalEditarNF()">Cancelar</button>
     </div>
   </div>
 </div>
@@ -462,7 +518,7 @@ table tr:hover td{background:#fafafa}
 var COM_0KM=[[1750,75],[1850,125],[1950,175],[2150,225],[2202,250],[2402,300],[2502,350]];
 var COM_SEMI=[[1550,75],[1650,125],[1740,175],[1890,225],[2050,300]];
 var CORT_SALDO=178.68,NOSSA=0.10;
-var ipvaAtivo=false;
+var ipvaAtivo=false,cortesiaAtiva=false,nfForaAtiva=false;
 var SURL='https://script.google.com/macros/s/AKfycbwvtY2fzH6u2WjQ1si8HVLEi33-x3VUg2BaYMZaFzYXGMY9iuPTFj004KFLLjOxTgjc/exec'; // URL fixa - só o adm altera aqui no código
 var creditos=[],nfs=[],usuarios=[];
 var usuarioLogado=null;
@@ -511,7 +567,9 @@ function getRef(tipo,v){var t=tipo==='0km'?COM_0KM:COM_SEMI;for(var i=t.length-1
 function fmtM(v){var n=Number(v);if(isNaN(n))n=0;return'R$ '+n.toFixed(2).replace('.',',');}
 function fmtD(d){if(!d)return'—';if(typeof d==='string'&&d.includes('T')){d=d.split('T')[0];}if(typeof d==='string'&&d.includes('-')){var p=d.split('-');return p[2]+'/'+p[1];}return String(d);}
 function getSem(ds){if(!ds)return'';var d=new Date(ds+'T12:00:00');var j=new Date(d.getFullYear(),0,1);return d.getFullYear()+'-S'+String(Math.ceil(((d-j)/86400000+j.getDay()+1)/7)).padStart(2,'0');}
-function stBadge(s){var m={ok:['ok','Normal'],cortesia:['cortesia','Cortesia'],perdida:['perdida','NF Fora'],pendente:['pendente','Pendente'],abaixo:['abaixo','Abaixo custo']};var r=m[s]||['',''];return'<span class="badge '+r[0]+'">'+r[1]+'</span>';}
+function stBadge(s){var m={ok:['ok','Normal'],pendente:['pendente','Pendente'],abaixo:['abaixo','Abaixo custo'],revenda:['revenda','Revenda'],diretoria:['diretoria','Diretoria'],fora_estado:['fora_estado','Fora do Estado']};var r=m[s]||['',s||''];return'<span class="badge '+r[0]+'">'+r[1]+'</span>';}
+function cortesiaBadge(c){return c?'<span class="badge cortesia">🎁 Cortesia</span>':'';}
+function nfForaBadge(n){return(n&&(n.nfFora===true||n.nfFora==='TRUE'))?'<span class="badge perdida">NF Fora</span>':'';}
 function dotH(st){if(st==='casado')return'<span class="dot green"></span>';if(st==='sem-nf')return'<span class="dot red"></span>';return'<span class="dot amber"></span>';}
 function ipvaB(v){return(v===true||v==='TRUE')?'<span class="badge ipva">✓ IPVA</span>':'<span style="color:#ccc;font-size:12px">—</span>';}
 function isAdm(){return usuarioLogado&&String(usuarioLogado.perfil||'').trim().toLowerCase()==='adm';}
@@ -603,9 +661,10 @@ function sugerirNF(){
 }
 
 function toggleIPVA(){ipvaAtivo=!ipvaAtivo;document.getElementById('ipva-toggle').classList.toggle('checked',ipvaAtivo);document.getElementById('ipva-toggle').setAttribute('aria-checked',ipvaAtivo);document.getElementById('ipva-icon').textContent=ipvaAtivo?'✓':'';document.getElementById('ipva-label').textContent=ipvaAtivo?'IPVA incluso':'IPVA não incluso';}
+function toggleCortesia(){cortesiaAtiva=!cortesiaAtiva;document.getElementById('cortesia-toggle').classList.toggle('checked',cortesiaAtiva);document.getElementById('cortesia-toggle').setAttribute('aria-checked',cortesiaAtiva);document.getElementById('cortesia-icon').textContent=cortesiaAtiva?'✓':'';document.getElementById('cortesia-label').textContent=cortesiaAtiva?'É cortesia':'Não é cortesia';}
+function toggleNfFora(){nfForaAtiva=!nfForaAtiva;document.getElementById('nfFora-toggle').classList.toggle('checked',nfForaAtiva);document.getElementById('nfFora-toggle').setAttribute('aria-checked',nfForaAtiva);document.getElementById('nfFora-icon').textContent=nfForaAtiva?'✓':'';document.getElementById('nfFora-label').textContent=nfForaAtiva?'NF ficou fora':'NF não ficou fora';document.getElementById('n-motivo-g').style.display=nfForaAtiva?'block':'none';}
 function calcRef(){var ref=getRef(document.getElementById('c-tipo').value,parseFloat(document.getElementById('c-valor').value)||0);document.getElementById('c-ref-tabela').textContent=ref?'Tabela sugere: '+fmtM(ref):'';calcNossaCom();}
-function calcNossaCom(){var hon=parseFloat(document.getElementById('c-honorarios').value)||0;var st=document.getElementById('c-status').value;document.getElementById('box-hon').textContent=hon?fmtM(hon):'R$ —';document.getElementById('box-nossa-com').textContent=hon?fmtM(hon*NOSSA):'R$ —';document.getElementById('box-cort-wrap').style.display=st==='cortesia'?'flex':'none';if(st==='cortesia')document.getElementById('box-cort-saldo').textContent=fmtM(CORT_SALDO);}
-function toggleMotivo(){document.getElementById('c-motivo-g').style.display=document.getElementById('c-status').value==='perdida'?'block':'none';calcNossaCom();}
+function calcNossaCom(){var hon=parseFloat(document.getElementById('c-honorarios').value)||0;document.getElementById('box-hon').textContent=hon?fmtM(hon):'R$ —';document.getElementById('box-nossa-com').textContent=hon?fmtM(hon*NOSSA):'R$ —';}
 
 async function salvarCredito(){
   var doc=normDoc(document.getElementById('c-doc').value);
@@ -615,20 +674,20 @@ async function salvarCredito(){
   if(doc.length<11){alert('CPF ou CNPJ inválido.');return;}
   if(!cliente||loja==='-- selecione --'||vendedor==='-- selecione --'){alert('Preencha nome, loja e vendedor.');return;}
   var hon=parseFloat(document.getElementById('c-honorarios').value)||0;var dt=document.getElementById('c-dtvenda').value;
-  var rec={id:Date.now(),doc:document.getElementById('c-doc').value,cliente:cliente,placa:document.getElementById('c-placa').value.trim().toUpperCase(),oc:document.getElementById('c-oc').value.trim(),ipva:ipvaAtivo,loja:loja,vendedor:vendedor,tipo:document.getElementById('c-tipo').value,valor:parseFloat(document.getElementById('c-valor').value)||0,comissao:parseFloat(document.getElementById('c-comissao').value)||0,honorarios:hon,nossaCom:parseFloat((hon*NOSSA).toFixed(2)),status:document.getElementById('c-status').value,motivo:document.getElementById('c-motivo').value,obs:document.getElementById('c-obs').value,dtVenda:dt,semana:getSem(dt||new Date().toISOString().slice(0,10)),criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:'',classificacaoPendencia:''};
+  var rec={id:Date.now(),doc:document.getElementById('c-doc').value,cliente:cliente,placa:document.getElementById('c-placa').value.trim().toUpperCase(),oc:document.getElementById('c-oc').value.trim(),ipva:ipvaAtivo,cortesia:cortesiaAtiva,loja:loja,vendedor:vendedor,tipo:document.getElementById('c-tipo').value,valor:parseFloat(document.getElementById('c-valor').value)||0,comissao:parseFloat(document.getElementById('c-comissao').value)||0,honorarios:hon,nossaCom:parseFloat((hon*NOSSA).toFixed(2)),status:document.getElementById('c-status').value,motivo:'',obs:document.getElementById('c-obs').value,dtVenda:dt,semana:getSem(dt||new Date().toISOString().slice(0,10)),criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:'',classificacaoPendencia:''};
   try{var r=await api({action:'insert',sheet:'CREDITOS',data:rec});if(r.error)throw new Error(r.error);creditos.unshift(rec);alert('✓ Crédito salvo!');limparCred();renderPainel();}catch(e){alert('Erro: '+e.message);}
 }
-function limparCred(){['c-doc','c-cliente','c-placa','c-oc','c-valor','c-comissao','c-honorarios','c-obs','c-dtvenda','c-motivo'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('c-loja').value='-- selecione --';document.getElementById('c-vendedor').value='-- selecione --';document.getElementById('c-status').value='ok';document.getElementById('c-motivo-g').style.display='none';document.getElementById('box-hon').textContent='R$ —';document.getElementById('box-nossa-com').textContent='R$ —';document.getElementById('box-cort-wrap').style.display='none';document.getElementById('c-ref-tabela').textContent='';document.getElementById('c-doc-match').className='doc-match';document.getElementById('c-doc-tipo').innerHTML='';if(ipvaAtivo)toggleIPVA();}
+function limparCred(){['c-doc','c-cliente','c-placa','c-oc','c-valor','c-comissao','c-honorarios','c-obs','c-dtvenda'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('c-loja').value='-- selecione --';document.getElementById('c-vendedor').value='-- selecione --';document.getElementById('c-status').value='ok';document.getElementById('box-hon').textContent='R$ —';document.getElementById('box-nossa-com').textContent='R$ —';document.getElementById('c-ref-tabela').textContent='';document.getElementById('c-doc-match').className='doc-match';document.getElementById('c-doc-tipo').innerHTML='';if(ipvaAtivo)toggleIPVA();if(cortesiaAtiva)toggleCortesia();}
 
 async function salvarNF(){
   var doc=normDoc(document.getElementById('n-doc').value);
   var loja=document.getElementById('n-loja').value;
   if(doc.length<11){alert('CPF ou CNPJ inválido.');return;}
   if(loja==='-- selecione --'){alert('Selecione a loja.');return;}
-  var rec={id:Date.now(),doc:document.getElementById('n-doc').value,cliente:document.getElementById('n-cliente').value.trim(),chassi:document.getElementById('n-chassi').value.trim(),loja:loja,dtFat:document.getElementById('n-dtfat').value,dtReceb:document.getElementById('n-dtreceb').value,obs:document.getElementById('n-obs').value,criadoPor:usuarioLogado?usuarioLogado.nome:''};
+  var rec={id:Date.now(),doc:document.getElementById('n-doc').value,cliente:document.getElementById('n-cliente').value.trim(),chassi:document.getElementById('n-chassi').value.trim(),loja:loja,dtFat:document.getElementById('n-dtfat').value,dtReceb:document.getElementById('n-dtreceb').value,obs:document.getElementById('n-obs').value,nfFora:nfForaAtiva,motivoNfFora:nfForaAtiva?document.getElementById('n-motivo').value.trim():'',criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:''};
   try{var r=await api({action:'insert',sheet:'NFS',data:rec});if(r.error)throw new Error(r.error);nfs.unshift(rec);alert('✓ NF salva!');limparNF();renderPainel();}catch(e){alert('Erro: '+e.message);}
 }
-function limparNF(){['n-doc','n-cliente','n-chassi','n-dtfat','n-dtreceb','n-obs'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('n-loja').value='-- selecione --';document.getElementById('n-doc-match').className='doc-match';document.getElementById('n-doc-tipo').innerHTML='';}
+function limparNF(){['n-doc','n-cliente','n-chassi','n-dtfat','n-dtreceb','n-obs','n-motivo'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('n-loja').value='-- selecione --';document.getElementById('n-doc-match').className='doc-match';document.getElementById('n-doc-tipo').innerHTML='';if(nfForaAtiva)toggleNfFora();}
 
 var modoGrafico='evolucao';
 function setModoGrafico(modo){
@@ -845,7 +904,7 @@ function renderPainel(){
   nfsAll.forEach(function(n){var k=normDoc(n.doc)+'||'+norm(n.loja);if(!mapAll[k])mapAll[k]={cliente:n.cliente,loja:n.loja,doc:n.doc,creditos:[],nfs:[]};mapAll[k].nfs.push(n);});
   var gsAll=Object.values(mapAll);
 
-  var nfPerdidas=credF.filter(function(c){return c.status==='perdida';}).length;
+  var nfPerdidas=nfsF.filter(function(n){return n.nfFora===true||n.nfFora==='TRUE';}).length;
   var totalNFsCadastradas=nfsF.length;
   var tH=credF.reduce(function(a,c){return a+(Number(c.honorarios)||0);},0);
   var tN=credF.reduce(function(a,c){return a+(Number(c.nossaCom)||0);},0);
@@ -902,8 +961,34 @@ function renderVinculo(){
 }
 
 function renderRegistros(){['rc-loja','rn-loja'].forEach(function(id){document.getElementById(id).innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+l+'</option>';}).join('');});renderRegCreditos();}
-function renderRegCreditos(){var busca=(document.getElementById('rc-busca').value||'').toLowerCase();var loja=document.getElementById('rc-loja').value;var status=document.getElementById('rc-status').value;var list=creditos.filter(function(c){if(loja&&norm(c.loja)!==norm(loja))return false;if(status&&c.status!==status)return false;if(busca&&!(norm(c.doc||'')+norm(c.cliente||'')+norm(c.placa||'')+norm(c.oc||'')+norm(c.vendedor||'')).includes(busca))return false;return true;});document.getElementById('tbl-creditos').innerHTML=list.length?list.map(function(c){var quemLancou=(c.editadoPor?c.editadoPor+' <span style="color:#aaa">(edit)</span>':(c.criadoPor||'—'));return'<tr><td style="font-weight:600;color:#185FA5">'+(c.oc||'—')+'</td><td style="font-weight:600">'+(c.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+(c.doc||'—')+'</td><td>'+(c.placa||'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+(c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom&&!isNaN(Number(c.nossaCom))?fmtM(c.nossaCom):'—')+'</td><td>'+stBadge(c.status)+'</td><td>'+fmtD(c.dtVenda)+'</td><td style="font-size:12px;color:#666">'+quemLancou+'</td><td class="tbl-actions"><button onclick="editarCredito('+c.id+')">✏️</button><button onclick="excCred('+c.id+')">🗑</button></td></tr>';}).join(''):'<tr><td colspan="15" class="empty-state">Nenhum crédito</td></tr>';}
-function renderRegNFs(){var busca=(document.getElementById('rn-busca').value||'').toLowerCase();var loja=document.getElementById('rn-loja').value;var list=nfs.filter(function(n){if(loja&&norm(n.loja)!==norm(loja))return false;if(busca&&!(norm(n.doc||'')+norm(n.cliente||'')).includes(busca))return false;return true;});document.getElementById('tbl-nfs').innerHTML=list.length?list.map(function(n){var tc=creditos.some(function(c){return normDoc(c.doc)===normDoc(n.doc)&&norm(c.loja)===norm(n.loja);});return'<tr><td style="font-size:12px;color:#666">'+(n.doc||'—')+'</td><td style="font-weight:600">'+(n.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+(n.chassi||'—')+'</td><td>'+n.loja+'</td><td>'+fmtD(n.dtFat)+'</td><td>'+fmtD(n.dtReceb)+'</td><td>'+(tc?'<span class="match-ok"><span class="dot green"></span> Casado</span>':'<span class="match-avulso"><span class="dot amber"></span> Sem crédito</span>')+'</td><td class="tbl-actions"><button onclick="excNF('+n.id+')">🗑</button></td></tr>';}).join(''):'<tr><td colspan="8" class="empty-state">Nenhuma NF avulsa</td></tr>';}
+function renderRegCreditos(){
+  var busca=(document.getElementById('rc-busca').value||'').toLowerCase();
+  var loja=document.getElementById('rc-loja').value;
+  var status=document.getElementById('rc-status').value;
+  var cortFiltro=document.getElementById('rc-cortesia').value;
+  var list=creditos.filter(function(c){
+    if(loja&&norm(c.loja)!==norm(loja))return false;
+    if(status&&c.status!==status)return false;
+    if(cortFiltro==='1'&&!(c.cortesia===true||c.cortesia==='TRUE'))return false;
+    if(cortFiltro==='0'&&(c.cortesia===true||c.cortesia==='TRUE'))return false;
+    if(busca&&!(norm(c.doc||'')+norm(c.cliente||'')+norm(c.placa||'')+norm(c.oc||'')+norm(c.vendedor||'')).includes(busca))return false;
+    return true;
+  });
+  document.getElementById('tbl-creditos').innerHTML=list.length?list.map(function(c){
+    var quemLancou=(c.editadoPor?c.editadoPor+' <span style="color:#aaa">(edit)</span>':(c.criadoPor||'—'));
+    var stHtml=stBadge(c.status)+(c.cortesia===true||c.cortesia==='TRUE'?' '+cortesiaBadge(true):'');
+    return'<tr><td style="font-weight:600;color:#185FA5">'+(c.oc||'—')+'</td><td style="font-weight:600">'+(c.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+(c.doc||'—')+'</td><td>'+(c.placa||'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+(c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom&&!isNaN(Number(c.nossaCom))?fmtM(c.nossaCom):'—')+'</td><td>'+stHtml+'</td><td>'+fmtD(c.dtVenda)+'</td><td style="font-size:12px;color:#666">'+quemLancou+'</td><td class="tbl-actions"><button onclick="editarCredito('+c.id+')">✏️</button><button onclick="excCred('+c.id+')">🗑</button></td></tr>';
+  }).join(''):'<tr><td colspan="15" class="empty-state">Nenhum crédito</td></tr>';
+}
+function renderRegNFs(){
+  var busca=(document.getElementById('rn-busca').value||'').toLowerCase();
+  var loja=document.getElementById('rn-loja').value;
+  var list=nfs.filter(function(n){if(loja&&norm(n.loja)!==norm(loja))return false;if(busca&&!(norm(n.doc||'')+norm(n.cliente||'')).includes(busca))return false;return true;});
+  document.getElementById('tbl-nfs').innerHTML=list.length?list.map(function(n){
+    var tc=creditos.some(function(c){return normDoc(c.doc)===normDoc(n.doc)&&norm(c.loja)===norm(n.loja);});
+    return'<tr><td style="font-size:12px;color:#666">'+(n.doc||'—')+'</td><td style="font-weight:600">'+(n.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+(n.chassi||'—')+'</td><td>'+n.loja+'</td><td>'+fmtD(n.dtFat)+'</td><td>'+fmtD(n.dtReceb)+'</td><td>'+(nfForaBadge(n)||'<span style="color:#ccc;font-size:12px">—</span>')+'</td><td>'+(tc?'<span class="match-ok"><span class="dot green"></span> Casado</span>':'<span class="match-avulso"><span class="dot amber"></span> Sem crédito</span>')+'</td><td class="tbl-actions"><button onclick="editarNF('+n.id+')">✏️</button><button onclick="excNF('+n.id+')">🗑</button></td></tr>';
+  }).join(''):'<tr><td colspan="9" class="empty-state">Nenhuma NF avulsa</td></tr>';
+}
 function editarCredito(id){
   var c=creditos.find(function(x){return x.id==id;});
   if(!c)return;
@@ -915,11 +1000,12 @@ function editarCredito(id){
   document.getElementById('e-tipo').value=c.tipo||'0km';
   document.getElementById('e-dtvenda').value=c.dtVenda||'';
   document.getElementById('e-status').value=c.status||'ok';
-  document.getElementById('e-motivo').value=c.motivo||'';
   document.getElementById('e-obs').value=c.obs||'';
   document.getElementById('e-valor').value=c.valor||'';
   document.getElementById('e-comissao').value=c.comissao||'';
   document.getElementById('e-honorarios').value=c.honorarios||'';
+  document.getElementById('e-ipva').checked=(c.ipva===true||c.ipva==='TRUE');
+  document.getElementById('e-cortesia').checked=(c.cortesia===true||c.cortesia==='TRUE');
   calcEditCom();
   var eloja=document.getElementById('e-loja');
   eloja.innerHTML='<option>-- selecione --</option>'+lojas.map(function(l){return'<option'+(c.loja===l?' selected':'')+'>'+l+'</option>';}).join('');
@@ -947,12 +1033,13 @@ async function salvarEdicao(){
   c.tipo=document.getElementById('e-tipo').value;
   c.dtVenda=document.getElementById('e-dtvenda').value;
   c.status=document.getElementById('e-status').value;
-  c.motivo=document.getElementById('e-motivo').value;
   c.obs=document.getElementById('e-obs').value;
   c.valor=parseFloat(document.getElementById('e-valor').value)||0;
   c.comissao=parseFloat(document.getElementById('e-comissao').value)||0;
   c.honorarios=hon;
   c.nossaCom=parseFloat((hon*0.10).toFixed(2));
+  c.ipva=document.getElementById('e-ipva').checked;
+  c.cortesia=document.getElementById('e-cortesia').checked;
   c.editadoPor=usuarioLogado?usuarioLogado.nome:'';
   if(SURL){
     try{
@@ -966,16 +1053,62 @@ async function salvarEdicao(){
   alert('✓ Lançamento atualizado!');
 }
 async function excCred(id){if(!confirm('Remover crédito?'))return;try{await api({action:'delete',sheet:'CREDITOS',id:id});}catch(e){alert('Erro: '+e.message);return;}creditos=creditos.filter(function(c){return c.id!=id;});renderRegCreditos();renderPainel();}
+function editarNF(id){
+  var n=nfs.find(function(x){return x.id==id;});
+  if(!n)return;
+  document.getElementById('en-id').value=n.id;
+  document.getElementById('en-doc').value=n.doc||'';
+  document.getElementById('en-cliente').value=n.cliente||'';
+  document.getElementById('en-chassi').value=n.chassi||'';
+  document.getElementById('en-dtfat').value=n.dtFat||'';
+  document.getElementById('en-dtreceb').value=n.dtReceb||'';
+  document.getElementById('en-obs').value=n.obs||'';
+  var isFora=(n.nfFora===true||n.nfFora==='TRUE');
+  document.getElementById('en-nfFora').checked=isFora;
+  document.getElementById('en-motivo-g').style.display=isFora?'block':'none';
+  document.getElementById('en-motivo').value=n.motivoNfFora||'';
+  var enloja=document.getElementById('en-loja');
+  enloja.innerHTML='<option>-- selecione --</option>'+lojas.map(function(l){return'<option'+(n.loja===l?' selected':'')+'>'+l+'</option>';}).join('');
+  document.getElementById('modal-editar-nf').classList.add('open');
+}
+function fecharModalEditarNF(){document.getElementById('modal-editar-nf').classList.remove('open');}
+async function salvarEdicaoNF(){
+  var id=document.getElementById('en-id').value;
+  var n=nfs.find(function(x){return x.id==id;});
+  if(!n){alert('Registro não encontrado.');return;}
+  n.doc=document.getElementById('en-doc').value;
+  n.cliente=document.getElementById('en-cliente').value.trim();
+  n.chassi=document.getElementById('en-chassi').value.trim();
+  n.loja=document.getElementById('en-loja').value;
+  n.dtFat=document.getElementById('en-dtfat').value;
+  n.dtReceb=document.getElementById('en-dtreceb').value;
+  n.obs=document.getElementById('en-obs').value;
+  n.nfFora=document.getElementById('en-nfFora').checked;
+  n.motivoNfFora=n.nfFora?document.getElementById('en-motivo').value.trim():'';
+  n.editadoPor=usuarioLogado?usuarioLogado.nome:'';
+  if(SURL){
+    try{
+      await api({action:'delete',sheet:'NFS',id:id});
+      await api({action:'insert',sheet:'NFS',data:n});
+    }catch(e){alert('Erro ao salvar: '+e.message);return;}
+  }
+  fecharModalEditarNF();
+  renderRegNFs();
+  renderPainel();
+  alert('✓ NF atualizada!');
+}
 async function excNF(id){if(!confirm('Remover NF?'))return;try{await api({action:'delete',sheet:'NFS',id:id});}catch(e){alert('Erro: '+e.message);return;}nfs=nfs.filter(function(n){return n.id!=id;});renderRegNFs();renderPainel();}
 
 function renderRelFiltros(){document.getElementById('rel-loja').innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+l+'</option>';}).join('');document.getElementById('rel-vendedor').innerHTML='<option value="">Todos os vendedores</option>'+vendedores.map(function(v){return'<option>'+v+'</option>';}).join('');}
 var ultimoRelatorioList=[];
 var ultimoRelatorioNome='relatorio';
 function gerarRelatorio(){
-  var loja=document.getElementById('rel-loja').value,vend=document.getElementById('rel-vendedor').value,status=document.getElementById('rel-status').value,di=document.getElementById('rel-dt-ini').value,df=document.getElementById('rel-dt-fim').value,ipvaF=document.getElementById('rel-ipva').value;
-  var list=creditos.filter(function(c){if(loja&&norm(c.loja)!==norm(loja))return false;if(vend&&norm(c.vendedor)!==norm(vend))return false;if(status&&c.status!==status)return false;if(di&&c.dtVenda&&c.dtVenda<di)return false;if(df&&c.dtVenda&&c.dtVenda>df)return false;if(ipvaF==='1'&&!(c.ipva===true||c.ipva==='TRUE'))return false;if(ipvaF==='0'&&(c.ipva===true||c.ipva==='TRUE'))return false;return true;});
+  var loja=document.getElementById('rel-loja').value,vend=document.getElementById('rel-vendedor').value,status=document.getElementById('rel-status').value,di=document.getElementById('rel-dt-ini').value,df=document.getElementById('rel-dt-fim').value,ipvaF=document.getElementById('rel-ipva').value,cortFiltro=document.getElementById('rel-cortesia').value;
+  var list=creditos.filter(function(c){if(loja&&norm(c.loja)!==norm(loja))return false;if(vend&&norm(c.vendedor)!==norm(vend))return false;if(status&&c.status!==status)return false;if(cortFiltro==='1'&&!(c.cortesia===true||c.cortesia==='TRUE'))return false;if(cortFiltro==='0'&&(c.cortesia===true||c.cortesia==='TRUE'))return false;if(di&&c.dtVenda&&c.dtVenda<di)return false;if(df&&c.dtVenda&&c.dtVenda>df)return false;if(ipvaF==='1'&&!(c.ipva===true||c.ipva==='TRUE'))return false;if(ipvaF==='0'&&(c.ipva===true||c.ipva==='TRUE'))return false;return true;});
   ultimoRelatorioList=list;
-  var perd=list.filter(function(c){return c.status==='perdida';});var cort=list.filter(function(c){return c.status==='cortesia';});
+  var cort=list.filter(function(c){return c.cortesia===true||c.cortesia==='TRUE';});
+  var nfsLoja=loja?nfs.filter(function(n){return norm(n.loja)===norm(loja);}):nfs;
+  var perd=nfsLoja.filter(function(n){return n.nfFora===true||n.nfFora==='TRUE';});
   var tH=list.reduce(function(a,c){return a+(Number(c.honorarios)||0);},0),tN=list.reduce(function(a,c){return a+(Number(c.nossaCom)||0);},0),tC=list.reduce(function(a,c){return a+(Number(c.comissao)||0);},0),tV=list.reduce(function(a,c){return a+(Number(c.valor)||0);},0);
   var cIPVA=list.filter(function(c){return c.ipva===true||c.ipva==='TRUE';}).length;
   var cas=list.filter(function(c){return nfs.some(function(n){return normDoc(n.doc)===normDoc(c.doc)&&norm(n.loja)===norm(c.loja);});});
