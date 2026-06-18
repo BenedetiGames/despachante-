@@ -339,7 +339,7 @@ table tr:hover td{background:#fafafa}
       </div>
     </div>
 
-    <!-- CASAMENTO -->
+    <!-- VÍNCULO -->
     <div id="sec-vinculo" class="section">
       <div class="search-bar">
         <div style="position:relative;flex:1;min-width:150px">
@@ -347,12 +347,12 @@ table tr:hover td{background:#fafafa}
           <input type="text" id="vin-busca" placeholder="Buscar CPF/CNPJ, cliente, placa..." oninput="renderVinculo()" style="width:100%;padding-left:30px;border-radius:7px;border:1px solid #ddd;padding-top:7px;padding-bottom:7px;padding-right:10px;font-size:13px">
         </div>
         <select id="vin-loja" onchange="renderVinculo()"><option value="">Todas as lojas</option></select>
-        <select id="vin-filtro" onchange="renderVinculo()"><option value="">Todos</option><option value="casado">Casados</option><option value="sem-nf">Aguardando NF</option><option value="sem-cred">NF sem crédito</option></select>
+        <select id="vin-filtro" onchange="renderVinculo()"><option value="">Todos</option><option value="casado">Vinculados</option><option value="sem-nf">Aguardando NF</option><option value="sem-cred">NF sem crédito</option></select>
         <button class="btn" onclick="carregarDados()">🔄 Atualizar</button>
       </div>
       <div class="leg"><span><span class="dot green" style="display:inline-block"></span> Casado</span><span><span class="dot red" style="display:inline-block"></span> Aguardando NF</span><span><span class="dot amber" style="display:inline-block"></span> NF sem crédito</span></div>
       <div class="card" style="padding:0;overflow-x:auto">
-        <table><thead><tr><th></th><th>OC</th><th>Cliente</th><th>CPF/CNPJ</th><th>Loja</th><th>Vendedor</th><th>Placa</th><th>IPVA</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Status</th><th>Dt. venda</th><th>Dt. NF</th></tr></thead><tbody id="tbl-vinculo"></tbody></table>
+        <table><thead><tr><th></th><th>OC</th><th>Cliente</th><th>CPF/CNPJ</th><th>Loja</th><th>Vendedor</th><th>Placa</th><th>IPVA</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Marcadores</th><th>Dt. venda</th><th>Dt. NF</th></tr></thead><tbody id="tbl-vinculo"></tbody></table>
       </div>
     </div>
 
@@ -405,6 +405,7 @@ table tr:hover td{background:#fafafa}
           <div class="fg"><label>Data final</label><input type="date" id="rel-dt-fim"></div>
           <div class="fg"><label>Motivo NF Fora</label><select id="rel-motivo-nffora"><option value="">Todos</option><option value="revenda">Revenda</option><option value="fora_estado">Fora do Estado</option><option value="poupa_tempo">Poupa-tempo</option><option value="ja_tem_despachante">Já tem despachante</option><option value="diretoria">Diretoria</option><option value="nao_teve_atendimento">Não teve atendimento</option><option value="whatsapp">Whatsapp</option></select></div>
           <div class="fg"><label>Cortesia</label><select id="rel-cortesia"><option value="">Todos</option><option value="1">Só cortesias</option><option value="0">Sem cortesia</option></select></div>
+          <div class="fg"><label>Venda direta</label><select id="rel-vendaDireta"><option value="">Todos</option><option value="1">Só venda direta</option><option value="0">Sem venda direta</option></select></div>
           <div class="fg"><label>IPVA</label><select id="rel-ipva"><option value="">Todos</option><option value="1">Com IPVA</option><option value="0">Sem IPVA</option></select></div>
         </div>
         <button class="btn primary" onclick="gerarRelatorio()">📊 Gerar relatório</button>
@@ -674,7 +675,7 @@ function showTab(t,btn){document.querySelectorAll('.section').forEach(function(s
 function showInner(v){document.getElementById('inner-credito').style.display=v==='credito'?'block':'none';document.getElementById('inner-nf').style.display=v==='nf'?'block':'none';document.getElementById('btn-tab-cred').classList.toggle('active',v==='credito');document.getElementById('btn-tab-nf').classList.toggle('active',v==='nf');}
 function showRegTab(v){document.getElementById('reg-cred-sec').style.display=v==='cred'?'block':'none';document.getElementById('reg-nf-sec').style.display=v==='nf'?'block':'none';document.getElementById('btn-reg-cred').classList.toggle('active',v==='cred');document.getElementById('btn-reg-nf').classList.toggle('active',v==='nf');if(v==='cred')renderRegCreditos();else renderRegNFs();}
 
-function buildCas(){var map={};creditos.forEach(function(c){var k=normDoc(c.doc)+'||'+norm(c.loja);if(!map[k])map[k]={doc:c.doc,cliente:c.cliente,loja:c.loja,creditos:[],nfs:[]};map[k].creditos.push(c);});nfs.forEach(function(n){var k=normDoc(n.doc)+'||'+norm(n.loja);if(!map[k])map[k]={doc:n.doc,cliente:n.cliente,loja:n.loja,creditos:[],nfs:[]};map[k].nfs.push(n);});return Object.values(map);}
+function buildVin(){var map={};creditos.forEach(function(c){var k=normDoc(c.doc)+'||'+norm(c.loja);if(!map[k])map[k]={doc:c.doc,cliente:c.cliente,loja:c.loja,creditos:[],nfs:[]};map[k].creditos.push(c);});nfs.forEach(function(n){var k=normDoc(n.doc)+'||'+norm(n.loja);if(!map[k])map[k]={doc:n.doc,cliente:n.cliente,loja:n.loja,creditos:[],nfs:[]};map[k].nfs.push(n);});return Object.values(map);}
 function casSt(g){if(g.creditos.length>0&&g.nfs.length>0)return'casado';if(g.creditos.length>0)return'sem-nf';return'sem-cred';}
 
 function sugerirCred(){
@@ -942,7 +943,7 @@ function renderPainel(){
     return true;
   });
 
-  // Casamento considerando todos os dados (não só filtrados) para status correto, mas exibindo métricas do período filtrado
+  // Vínculo considerando todos os dados (não só filtrados) para status correto, mas exibindo métricas do período filtrado
   var credAll=creditos.filter(function(c){return!lojaSel||norm(c.loja)===norm(lojaSel);});
   var nfsAll=nfs.filter(function(n){return!lojaSel||norm(n.loja)===norm(lojaSel);});
   var mapAll={};
@@ -999,11 +1000,11 @@ async function classificarPendencia(id,valor){
 function renderVinculo(){
   var sl=document.getElementById('vin-loja');sl.innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+l+'</option>';}).join('');
   var busca=(document.getElementById('vin-busca').value||'').toLowerCase();var loja=document.getElementById('vin-loja').value;var filtro=document.getElementById('vin-filtro').value;
-  var gs=buildCas();
+  var gs=buildVin();
   if(loja)gs=gs.filter(function(g){return norm(g.loja)===norm(loja);});
   if(busca)gs=gs.filter(function(g){var c=g.creditos[0];return norm(g.doc).includes(busca)||norm(g.cliente||'').includes(busca)||(c&&norm(c.placa||'').includes(busca))||(c&&norm(c.oc||'').includes(busca));});
   if(filtro)gs=gs.filter(function(g){return casSt(g)===filtro;});
-  document.getElementById('tbl-vinculo').innerHTML=gs.length?gs.map(function(g){var st=casSt(g);var c=g.creditos[0];var n=g.nfs[0];return'<tr><td>'+dotH(st)+'</td><td style="font-weight:600;color:#185FA5">'+(c&&c.oc?c.oc:'—')+'</td><td style="font-weight:600">'+(g.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+g.doc+'</td><td>'+g.loja+'</td><td>'+(c?c.vendedor:'—')+'</td><td>'+(c&&c.placa?c.placa:'—')+'</td><td>'+(c?ipvaB(c.ipva):'—')+'</td><td>'+(c?fmtM(c.valor):'—')+'</td><td style="color:#854F0B">'+(c&&c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c&&c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c&&c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+(c?stBadge(c.status):'—')+'</td><td>'+(c?fmtD(c.dtVenda):'—')+'</td><td>'+(n?fmtD(n.dtReceb):'—')+'</td></tr>';}).join(''):'<tr><td colspan="15" class="empty-state">Nenhum registro</td></tr>';
+  document.getElementById('tbl-vinculo').innerHTML=gs.length?gs.map(function(g){var st=casSt(g);var c=g.creditos[0];var n=g.nfs[0];var marcadores=[cortesiaBadge(c&&isCortesia(c)),c&&(c.vendaDireta===true||c.vendaDireta==='TRUE')?vendaDiretaBadge(c):''].filter(Boolean).join(' ')||'<span style="color:#ccc;font-size:12px">—</span>';return'<tr><td>'+dotH(st)+'</td><td style="font-weight:600;color:#185FA5">'+(c&&c.oc?c.oc:'—')+'</td><td style="font-weight:600">'+(g.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+g.doc+'</td><td>'+g.loja+'</td><td>'+(c?c.vendedor:'—')+'</td><td>'+(c&&c.placa?c.placa:'—')+'</td><td>'+(c?ipvaB(c.ipva):'—')+'</td><td>'+(c?fmtM(c.valor):'—')+'</td><td style="color:#854F0B">'+(c&&c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c&&c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c&&c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+marcadores+'</td><td>'+(c?fmtD(c.dtVenda):'—')+'</td><td>'+(n?fmtD(n.dtReceb):'—')+'</td></tr>';}).join(''):'<tr><td colspan="15" class="empty-state">Nenhum registro</td></tr>';
 }
 
 function renderRegistros(){['rc-loja','rn-loja'].forEach(function(id){document.getElementById(id).innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+l+'</option>';}).join('');});renderRegCreditos();}
@@ -1163,7 +1164,7 @@ function renderRelFiltros(){document.getElementById('rel-loja').innerHTML='<opti
 var ultimoRelatorioList=[];
 var ultimoRelatorioNome='relatorio';
 function gerarRelatorio(){
-  var loja=document.getElementById('rel-loja').value,vend=document.getElementById('rel-vendedor').value,motivoFora=document.getElementById('rel-motivo-nffora').value,di=document.getElementById('rel-dt-ini').value,df=document.getElementById('rel-dt-fim').value,ipvaF=document.getElementById('rel-ipva').value,cortFiltro=document.getElementById('rel-cortesia').value;
+  var loja=document.getElementById('rel-loja').value,vend=document.getElementById('rel-vendedor').value,motivoFora=document.getElementById('rel-motivo-nffora').value,di=document.getElementById('rel-dt-ini').value,df=document.getElementById('rel-dt-fim').value,ipvaF=document.getElementById('rel-ipva').value,cortFiltro=document.getElementById('rel-cortesia').value,vdFiltro=(document.getElementById('rel-vendaDireta')||{value:''}).value;
   // Mapa de doc+loja -> NF correspondente (para checar motivo NF fora)
   var nfMap={};
   nfs.forEach(function(n){var k=normDoc(n.doc)+'||'+norm(n.loja);if(!nfMap[k])nfMap[k]=n;});
@@ -1172,6 +1173,8 @@ function gerarRelatorio(){
     if(vend&&norm(c.vendedor)!==norm(vend))return false;
     if(cortFiltro==='1'&&!isCortesia(c))return false;
     if(cortFiltro==='0'&&isCortesia(c))return false;
+    if(vdFiltro==='1'&&!(c.vendaDireta===true||c.vendaDireta==='TRUE'))return false;
+    if(vdFiltro==='0'&&(c.vendaDireta===true||c.vendaDireta==='TRUE'))return false;
     if(motivoFora){
       var nfMatch=nfMap[normDoc(c.doc)+'||'+norm(c.loja)];
       if(!nfMatch||nfMatch.motivoNfFora!==motivoFora)return false;
@@ -1193,7 +1196,7 @@ function gerarRelatorio(){
   var per=di&&df?fmtD(di)+' a '+fmtD(df):di?'a partir de '+fmtD(di):df?'até '+fmtD(df):'';
   var titulo=[loja,vend,per].filter(Boolean).join(' · ')||'Geral';
   ultimoRelatorioNome='relatorio_'+norm(titulo).replace(/[^a-z0-9]+/g,'_');
-  document.getElementById('rel-output').innerHTML='<div class="card"><div class="section-title" style="margin-bottom:1rem">Relatório: '+titulo+'</div><div class="metric-grid" style="margin-bottom:1.25rem"><div class="metric"><div class="lbl">Créditos</div><div class="val blue">'+list.length+'</div></div><div class="metric"><div class="lbl">Casados</div><div class="val green">'+cas.length+'</div></div><div class="metric"><div class="lbl">NF perdidas</div><div class="val red">'+perd.length+'</div></div><div class="metric"><div class="lbl">Cortesias</div><div class="val">'+cort.length+'</div></div><div class="metric"><div class="lbl">Com IPVA</div><div class="val blue">'+cIPVA+'</div></div><div class="metric"><div class="lbl">Total vendas</div><div class="val blue">'+fmtM(tV)+'</div></div><div class="metric"><div class="lbl">Com. vendedores</div><div class="val amber">'+fmtM(tC)+'</div></div><div class="metric"><div class="lbl">Total honorários</div><div class="val">'+fmtM(tH)+'</div></div><div class="metric"><div class="lbl">Nossa comissão</div><div class="val green">'+fmtM(tN)+'</div></div></div>'+(Object.keys(pV).length?'<div class="section-title" style="margin-bottom:.5rem">Por vendedor</div><table style="margin-bottom:1rem"><thead><tr><th>Vendedor</th><th>NFs</th><th>Com. vendedor</th><th>Honorários</th><th>Nossa com.</th></tr></thead><tbody>'+Object.entries(pV).sort(function(a,b){return b[1].n-a[1].n;}).map(function(e){return'<tr><td style="font-weight:600">'+e[0]+'</td><td>'+e[1].q+'</td><td style="color:#854F0B">'+fmtM(e[1].c)+'</td><td>'+fmtM(e[1].h)+'</td><td style="color:#0F6E56;font-weight:600">'+fmtM(e[1].n)+'</td></tr>';}).join('')+'</tbody></table>':'')+'<div class="section-title" style="margin-bottom:.5rem">Detalhamento</div><div style="overflow-x:auto"><table><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>OC</th><th>IPVA</th><th>Loja</th><th>Vendedor</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Cortesia</th><th>Data</th><th>Lançado por</th></tr></thead><tbody>'+(list.length?list.map(function(c){var qm=(c.editadoPor?c.editadoPor:(c.criadoPor||'—'));return'<tr><td style="font-size:11px;color:#888">'+(c.doc||'—')+'</td><td>'+c.cliente+'</td><td>'+(c.placa||'—')+'</td><td style="font-size:11px;color:#888">'+(c.oc||'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+(c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+(isCortesia(c)?cortesiaBadge(true):'<span style="color:#ccc;font-size:12px">—</span>')+'</td><td>'+fmtD(c.dtVenda)+'</td><td style="font-size:12px;color:#666">'+qm+'</td></tr>';}).join(''):'<tr><td colspan="14" class="empty-state">Nenhum resultado</td></tr>')+'</tbody></table></div></div>';
+  document.getElementById('rel-output').innerHTML='<div class="card"><div class="section-title" style="margin-bottom:1rem">Relatório: '+titulo+'</div><div class="metric-grid" style="margin-bottom:1.25rem"><div class="metric"><div class="lbl">Créditos</div><div class="val blue">'+list.length+'</div></div><div class="metric"><div class="lbl">Vinculados</div><div class="val green">'+cas.length+'</div></div><div class="metric"><div class="lbl">NF perdidas</div><div class="val red">'+perd.length+'</div></div><div class="metric"><div class="lbl">Cortesias</div><div class="val">'+cort.length+'</div></div><div class="metric"><div class="lbl">Com IPVA</div><div class="val blue">'+cIPVA+'</div></div><div class="metric"><div class="lbl">Total vendas</div><div class="val blue">'+fmtM(tV)+'</div></div><div class="metric"><div class="lbl">Com. vendedores</div><div class="val amber">'+fmtM(tC)+'</div></div><div class="metric"><div class="lbl">Total honorários</div><div class="val">'+fmtM(tH)+'</div></div><div class="metric"><div class="lbl">Nossa comissão</div><div class="val green">'+fmtM(tN)+'</div></div></div>'+(Object.keys(pV).length?'<div class="section-title" style="margin-bottom:.5rem">Por vendedor</div><table style="margin-bottom:1rem"><thead><tr><th>Vendedor</th><th>NFs</th><th>Com. vendedor</th><th>Honorários</th><th>Nossa com.</th></tr></thead><tbody>'+Object.entries(pV).sort(function(a,b){return b[1].n-a[1].n;}).map(function(e){return'<tr><td style="font-weight:600">'+e[0]+'</td><td>'+e[1].q+'</td><td style="color:#854F0B">'+fmtM(e[1].c)+'</td><td>'+fmtM(e[1].h)+'</td><td style="color:#0F6E56;font-weight:600">'+fmtM(e[1].n)+'</td></tr>';}).join('')+'</tbody></table>':'')+'<div class="section-title" style="margin-bottom:.5rem">Detalhamento</div><div style="overflow-x:auto"><table><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>OC</th><th>IPVA</th><th>Loja</th><th>Vendedor</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Cortesia</th><th>Data</th><th>Lançado por</th></tr></thead><tbody>'+(list.length?list.map(function(c){var qm=(c.editadoPor?c.editadoPor:(c.criadoPor||'—'));return'<tr><td style="font-size:11px;color:#888">'+(c.doc||'—')+'</td><td>'+c.cliente+'</td><td>'+(c.placa||'—')+'</td><td style="font-size:11px;color:#888">'+(c.oc||'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+(c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+(isCortesia(c)?cortesiaBadge(true):'<span style="color:#ccc;font-size:12px">—</span>')+'</td><td>'+fmtD(c.dtVenda)+'</td><td style="font-size:12px;color:#666">'+qm+'</td></tr>';}).join(''):'<tr><td colspan="14" class="empty-state">Nenhum resultado</td></tr>')+'</tbody></table></div></div>';
 }
 function exportarUltimoRelatorio(){
   if(!ultimoRelatorioList.length){alert('Gere um relatório primeiro antes de exportar.');return;}
