@@ -247,7 +247,6 @@ table tr:hover td{background:#fafafa}
             <div class="fg"><label>Vendedor</label><select id="c-vendedor"><option>-- selecione --</option></select></div>
             <div class="fg"><label>Tipo de veículo</label><select id="c-tipo" onchange="calcRef()"><option value="0km">0 km</option><option value="semi">Semi-novo</option></select></div>
             <div class="fg"><label>Data da venda</label><input type="date" id="c-dtvenda"></div>
-            <div class="fg"><label>Status</label><select id="c-status"><option value="ok">Normal</option><option value="pendente">Pendente</option><option value="revenda">Revenda</option><option value="diretoria">Diretoria</option><option value="fora_estado">Fora do Estado</option><option value="abaixo">Abaixo do custo</option></select></div>
             <div class="fg"><label>Observações</label><input type="text" id="c-obs"></div>
           </div>
           <div style="margin-bottom:1rem;display:flex;gap:14px;flex-wrap:wrap">
@@ -310,7 +309,19 @@ table tr:hover td{background:#fafafa}
               <span class="ipva-label" id="nfFora-label">NF não ficou fora</span>
             </div>
           </div>
-          <div class="fg" id="n-motivo-g" style="display:none;margin-bottom:1rem;max-width:400px"><label>Motivo da NF fora</label><input type="text" id="n-motivo" placeholder="Ex: sem atendimento, cliente desistiu..."></div>
+          <div class="fg" id="n-motivo-g" style="display:none;margin-bottom:1rem;max-width:400px">
+            <label>Motivo da NF fora</label>
+            <select id="n-motivo">
+              <option value="">-- selecione --</option>
+              <option value="revenda">Revenda</option>
+              <option value="fora_estado">Fora do Estado</option>
+              <option value="poupa_tempo">Poupa-tempo</option>
+              <option value="ja_tem_despachante">Já tem despachante</option>
+              <option value="diretoria">Diretoria</option>
+              <option value="nao_teve_atendimento">Não teve atendimento</option>
+              <option value="whatsapp">Whatsapp</option>
+            </select>
+          </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn success" onclick="salvarNF()">💾 Salvar NF</button>
             <button class="btn" onclick="limparNF()">✕ Limpar</button>
@@ -349,11 +360,10 @@ table tr:hover td{background:#fafafa}
             <input type="text" id="rc-busca" placeholder="Buscar CPF/CNPJ, cliente, placa..." oninput="renderRegCreditos()" style="width:100%;padding-left:30px;border-radius:7px;border:1px solid #ddd;padding-top:7px;padding-bottom:7px;padding-right:10px;font-size:13px">
           </div>
           <select id="rc-loja" onchange="renderRegCreditos()"><option value="">Todas as lojas</option></select>
-          <select id="rc-status" onchange="renderRegCreditos()"><option value="">Todos os status</option><option value="ok">Normal</option><option value="pendente">Pendente</option><option value="abaixo">Abaixo do custo</option><option value="revenda">Revenda</option><option value="diretoria">Diretoria</option><option value="fora_estado">Fora do Estado</option></select>
           <select id="rc-cortesia" onchange="renderRegCreditos()"><option value="">Cortesia: todos</option><option value="1">Só cortesias</option><option value="0">Sem cortesia</option></select>
           <button class="btn" onclick="carregarDados()">🔄 Atualizar</button>
         </div>
-        <div class="card" style="padding:0;overflow-x:auto"><table><thead><tr><th>OC</th><th>Cliente</th><th>CPF/CNPJ</th><th>Placa</th><th>IPVA</th><th>Loja</th><th>Vendedor</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Status</th><th>Data</th><th>Lançado por</th><th></th></tr></thead><tbody id="tbl-creditos"></tbody></table></div>
+        <div class="card" style="padding:0;overflow-x:auto"><table><thead><tr><th>OC</th><th>Cliente</th><th>CPF/CNPJ</th><th>Placa</th><th>IPVA</th><th>Loja</th><th>Vendedor</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Cortesia</th><th>Data</th><th>Lançado por</th><th></th></tr></thead><tbody id="tbl-creditos"></tbody></table></div>
       </div>
       <div id="reg-nf-sec" style="display:none">
         <div class="search-bar">
@@ -376,7 +386,7 @@ table tr:hover td{background:#fafafa}
           <div class="fg"><label>Vendedor</label><select id="rel-vendedor"><option value="">Todos os vendedores</option></select></div>
           <div class="fg"><label>Data inicial</label><input type="date" id="rel-dt-ini"></div>
           <div class="fg"><label>Data final</label><input type="date" id="rel-dt-fim"></div>
-          <div class="fg"><label>Status</label><select id="rel-status"><option value="">Todos os status</option><option value="ok">Normal</option><option value="pendente">Pendente</option><option value="abaixo">Abaixo do custo</option><option value="revenda">Revenda</option><option value="diretoria">Diretoria</option><option value="fora_estado">Fora do Estado</option></select></div>
+          <div class="fg"><label>Motivo NF Fora</label><select id="rel-motivo-nffora"><option value="">Todos</option><option value="revenda">Revenda</option><option value="fora_estado">Fora do Estado</option><option value="poupa_tempo">Poupa-tempo</option><option value="ja_tem_despachante">Já tem despachante</option><option value="diretoria">Diretoria</option><option value="nao_teve_atendimento">Não teve atendimento</option><option value="whatsapp">Whatsapp</option></select></div>
           <div class="fg"><label>Cortesia</label><select id="rel-cortesia"><option value="">Todos</option><option value="1">Só cortesias</option><option value="0">Sem cortesia</option></select></div>
           <div class="fg"><label>IPVA</label><select id="rel-ipva"><option value="">Todos</option><option value="1">Com IPVA</option><option value="0">Sem IPVA</option></select></div>
         </div>
@@ -438,7 +448,6 @@ table tr:hover td{background:#fafafa}
       <div class="fg"><label>Vendedor</label><select id="e-vendedor"><option>-- selecione --</option></select></div>
       <div class="fg"><label>Tipo</label><select id="e-tipo"><option value="0km">0 km</option><option value="semi">Semi-novo</option></select></div>
       <div class="fg"><label>Data da venda</label><input type="date" id="e-dtvenda"></div>
-      <div class="fg"><label>Status</label><select id="e-status"><option value="ok">Normal</option><option value="pendente">Pendente</option><option value="abaixo">Abaixo do custo</option><option value="revenda">Revenda</option><option value="diretoria">Diretoria</option><option value="fora_estado">Fora do Estado</option></select></div>
       <div class="fg"><label>Observações</label><input type="text" id="e-obs"></div>
     </div>
     <div style="display:flex;gap:14px;margin-bottom:1rem;flex-wrap:wrap">
@@ -484,7 +493,19 @@ table tr:hover td{background:#fafafa}
         <input type="checkbox" id="en-nfFora" onchange="document.getElementById('en-motivo-g').style.display=this.checked?'block':'none'" style="accent-color:#1D9E75"> NF ficou fora
       </label>
     </div>
-    <div class="fg" id="en-motivo-g" style="display:none;margin-bottom:1rem;max-width:400px"><label>Motivo da NF fora</label><input type="text" id="en-motivo" placeholder="Ex: sem atendimento, cliente desistiu..."></div>
+    <div class="fg" id="en-motivo-g" style="display:none;margin-bottom:1rem;max-width:400px">
+      <label>Motivo da NF fora</label>
+      <select id="en-motivo">
+        <option value="">-- selecione --</option>
+        <option value="revenda">Revenda</option>
+        <option value="fora_estado">Fora do Estado</option>
+        <option value="poupa_tempo">Poupa-tempo</option>
+        <option value="ja_tem_despachante">Já tem despachante</option>
+        <option value="diretoria">Diretoria</option>
+        <option value="nao_teve_atendimento">Não teve atendimento</option>
+        <option value="whatsapp">Whatsapp</option>
+      </select>
+    </div>
     <div style="display:flex;gap:8px;margin-top:.5rem;flex-wrap:wrap">
       <button class="btn success" onclick="salvarEdicaoNF()">💾 Salvar alterações</button>
       <button class="btn" onclick="fecharModalEditarNF()">Cancelar</button>
@@ -561,6 +582,8 @@ function fmtDoc(fieldId){
 }
 
 function norm(s){if(s===null||s===undefined)return'';return String(s).toLowerCase().trim();}
+function isCortesia(c){return c.cortesia===true||c.cortesia==='TRUE'||c.status==='cortesia';}
+function motivoNfForaLabel(m){var map={revenda:'Revenda',fora_estado:'Fora do Estado',poupa_tempo:'Poupa-tempo',ja_tem_despachante:'Já tem despachante',diretoria:'Diretoria',nao_teve_atendimento:'Não teve atendimento',whatsapp:'Whatsapp'};return map[m]||m||'';}
 function diasDesde(dataStr){if(!dataStr)return 0;var d=new Date(dataStr+'T00:00:00');var hoje=new Date();return Math.floor((hoje-d)/86400000);}
 function isPendenciaAntiga(c){return diasDesde(c.dtVenda)>=60;}
 function getRef(tipo,v){var t=tipo==='0km'?COM_0KM:COM_SEMI;for(var i=t.length-1;i>=0;i--){if(v>=t[i][0])return t[i][1];}return 0;}
@@ -569,7 +592,7 @@ function fmtD(d){if(!d)return'—';if(typeof d==='string'&&d.includes('T')){d=d.
 function getSem(ds){if(!ds)return'';var d=new Date(ds+'T12:00:00');var j=new Date(d.getFullYear(),0,1);return d.getFullYear()+'-S'+String(Math.ceil(((d-j)/86400000+j.getDay()+1)/7)).padStart(2,'0');}
 function stBadge(s){var m={ok:['ok','Normal'],pendente:['pendente','Pendente'],abaixo:['abaixo','Abaixo custo'],revenda:['revenda','Revenda'],diretoria:['diretoria','Diretoria'],fora_estado:['fora_estado','Fora do Estado']};var r=m[s]||['',s||''];return'<span class="badge '+r[0]+'">'+r[1]+'</span>';}
 function cortesiaBadge(c){return c?'<span class="badge cortesia">🎁 Cortesia</span>':'';}
-function nfForaBadge(n){return(n&&(n.nfFora===true||n.nfFora==='TRUE'))?'<span class="badge perdida">NF Fora</span>':'';}
+function nfForaBadge(n){if(!n||!(n.nfFora===true||n.nfFora==='TRUE'))return'';var m=motivoNfForaLabel(n.motivoNfFora);return'<span class="badge perdida">NF Fora'+(m?': '+m:'')+'</span>';}
 function dotH(st){if(st==='casado')return'<span class="dot green"></span>';if(st==='sem-nf')return'<span class="dot red"></span>';return'<span class="dot amber"></span>';}
 function ipvaB(v){return(v===true||v==='TRUE')?'<span class="badge ipva">✓ IPVA</span>':'<span style="color:#ccc;font-size:12px">—</span>';}
 function isAdm(){return usuarioLogado&&String(usuarioLogado.perfil||'').trim().toLowerCase()==='adm';}
@@ -674,10 +697,10 @@ async function salvarCredito(){
   if(doc.length<11){alert('CPF ou CNPJ inválido.');return;}
   if(!cliente||loja==='-- selecione --'||vendedor==='-- selecione --'){alert('Preencha nome, loja e vendedor.');return;}
   var hon=parseFloat(document.getElementById('c-honorarios').value)||0;var dt=document.getElementById('c-dtvenda').value;
-  var rec={id:Date.now(),doc:document.getElementById('c-doc').value,cliente:cliente,placa:document.getElementById('c-placa').value.trim().toUpperCase(),oc:document.getElementById('c-oc').value.trim(),ipva:ipvaAtivo,cortesia:cortesiaAtiva,loja:loja,vendedor:vendedor,tipo:document.getElementById('c-tipo').value,valor:parseFloat(document.getElementById('c-valor').value)||0,comissao:parseFloat(document.getElementById('c-comissao').value)||0,honorarios:hon,nossaCom:parseFloat((hon*NOSSA).toFixed(2)),status:document.getElementById('c-status').value,motivo:'',obs:document.getElementById('c-obs').value,dtVenda:dt,semana:getSem(dt||new Date().toISOString().slice(0,10)),criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:'',classificacaoPendencia:''};
+  var rec={id:Date.now(),doc:document.getElementById('c-doc').value,cliente:cliente,placa:document.getElementById('c-placa').value.trim().toUpperCase(),oc:document.getElementById('c-oc').value.trim(),ipva:ipvaAtivo,cortesia:cortesiaAtiva,loja:loja,vendedor:vendedor,tipo:document.getElementById('c-tipo').value,valor:parseFloat(document.getElementById('c-valor').value)||0,comissao:parseFloat(document.getElementById('c-comissao').value)||0,honorarios:hon,nossaCom:parseFloat((hon*NOSSA).toFixed(2)),status:'ok',motivo:'',obs:document.getElementById('c-obs').value,dtVenda:dt,semana:getSem(dt||new Date().toISOString().slice(0,10)),criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:'',classificacaoPendencia:''};
   try{var r=await api({action:'insert',sheet:'CREDITOS',data:rec});if(r.error)throw new Error(r.error);creditos.unshift(rec);alert('✓ Crédito salvo!');limparCred();renderPainel();}catch(e){alert('Erro: '+e.message);}
 }
-function limparCred(){['c-doc','c-cliente','c-placa','c-oc','c-valor','c-comissao','c-honorarios','c-obs','c-dtvenda'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('c-loja').value='-- selecione --';document.getElementById('c-vendedor').value='-- selecione --';document.getElementById('c-status').value='ok';document.getElementById('box-hon').textContent='R$ —';document.getElementById('box-nossa-com').textContent='R$ —';document.getElementById('c-ref-tabela').textContent='';document.getElementById('c-doc-match').className='doc-match';document.getElementById('c-doc-tipo').innerHTML='';if(ipvaAtivo)toggleIPVA();if(cortesiaAtiva)toggleCortesia();}
+function limparCred(){['c-doc','c-cliente','c-placa','c-oc','c-valor','c-comissao','c-honorarios','c-obs','c-dtvenda'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('c-loja').value='-- selecione --';document.getElementById('c-vendedor').value='-- selecione --';document.getElementById('box-hon').textContent='R$ —';document.getElementById('box-nossa-com').textContent='R$ —';document.getElementById('c-ref-tabela').textContent='';document.getElementById('c-doc-match').className='doc-match';document.getElementById('c-doc-tipo').innerHTML='';if(ipvaAtivo)toggleIPVA();if(cortesiaAtiva)toggleCortesia();}
 
 async function salvarNF(){
   var doc=normDoc(document.getElementById('n-doc').value);
@@ -964,19 +987,17 @@ function renderRegistros(){['rc-loja','rn-loja'].forEach(function(id){document.g
 function renderRegCreditos(){
   var busca=(document.getElementById('rc-busca').value||'').toLowerCase();
   var loja=document.getElementById('rc-loja').value;
-  var status=document.getElementById('rc-status').value;
   var cortFiltro=document.getElementById('rc-cortesia').value;
   var list=creditos.filter(function(c){
     if(loja&&norm(c.loja)!==norm(loja))return false;
-    if(status&&c.status!==status)return false;
-    if(cortFiltro==='1'&&!(c.cortesia===true||c.cortesia==='TRUE'))return false;
-    if(cortFiltro==='0'&&(c.cortesia===true||c.cortesia==='TRUE'))return false;
+    if(cortFiltro==='1'&&!isCortesia(c))return false;
+    if(cortFiltro==='0'&&isCortesia(c))return false;
     if(busca&&!(norm(c.doc||'')+norm(c.cliente||'')+norm(c.placa||'')+norm(c.oc||'')+norm(c.vendedor||'')).includes(busca))return false;
     return true;
   });
   document.getElementById('tbl-creditos').innerHTML=list.length?list.map(function(c){
     var quemLancou=(c.editadoPor?c.editadoPor+' <span style="color:#aaa">(edit)</span>':(c.criadoPor||'—'));
-    var stHtml=stBadge(c.status)+(c.cortesia===true||c.cortesia==='TRUE'?' '+cortesiaBadge(true):'');
+    var stHtml=isCortesia(c)?cortesiaBadge(true):'<span style="color:#ccc;font-size:12px">—</span>';
     return'<tr><td style="font-weight:600;color:#185FA5">'+(c.oc||'—')+'</td><td style="font-weight:600">'+(c.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+(c.doc||'—')+'</td><td>'+(c.placa||'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+(c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom&&!isNaN(Number(c.nossaCom))?fmtM(c.nossaCom):'—')+'</td><td>'+stHtml+'</td><td>'+fmtD(c.dtVenda)+'</td><td style="font-size:12px;color:#666">'+quemLancou+'</td><td class="tbl-actions"><button onclick="editarCredito('+c.id+')">✏️</button><button onclick="excCred('+c.id+')">🗑</button></td></tr>';
   }).join(''):'<tr><td colspan="15" class="empty-state">Nenhum crédito</td></tr>';
 }
@@ -999,13 +1020,12 @@ function editarCredito(id){
   document.getElementById('e-oc').value=c.oc||'';
   document.getElementById('e-tipo').value=c.tipo||'0km';
   document.getElementById('e-dtvenda').value=c.dtVenda||'';
-  document.getElementById('e-status').value=c.status||'ok';
   document.getElementById('e-obs').value=c.obs||'';
   document.getElementById('e-valor').value=c.valor||'';
   document.getElementById('e-comissao').value=c.comissao||'';
   document.getElementById('e-honorarios').value=c.honorarios||'';
   document.getElementById('e-ipva').checked=(c.ipva===true||c.ipva==='TRUE');
-  document.getElementById('e-cortesia').checked=(c.cortesia===true||c.cortesia==='TRUE');
+  document.getElementById('e-cortesia').checked=isCortesia(c);
   calcEditCom();
   var eloja=document.getElementById('e-loja');
   eloja.innerHTML='<option>-- selecione --</option>'+lojas.map(function(l){return'<option'+(c.loja===l?' selected':'')+'>'+l+'</option>';}).join('');
@@ -1032,7 +1052,6 @@ async function salvarEdicao(){
   c.vendedor=document.getElementById('e-vendedor').value;
   c.tipo=document.getElementById('e-tipo').value;
   c.dtVenda=document.getElementById('e-dtvenda').value;
-  c.status=document.getElementById('e-status').value;
   c.obs=document.getElementById('e-obs').value;
   c.valor=parseFloat(document.getElementById('e-valor').value)||0;
   c.comissao=parseFloat(document.getElementById('e-comissao').value)||0;
@@ -1103,10 +1122,27 @@ function renderRelFiltros(){document.getElementById('rel-loja').innerHTML='<opti
 var ultimoRelatorioList=[];
 var ultimoRelatorioNome='relatorio';
 function gerarRelatorio(){
-  var loja=document.getElementById('rel-loja').value,vend=document.getElementById('rel-vendedor').value,status=document.getElementById('rel-status').value,di=document.getElementById('rel-dt-ini').value,df=document.getElementById('rel-dt-fim').value,ipvaF=document.getElementById('rel-ipva').value,cortFiltro=document.getElementById('rel-cortesia').value;
-  var list=creditos.filter(function(c){if(loja&&norm(c.loja)!==norm(loja))return false;if(vend&&norm(c.vendedor)!==norm(vend))return false;if(status&&c.status!==status)return false;if(cortFiltro==='1'&&!(c.cortesia===true||c.cortesia==='TRUE'))return false;if(cortFiltro==='0'&&(c.cortesia===true||c.cortesia==='TRUE'))return false;if(di&&c.dtVenda&&c.dtVenda<di)return false;if(df&&c.dtVenda&&c.dtVenda>df)return false;if(ipvaF==='1'&&!(c.ipva===true||c.ipva==='TRUE'))return false;if(ipvaF==='0'&&(c.ipva===true||c.ipva==='TRUE'))return false;return true;});
+  var loja=document.getElementById('rel-loja').value,vend=document.getElementById('rel-vendedor').value,motivoFora=document.getElementById('rel-motivo-nffora').value,di=document.getElementById('rel-dt-ini').value,df=document.getElementById('rel-dt-fim').value,ipvaF=document.getElementById('rel-ipva').value,cortFiltro=document.getElementById('rel-cortesia').value;
+  // Mapa de doc+loja -> NF correspondente (para checar motivo NF fora)
+  var nfMap={};
+  nfs.forEach(function(n){var k=normDoc(n.doc)+'||'+norm(n.loja);if(!nfMap[k])nfMap[k]=n;});
+  var list=creditos.filter(function(c){
+    if(loja&&norm(c.loja)!==norm(loja))return false;
+    if(vend&&norm(c.vendedor)!==norm(vend))return false;
+    if(cortFiltro==='1'&&!isCortesia(c))return false;
+    if(cortFiltro==='0'&&isCortesia(c))return false;
+    if(motivoFora){
+      var nfMatch=nfMap[normDoc(c.doc)+'||'+norm(c.loja)];
+      if(!nfMatch||nfMatch.motivoNfFora!==motivoFora)return false;
+    }
+    if(di&&c.dtVenda&&c.dtVenda<di)return false;
+    if(df&&c.dtVenda&&c.dtVenda>df)return false;
+    if(ipvaF==='1'&&!(c.ipva===true||c.ipva==='TRUE'))return false;
+    if(ipvaF==='0'&&(c.ipva===true||c.ipva==='TRUE'))return false;
+    return true;
+  });
   ultimoRelatorioList=list;
-  var cort=list.filter(function(c){return c.cortesia===true||c.cortesia==='TRUE';});
+  var cort=list.filter(function(c){return isCortesia(c);});
   var nfsLoja=loja?nfs.filter(function(n){return norm(n.loja)===norm(loja);}):nfs;
   var perd=nfsLoja.filter(function(n){return n.nfFora===true||n.nfFora==='TRUE';});
   var tH=list.reduce(function(a,c){return a+(Number(c.honorarios)||0);},0),tN=list.reduce(function(a,c){return a+(Number(c.nossaCom)||0);},0),tC=list.reduce(function(a,c){return a+(Number(c.comissao)||0);},0),tV=list.reduce(function(a,c){return a+(Number(c.valor)||0);},0);
@@ -1116,7 +1152,7 @@ function gerarRelatorio(){
   var per=di&&df?fmtD(di)+' a '+fmtD(df):di?'a partir de '+fmtD(di):df?'até '+fmtD(df):'';
   var titulo=[loja,vend,per].filter(Boolean).join(' · ')||'Geral';
   ultimoRelatorioNome='relatorio_'+norm(titulo).replace(/[^a-z0-9]+/g,'_');
-  document.getElementById('rel-output').innerHTML='<div class="card"><div class="section-title" style="margin-bottom:1rem">Relatório: '+titulo+'</div><div class="metric-grid" style="margin-bottom:1.25rem"><div class="metric"><div class="lbl">Créditos</div><div class="val blue">'+list.length+'</div></div><div class="metric"><div class="lbl">Casados</div><div class="val green">'+cas.length+'</div></div><div class="metric"><div class="lbl">NF perdidas</div><div class="val red">'+perd.length+'</div></div><div class="metric"><div class="lbl">Cortesias</div><div class="val">'+cort.length+'</div></div><div class="metric"><div class="lbl">Com IPVA</div><div class="val blue">'+cIPVA+'</div></div><div class="metric"><div class="lbl">Total vendas</div><div class="val blue">'+fmtM(tV)+'</div></div><div class="metric"><div class="lbl">Com. vendedores</div><div class="val amber">'+fmtM(tC)+'</div></div><div class="metric"><div class="lbl">Total honorários</div><div class="val">'+fmtM(tH)+'</div></div><div class="metric"><div class="lbl">Nossa comissão</div><div class="val green">'+fmtM(tN)+'</div></div></div>'+(Object.keys(pV).length?'<div class="section-title" style="margin-bottom:.5rem">Por vendedor</div><table style="margin-bottom:1rem"><thead><tr><th>Vendedor</th><th>NFs</th><th>Com. vendedor</th><th>Honorários</th><th>Nossa com.</th></tr></thead><tbody>'+Object.entries(pV).sort(function(a,b){return b[1].n-a[1].n;}).map(function(e){return'<tr><td style="font-weight:600">'+e[0]+'</td><td>'+e[1].q+'</td><td style="color:#854F0B">'+fmtM(e[1].c)+'</td><td>'+fmtM(e[1].h)+'</td><td style="color:#0F6E56;font-weight:600">'+fmtM(e[1].n)+'</td></tr>';}).join('')+'</tbody></table>':'')+'<div class="section-title" style="margin-bottom:.5rem">Detalhamento</div><div style="overflow-x:auto"><table><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>OC</th><th>IPVA</th><th>Loja</th><th>Vendedor</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Status</th><th>Data</th><th>Lançado por</th></tr></thead><tbody>'+(list.length?list.map(function(c){var qm=(c.editadoPor?c.editadoPor:(c.criadoPor||'—'));return'<tr><td style="font-size:11px;color:#888">'+(c.doc||'—')+'</td><td>'+c.cliente+'</td><td>'+(c.placa||'—')+'</td><td style="font-size:11px;color:#888">'+(c.oc||'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+(c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+stBadge(c.status)+'</td><td>'+fmtD(c.dtVenda)+'</td><td style="font-size:12px;color:#666">'+qm+'</td></tr>';}).join(''):'<tr><td colspan="14" class="empty-state">Nenhum resultado</td></tr>')+'</tbody></table></div></div>';
+  document.getElementById('rel-output').innerHTML='<div class="card"><div class="section-title" style="margin-bottom:1rem">Relatório: '+titulo+'</div><div class="metric-grid" style="margin-bottom:1.25rem"><div class="metric"><div class="lbl">Créditos</div><div class="val blue">'+list.length+'</div></div><div class="metric"><div class="lbl">Casados</div><div class="val green">'+cas.length+'</div></div><div class="metric"><div class="lbl">NF perdidas</div><div class="val red">'+perd.length+'</div></div><div class="metric"><div class="lbl">Cortesias</div><div class="val">'+cort.length+'</div></div><div class="metric"><div class="lbl">Com IPVA</div><div class="val blue">'+cIPVA+'</div></div><div class="metric"><div class="lbl">Total vendas</div><div class="val blue">'+fmtM(tV)+'</div></div><div class="metric"><div class="lbl">Com. vendedores</div><div class="val amber">'+fmtM(tC)+'</div></div><div class="metric"><div class="lbl">Total honorários</div><div class="val">'+fmtM(tH)+'</div></div><div class="metric"><div class="lbl">Nossa comissão</div><div class="val green">'+fmtM(tN)+'</div></div></div>'+(Object.keys(pV).length?'<div class="section-title" style="margin-bottom:.5rem">Por vendedor</div><table style="margin-bottom:1rem"><thead><tr><th>Vendedor</th><th>NFs</th><th>Com. vendedor</th><th>Honorários</th><th>Nossa com.</th></tr></thead><tbody>'+Object.entries(pV).sort(function(a,b){return b[1].n-a[1].n;}).map(function(e){return'<tr><td style="font-weight:600">'+e[0]+'</td><td>'+e[1].q+'</td><td style="color:#854F0B">'+fmtM(e[1].c)+'</td><td>'+fmtM(e[1].h)+'</td><td style="color:#0F6E56;font-weight:600">'+fmtM(e[1].n)+'</td></tr>';}).join('')+'</tbody></table>':'')+'<div class="section-title" style="margin-bottom:.5rem">Detalhamento</div><div style="overflow-x:auto"><table><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>OC</th><th>IPVA</th><th>Loja</th><th>Vendedor</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Cortesia</th><th>Data</th><th>Lançado por</th></tr></thead><tbody>'+(list.length?list.map(function(c){var qm=(c.editadoPor?c.editadoPor:(c.criadoPor||'—'));return'<tr><td style="font-size:11px;color:#888">'+(c.doc||'—')+'</td><td>'+c.cliente+'</td><td>'+(c.placa||'—')+'</td><td style="font-size:11px;color:#888">'+(c.oc||'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+(c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+(isCortesia(c)?cortesiaBadge(true):'<span style="color:#ccc;font-size:12px">—</span>')+'</td><td>'+fmtD(c.dtVenda)+'</td><td style="font-size:12px;color:#666">'+qm+'</td></tr>';}).join(''):'<tr><td colspan="14" class="empty-state">Nenhum resultado</td></tr>')+'</tbody></table></div></div>';
 }
 function exportarUltimoRelatorio(){
   if(!ultimoRelatorioList.length){alert('Gere um relatório primeiro antes de exportar.');return;}
