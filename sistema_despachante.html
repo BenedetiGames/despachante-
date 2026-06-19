@@ -267,6 +267,12 @@ table tr:hover td{background:#fafafa}
         <div class="leg"><span><span class="dot green" style="display:inline-block"></span> Vinculado</span><span><span class="dot red" style="display:inline-block"></span> Aguardando NF</span><span><span class="dot amber" style="display:inline-block"></span> NF sem crédito</span><span><span class="dot" style="background:#aaa;display:inline-block"></span> Semi-novo</span></div>
         <div style="overflow-x:auto"><table><thead><tr><th>OC</th><th>Cliente</th><th>CPF/CNPJ</th><th>Loja</th><th>Vendedor</th><th>Placa</th><th>Valor</th><th>Status</th></tr></thead><tbody id="tbl-painel-pend"></tbody></table></div>
       </div>
+
+      <div class="card">
+        <div class="section-title">Pendências de documentação</div>
+        <div style="font-size:12px;color:#888;margin-bottom:10px">NFs enviadas para documentação que ainda não voltaram</div>
+        <div style="overflow-x:auto"><table><thead><tr><th>Cliente</th><th>Chassi</th><th>Loja</th><th>Vendedor</th><th>Dt. envio</th><th>Dias em aberto</th></tr></thead><tbody id="tbl-painel-pend-doc"></tbody></table></div>
+      </div>
     </div>
 
     <!-- LANÇAMENTO -->
@@ -549,7 +555,7 @@ table tr:hover td{background:#fafafa}
       <div class="fg"><label>CPF ou CNPJ</label><input type="text" id="en-doc" oninput="fmtDoc('en-doc')" maxlength="18"></div>
       <div class="fg"><label>Nome do cliente</label><input type="text" id="en-cliente"></div>
       <div class="fg"><label>Chassi</label><input type="text" id="en-chassi"></div>
-      <div class="fg"><label>Loja</label><select id="en-loja"><option>-- selecione --</option></select></div>
+      <div class="fg"><label>Loja</label><select id="en-loja" onchange="checarOcVinculada()"><option>-- selecione --</option></select></div>
       <div class="fg"><label>Vendedor</label><select id="en-vendedor"><option>-- selecione --</option></select></div>
       <div class="fg"><label>Data faturamento NF</label><input type="date" id="en-dtfat"></div>
       <div class="fg"><label>Data recebimento NF</label><input type="date" id="en-dtreceb"></div>
@@ -572,6 +578,23 @@ table tr:hover td{background:#fafafa}
         <option value="nao_teve_atendimento">Não teve atendimento</option>
         <option value="whatsapp">Whatsapp</option>
       </select>
+    </div>
+    <hr class="sep">
+    <div style="font-size:13px;font-weight:600;margin-bottom:.5rem;color:#555">Vínculo manual (opcional)</div>
+    <div class="fg" style="margin-bottom:.5rem;max-width:300px">
+      <label>OC do crédito a vincular</label>
+      <input type="text" id="en-ocVinculada" placeholder="Ex: 104.731" oninput="checarOcVinculada()">
+    </div>
+    <div id="en-oc-match" class="doc-match" style="margin-bottom:1rem"></div>
+    <hr class="sep">
+    <div style="font-size:13px;font-weight:600;margin-bottom:.5rem;color:#555">Documentação</div>
+    <div style="display:flex;gap:10px;margin-bottom:1rem;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#f5f5f3;padding:7px 12px;border-radius:8px;border:1px solid #e5e5e5">
+        <input type="checkbox" id="en-enviadoDoc" style="accent-color:#1D9E75"> Enviado p/ documentação
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#f5f5f3;padding:7px 12px;border-radius:8px;border:1px solid #e5e5e5">
+        <input type="checkbox" id="en-docPronto" style="accent-color:#1D9E75"> Documento pronto
+      </label>
     </div>
     <div style="display:flex;gap:8px;margin-top:.5rem;flex-wrap:wrap">
       <button class="btn success" onclick="salvarEdicaoNF()">💾 Salvar alterações</button>
@@ -747,7 +770,15 @@ function showTab(t,btn){document.querySelectorAll('.section').forEach(function(s
 function showInner(v){document.getElementById('inner-credito').style.display=v==='credito'?'block':'none';document.getElementById('inner-nf').style.display=v==='nf'?'block':'none';document.getElementById('btn-tab-cred').classList.toggle('active',v==='credito');document.getElementById('btn-tab-nf').classList.toggle('active',v==='nf');}
 function showRegTab(v){document.getElementById('reg-cred-sec').style.display=v==='cred'?'block':'none';document.getElementById('reg-nf-sec').style.display=v==='nf'?'block':'none';document.getElementById('btn-reg-cred').classList.toggle('active',v==='cred');document.getElementById('btn-reg-nf').classList.toggle('active',v==='nf');if(v==='cred')renderRegCreditos();else renderRegNFs();}
 
-function buildVin(){var map={};creditos.forEach(function(c){var k=normDoc(c.doc)+'||'+norm(c.loja);if(!map[k])map[k]={doc:c.doc,cliente:c.cliente,loja:c.loja,creditos:[],nfs:[]};map[k].creditos.push(c);});nfs.forEach(function(n){var k=normDoc(n.doc)+'||'+norm(n.loja);if(!map[k])map[k]={doc:n.doc,cliente:n.cliente,loja:n.loja,creditos:[],nfs:[]};map[k].nfs.push(n);});return Object.values(map);}
+function docEfetivoNF(n){
+  // Se a NF tem vínculo forçado por OC, usa o doc do crédito daquela OC (sem alterar o dado real da NF)
+  if(n.ocVinculada){
+    var cred=creditos.find(function(c){return norm(c.oc)===norm(n.ocVinculada)&&norm(c.loja)===norm(n.loja);});
+    if(cred)return cred.doc;
+  }
+  return n.doc;
+}
+function buildVin(){var map={};creditos.forEach(function(c){var k=normDoc(c.doc)+'||'+norm(c.loja);if(!map[k])map[k]={doc:c.doc,cliente:c.cliente,loja:c.loja,creditos:[],nfs:[]};map[k].creditos.push(c);});nfs.forEach(function(n){var k=normDoc(docEfetivoNF(n))+'||'+norm(n.loja);if(!map[k])map[k]={doc:n.doc,cliente:n.cliente,loja:n.loja,creditos:[],nfs:[]};map[k].nfs.push(n);});return Object.values(map);}
 function casSt(g){
   if(g.creditos.length>0&&g.nfs.length>0)return'casado';
   // Semi-novos não precisam de NF — tratar como "ok" (não pendente)
@@ -781,6 +812,20 @@ function sugerirNF(){
   }else{
     hint.className='doc-match notfound';
     hint.textContent='⚠️ Nenhum crédito encontrado para este documento. Pode preencher o nome manualmente.';
+  }
+}
+function checarOcVinculada(){
+  var oc=(document.getElementById('en-ocVinculada').value||'').trim();
+  var hint=document.getElementById('en-oc-match');
+  var loja=document.getElementById('en-loja').value;
+  if(!oc){hint.className='doc-match';hint.textContent='';return;}
+  var cred=creditos.find(function(c){return norm(c.oc)===norm(oc)&&norm(c.loja)===norm(loja);});
+  if(cred){
+    hint.className='doc-match found';
+    hint.textContent='✓ Crédito encontrado — '+cred.cliente+', '+fmtM(cred.valor)+'. Será vinculado ao salvar, mesmo que o CPF não bata.';
+  }else{
+    hint.className='doc-match notfound';
+    hint.textContent='⚠️ Nenhum crédito com essa OC nessa loja. Confira o número e a loja selecionada.';
   }
 }
 
@@ -1072,6 +1117,7 @@ function renderPainel(){
   renderPorLoja();
   renderNfForaMotivos();
   renderCortesiasEspeciais();
+  renderPendDocumentacao();
 }
 
 // ── RANKING DE VENDEDORES ──────────────────────────────────────────
@@ -1259,6 +1305,25 @@ function renderCortesiasEspeciais(){
   el.innerHTML=html;
 }
 
+// ── PENDÊNCIAS DE DOCUMENTAÇÃO ───────────────────────────────────────
+function renderPendDocumentacao(){
+  var tbl=document.getElementById('tbl-painel-pend-doc');
+  if(!tbl)return;
+  var minhas=lojasDoUsuario().map(function(l){return norm(l);});
+  var pend=nfs.filter(function(n){
+    var enviado=(n.enviadoDocumentacao===true||n.enviadoDocumentacao==='TRUE');
+    var pronto=(n.documentoPronto===true||n.documentoPronto==='TRUE');
+    if(!enviado||pronto)return false;
+    if(minhas.indexOf(norm(n.loja))<0)return false;
+    return true;
+  }).sort(function(a,b){return diasDesde(b.dtEnvioDoc)-diasDesde(a.dtEnvioDoc);});
+  tbl.innerHTML=pend.length?pend.map(function(n){
+    var dias=diasDesde(n.dtEnvioDoc);
+    var corDias=dias>=7?'#993C1D':(dias>=3?'#854F0B':'#666');
+    return'<tr><td style="font-weight:600">'+(n.cliente||'—')+'</td><td>'+(n.chassi||'—')+'</td><td>'+n.loja+'</td><td>'+(n.vendedor||'—')+'</td><td>'+fmtD(n.dtEnvioDoc)+'</td><td style="color:'+corDias+';font-weight:600">'+dias+' dia'+(dias!==1?'s':'')+'</td></tr>';
+  }).join(''):'<tr><td colspan="6" class="empty-state">Nenhuma pendência de documentação 🎉</td></tr>';
+}
+
 async function classificarPendencia(id,valor){
   var c=creditos.find(function(x){return String(x.id)===String(id);});
   if(!c)return;
@@ -1314,7 +1379,7 @@ function renderRegNFs(){
     return true;
   });
   document.getElementById('tbl-nfs').innerHTML=list.length?list.map(function(n){
-    var tc=creditos.some(function(c){return normDoc(c.doc)===normDoc(n.doc)&&norm(c.loja)===norm(n.loja);});
+    var tc=creditos.some(function(c){return normDoc(c.doc)===normDoc(docEfetivoNF(n))&&norm(c.loja)===norm(n.loja);});
     return'<tr><td style="font-size:12px;color:#666">'+(n.doc||'—')+'</td><td style="font-weight:600">'+(n.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+(n.chassi||'—')+'</td><td>'+n.loja+'</td><td>'+(n.vendedor||'—')+'</td><td>'+fmtD(n.dtFat)+'</td><td>'+fmtD(n.dtReceb)+'</td><td>'+(nfForaBadge(n)||'<span style="color:#ccc;font-size:12px">—</span>')+'</td><td>'+(tc?'<span class="match-ok"><span class="dot green"></span> Casado</span>':'<span class="match-avulso"><span class="dot amber"></span> Sem crédito</span>')+'</td><td class="tbl-actions"><button onclick="editarNF('+n.id+')">✏️</button><button onclick="excNF('+n.id+')">🗑</button></td></tr>';
   }).join(''):'<tr><td colspan="10" class="empty-state">Nenhuma NF avulsa</td></tr>';
 }
@@ -1400,6 +1465,10 @@ function editarNF(id){
   document.getElementById('en-nfFora').checked=isFora;
   document.getElementById('en-motivo-g').style.display=isFora?'block':'none';
   document.getElementById('en-motivo').value=n.motivoNfFora||'';
+  document.getElementById('en-enviadoDoc').checked=(n.enviadoDocumentacao===true||n.enviadoDocumentacao==='TRUE');
+  document.getElementById('en-docPronto').checked=(n.documentoPronto===true||n.documentoPronto==='TRUE');
+  document.getElementById('en-ocVinculada').value=n.ocVinculada||'';
+  checarOcVinculada();
   var enloja=document.getElementById('en-loja');
   enloja.innerHTML='<option>-- selecione --</option>'+lojas.map(function(l){return'<option'+(n.loja===l?' selected':'')+'>'+l+'</option>';}).join('');
   var envend=document.getElementById('en-vendedor');
@@ -1462,7 +1531,7 @@ function renderDashVendedor(){
   var vd=list.filter(function(c){return c.vendaDireta===true||c.vendaDireta==='TRUE';}).length;
   var ipvaCnt=list.filter(function(c){return c.ipva===true||c.ipva==='TRUE';}).length;
   var nfFora=nfsVend.filter(function(n){return n.nfFora===true||n.nfFora==='TRUE';}).length;
-  var vinc=list.filter(function(c){return nfs.some(function(n){return normDoc(n.doc)===normDoc(c.doc)&&norm(n.loja)===norm(c.loja);});}).length;
+  var vinc=list.filter(function(c){return nfs.some(function(n){return normDoc(docEfetivoNF(n))===normDoc(c.doc)&&norm(n.loja)===norm(c.loja);});}).length;
   document.getElementById('dash-vend-metricas').innerHTML=
     '<div class="metric"><div class="lbl">Créditos</div><div class="val blue">'+list.length+'</div></div>'+
     '<div class="metric"><div class="lbl">NFs vinculadas</div><div class="val green">'+vinc+'</div></div>'+
@@ -1497,6 +1566,17 @@ async function salvarEdicaoNF(){
   n.obs=document.getElementById('en-obs').value;
   n.nfFora=document.getElementById('en-nfFora').checked;
   n.motivoNfFora=n.nfFora?document.getElementById('en-motivo').value.trim():'';
+  var hoje=new Date().toISOString().slice(0,10);
+  var enviadoMarcado=document.getElementById('en-enviadoDoc').checked;
+  var prontoMarcado=document.getElementById('en-docPronto').checked;
+  // Só grava a data na primeira vez que marca (não sobrescreve se já tinha data e continua marcado)
+  if(enviadoMarcado&&!n.dtEnvioDoc)n.dtEnvioDoc=hoje;
+  if(!enviadoMarcado)n.dtEnvioDoc='';
+  if(prontoMarcado&&!n.dtDocPronto)n.dtDocPronto=hoje;
+  if(!prontoMarcado)n.dtDocPronto='';
+  n.enviadoDocumentacao=enviadoMarcado;
+  n.documentoPronto=prontoMarcado;
+  n.ocVinculada=(document.getElementById('en-ocVinculada').value||'').trim();
   n.editadoPor=usuarioLogado?usuarioLogado.nome:'';
   if(SURL){
     try{
@@ -1518,7 +1598,7 @@ function gerarRelatorio(){
   var loja=document.getElementById('rel-loja').value,vend=document.getElementById('rel-vendedor').value,motivoFora=document.getElementById('rel-motivo-nffora').value,di=document.getElementById('rel-dt-ini').value,df=document.getElementById('rel-dt-fim').value,ipvaF=document.getElementById('rel-ipva').value,cortFiltro=document.getElementById('rel-cortesia').value,vdFiltro=(document.getElementById('rel-vendaDireta')||{value:''}).value;
   // Mapa de doc+loja -> NF correspondente (para checar motivo NF fora)
   var nfMap={};
-  nfs.forEach(function(n){var k=normDoc(n.doc)+'||'+norm(n.loja);if(!nfMap[k])nfMap[k]=n;});
+  nfs.forEach(function(n){var k=normDoc(docEfetivoNF(n))+'||'+norm(n.loja);if(!nfMap[k])nfMap[k]=n;});
   var list=creditos.filter(function(c){
     if(loja&&norm(c.loja)!==norm(loja))return false;
     if(vend&&norm(c.vendedor)!==norm(vend))return false;
@@ -1542,7 +1622,7 @@ function gerarRelatorio(){
   var perd=nfsLoja.filter(function(n){return n.nfFora===true||n.nfFora==='TRUE';});
   var tH=list.reduce(function(a,c){return a+(Number(c.honorarios)||0);},0),tN=list.reduce(function(a,c){return a+(Number(c.nossaCom)||0);},0),tC=list.reduce(function(a,c){return a+(Number(c.comissao)||0);},0),tV=list.reduce(function(a,c){return a+(Number(c.valor)||0);},0);
   var cIPVA=list.filter(function(c){return c.ipva===true||c.ipva==='TRUE';}).length;
-  var cas=list.filter(function(c){return nfs.some(function(n){return normDoc(n.doc)===normDoc(c.doc)&&norm(n.loja)===norm(c.loja);});});
+  var cas=list.filter(function(c){return nfs.some(function(n){return normDoc(docEfetivoNF(n))===normDoc(c.doc)&&norm(n.loja)===norm(c.loja);});});
   var pV={};list.forEach(function(c){if(!pV[c.vendedor])pV[c.vendedor]={q:0,c:0,h:0,n:0};pV[c.vendedor].q++;pV[c.vendedor].c+=Number(c.comissao)||0;pV[c.vendedor].h+=Number(c.honorarios)||0;pV[c.vendedor].n+=Number(c.nossaCom)||0;});
   var per=di&&df?fmtD(di)+' a '+fmtD(df):di?'a partir de '+fmtD(di):df?'até '+fmtD(df):'';
   var titulo=[loja,vend,per].filter(Boolean).join(' · ')||'Geral';
