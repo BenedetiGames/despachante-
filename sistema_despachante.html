@@ -234,7 +234,7 @@ table tr:hover td{background:#fafafa}
       <div class="card">
         <div class="section-title">Pendências de documentação</div>
         <div style="font-size:12px;color:#888;margin-bottom:10px">NFs enviadas para documentação que ainda não voltaram</div>
-        <div style="overflow-x:auto"><table><thead><tr><th>Cliente</th><th>Chassi</th><th>Loja</th><th>Vendedor</th><th>Dt. envio</th><th>Dias em aberto</th><th></th></tr></thead><tbody id="tbl-painel-pend-doc"></tbody></table></div>
+        <div style="overflow-x:auto"><table><thead><tr><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Dt. envio</th><th>Dias em aberto</th><th></th></tr></thead><tbody id="tbl-painel-pend-doc"></tbody></table></div>
       </div>
 
       <div class="bi-grid-3">
@@ -457,7 +457,7 @@ table tr:hover td{background:#fafafa}
           <span style="font-size:12px;color:#888;align-self:center">até:</span>
           <input type="date" id="rd-dtlanc-fim" onchange="renderRegDocPronto()" style="border-radius:7px;border:1px solid #ddd;padding:7px 8px;font-size:13px">
         </div>
-        <div class="card" style="padding:0;overflow-x:auto"><table><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Chassi</th><th>Loja</th><th>Vendedor</th><th>Dt. envio</th><th>Dt. doc pronto</th><th></th></tr></thead><tbody id="tbl-doc-pronto"></tbody></table></div>
+        <div class="card" style="padding:0;overflow-x:auto"><table><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Dt. envio</th><th>Dt. doc pronto</th><th></th></tr></thead><tbody id="tbl-doc-pronto"></tbody></table></div>
       </div>
     </div>
 
@@ -802,6 +802,13 @@ function lojaEfetivaNF(n){
   }
   return n.loja;
 }
+function placaDaNF(n){
+  // Placa não existe na NF - busca no crédito vinculado (por OC forçada ou por doc+loja)
+  var cred=null;
+  if(n.ocVinculada)cred=creditos.find(function(c){return norm(c.oc)===norm(n.ocVinculada);});
+  if(!cred)cred=creditos.find(function(c){return normDoc(c.doc)===normDoc(n.doc)&&norm(c.loja)===norm(n.loja);});
+  return cred&&cred.placa?cred.placa:'';
+}
 function buildVin(){var map={};creditos.forEach(function(c){var k=normDoc(c.doc)+'||'+norm(c.loja);if(!map[k])map[k]={doc:c.doc,cliente:c.cliente,loja:c.loja,creditos:[],nfs:[]};map[k].creditos.push(c);});nfs.forEach(function(n){var k=normDoc(docEfetivoNF(n))+'||'+norm(lojaEfetivaNF(n));if(!map[k])map[k]={doc:n.doc,cliente:n.cliente,loja:n.loja,creditos:[],nfs:[]};map[k].nfs.push(n);});return Object.values(map);}
 function casSt(g){
   if(g.creditos.length>0&&g.nfs.length>0)return'casado';
@@ -841,15 +848,14 @@ function sugerirNF(){
 function checarOcVinculada(){
   var oc=(document.getElementById('en-ocVinculada').value||'').trim();
   var hint=document.getElementById('en-oc-match');
-  var loja=document.getElementById('en-loja').value;
   if(!oc){hint.className='doc-match';hint.textContent='';return;}
-  var cred=creditos.find(function(c){return norm(c.oc)===norm(oc)&&norm(c.loja)===norm(loja);});
+  var cred=creditos.find(function(c){return norm(c.oc)===norm(oc);});
   if(cred){
     hint.className='doc-match found';
-    hint.textContent='✓ Crédito encontrado — '+cred.cliente+', '+fmtM(cred.valor)+'. Será vinculado ao salvar, mesmo que o CPF não bata.';
+    hint.textContent='✓ Crédito encontrado — '+cred.cliente+', '+cred.loja+', '+fmtM(cred.valor)+'. Será vinculado ao salvar, mesmo que o CPF ou a loja não batam.';
   }else{
     hint.className='doc-match notfound';
-    hint.textContent='⚠️ Nenhum crédito com essa OC nessa loja. Confira o número e a loja selecionada.';
+    hint.textContent='⚠️ Nenhum crédito com essa OC. Confira o número.';
   }
 }
 
@@ -1025,12 +1031,12 @@ function renderGraficoEvolucao(){
 
 function exportarRelatorioCSV(list,nomeArquivo){
   if(!list||!list.length){alert('Nada para exportar.');return;}
-  var headers=['Cliente','CPF/CNPJ','Placa','OC','IPVA','Loja','Vendedor','Valor Venda','Comissao Vendedor','Honorarios','Nossa Comissao','Status','Data Venda','Lancado Por'];
+  var headers=['Cliente','CPF/CNPJ','Placa','OC','IPVA','Loja','Vendedor','Valor Venda','Comissao Vendedor','Honorarios','Nossa Comissao','Cortesia','Venda Direta','Data Venda','Lancado Por'];
   var rows=list.map(function(c){
     return [
       c.cliente||'',c.doc||'',c.placa||'',c.oc||'',(c.ipva===true||c.ipva==='TRUE')?'Sim':'Nao',
       c.loja||'',c.vendedor||'',c.valor||0,c.comissao||0,c.honorarios||0,c.nossaCom||0,
-      c.status||'',fmtD(c.dtVenda),c.editadoPor||c.criadoPor||''
+      isCortesia(c)?'Sim':'Nao',(c.vendaDireta===true||c.vendaDireta==='TRUE')?'Sim':'Nao',fmtD(c.dtVenda),c.editadoPor||c.criadoPor||''
     ].map(function(v){
       var s=String(v);
       if(s.indexOf(',')>=0||s.indexOf('"')>=0)s='"'+s.replace(/"/g,'""')+'"';
@@ -1046,7 +1052,7 @@ function exportarRelatorioCSV(list,nomeArquivo){
   URL.revokeObjectURL(url);
 }
 
-function mesAno(ds){if(!ds)return'';var p=String(ds).split('-');return p[0]+'-'+p[1];}
+function mesAno(ds){if(!ds)return'';var p=String(ds).split('-');if(p.length<2)return'';return p[0]+'-'+p[1];}
 function mesLabel(ym){
   if(!ym)return'';
   var p=ym.split('-');var meses=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -1091,12 +1097,8 @@ function renderPainel(){
   });
 
   // Vínculo considerando todos os dados (não só filtrados) para status correto, mas exibindo métricas do período filtrado
-  var credAll=creditos.filter(function(c){return!lojaSel||norm(c.loja)===norm(lojaSel);});
-  var nfsAll=nfs.filter(function(n){return!lojaSel||norm(n.loja)===norm(lojaSel);});
-  var mapAll={};
-  credAll.forEach(function(c){var k=normDoc(c.doc)+'||'+norm(c.loja);if(!mapAll[k])mapAll[k]={cliente:c.cliente,loja:c.loja,doc:c.doc,creditos:[],nfs:[]};mapAll[k].creditos.push(c);});
-  nfsAll.forEach(function(n){var k=normDoc(n.doc)+'||'+norm(n.loja);if(!mapAll[k])mapAll[k]={cliente:n.cliente,loja:n.loja,doc:n.doc,creditos:[],nfs:[]};mapAll[k].nfs.push(n);});
-  var gsAll=Object.values(mapAll);
+  // Reaproveita buildVin() para já considerar vínculo forçado por OC (docEfetivoNF/lojaEfetivaNF)
+  var gsAll=buildVin().filter(function(g){return!lojaSel||norm(g.loja)===norm(lojaSel);});
 
   var nfPerdidas=nfsF.filter(function(n){return n.nfFora===true||n.nfFora==='TRUE';}).length;
   var totalNFsCadastradas=nfsF.length;
@@ -1344,22 +1346,24 @@ function renderPendDocumentacao(){
   tbl.innerHTML=pend.length?pend.map(function(n){
     var dias=diasDesde(n.dtEnvioDoc);
     var corDias=dias>=7?'#993C1D':(dias>=3?'#854F0B':'#666');
-    return'<tr><td style="font-weight:600">'+(n.cliente||'—')+'</td><td>'+(n.chassi||'—')+'</td><td>'+n.loja+'</td><td>'+(n.vendedor||'—')+'</td><td>'+fmtD(n.dtEnvioDoc)+'</td><td style="color:'+corDias+';font-weight:600">'+dias+' dia'+(dias!==1?'s':'')+'</td><td><button class="btn success" style="font-size:11px;padding:5px 10px" onclick="marcarDocPronto('+n.id+')">✓ Doc pronto</button></td></tr>';
+    return'<tr><td style="font-weight:600">'+(n.cliente||'—')+'</td><td>'+(placaDaNF(n)||'—')+'</td><td>'+n.loja+'</td><td>'+(n.vendedor||'—')+'</td><td>'+fmtD(n.dtEnvioDoc)+'</td><td style="color:'+corDias+';font-weight:600">'+dias+' dia'+(dias!==1?'s':'')+'</td><td><button style="font-size:12px;padding:7px 14px;background:#1D9E75;color:#fff;border:none;border-radius:7px;cursor:pointer;font-weight:600" onclick="marcarDocPronto('+n.id+')">✓ Marcar pronto</button></td></tr>';
   }).join(''):'<tr><td colspan="7" class="empty-state">Nenhuma pendência de documentação 🎉</td></tr>';
 }
 async function marcarDocPronto(id){
-  var n=nfs.find(function(x){return x.id==id;});
-  if(!n)return;
-  n.documentoPronto=true;
-  if(!n.dtDocPronto)n.dtDocPronto=new Date().toISOString().slice(0,10);
-  if(SURL){
-    try{
+  try{
+    var n=nfs.find(function(x){return String(x.id)===String(id);});
+    if(!n){alert('Registro não encontrado (id: '+id+').');return;}
+    n.documentoPronto=true;
+    if(!n.dtDocPronto)n.dtDocPronto=new Date().toISOString().slice(0,10);
+    if(SURL){
       await api({action:'delete',sheet:'NFS',id:id});
       await api({action:'insert',sheet:'NFS',data:n});
-    }catch(e){alert('Erro ao salvar: '+e.message);return;}
+    }
+    renderPendDocumentacao();
+    renderPainel();
+  }catch(e){
+    alert('Erro ao marcar documento pronto: '+e.message);
   }
-  renderPendDocumentacao();
-  renderPainel();
 }
 
 async function classificarPendencia(id,valor){
@@ -1372,7 +1376,7 @@ async function classificarPendencia(id,valor){
 }
 
 function renderVinculo(){
-  var sl=document.getElementById('vin-loja');sl.innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+l+'</option>';}).join('');
+  var sl=document.getElementById('vin-loja');var valorAtual=sl.value;sl.innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+l+'</option>';}).join('');sl.value=valorAtual;
   var busca=(document.getElementById('vin-busca').value||'').toLowerCase();var loja=document.getElementById('vin-loja').value;var filtro=document.getElementById('vin-filtro').value;
   var gs=buildVin();
   if(loja)gs=gs.filter(function(g){return norm(g.loja)===norm(loja);});
@@ -1436,7 +1440,7 @@ function renderRegDocPronto(){
     return true;
   }).sort(function(a,b){return(b.dtDocPronto||'').localeCompare(a.dtDocPronto||'');});
   document.getElementById('tbl-doc-pronto').innerHTML=list.length?list.map(function(n){
-    return'<tr><td style="font-size:12px;color:#666">'+(n.doc||'—')+'</td><td style="font-weight:600">'+(n.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+(n.chassi||'—')+'</td><td>'+n.loja+'</td><td>'+(n.vendedor||'—')+'</td><td>'+fmtD(n.dtEnvioDoc)+'</td><td style="color:#0F6E56;font-weight:600">'+fmtD(n.dtDocPronto)+'</td><td class="tbl-actions"><button onclick="desfazerDocPronto('+n.id+')" title="Desfazer">↩️</button></td></tr>';
+    return'<tr><td style="font-size:12px;color:#666">'+(n.doc||'—')+'</td><td style="font-weight:600">'+(n.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+(placaDaNF(n)||'—')+'</td><td>'+n.loja+'</td><td>'+(n.vendedor||'—')+'</td><td>'+fmtD(n.dtEnvioDoc)+'</td><td style="color:#0F6E56;font-weight:600">'+fmtD(n.dtDocPronto)+'</td><td class="tbl-actions"><button onclick="desfazerDocPronto('+n.id+')" title="Desfazer">↩️</button></td></tr>';
   }).join(''):'<tr><td colspan="8" class="empty-state">Nenhum documento pronto ainda</td></tr>';
 }
 async function desfazerDocPronto(id){
