@@ -814,11 +814,15 @@ function lojaEfetivaNF(n){
   }
   return n.loja;
 }
-function placaDaNF(n){
-  // Placa não existe na NF - busca no crédito vinculado (por OC forçada ou por doc+loja)
+function creditoDaNF(n){
+  // Busca o crédito vinculado a uma NF (por OC forçada, ou por doc+loja)
   var cred=null;
   if(n.ocVinculada)cred=creditos.find(function(c){return norm(c.oc)===norm(n.ocVinculada);});
   if(!cred)cred=creditos.find(function(c){return normDoc(c.doc)===normDoc(n.doc)&&norm(c.loja)===norm(n.loja);});
+  return cred||null;
+}
+function placaDaNF(n){
+  var cred=creditoDaNF(n);
   return cred&&cred.placa?cred.placa:'';
 }
 function buildVin(){var map={};creditos.forEach(function(c){var k=normDoc(c.doc)+'||'+norm(c.loja);if(!map[k])map[k]={doc:c.doc,cliente:c.cliente,loja:c.loja,creditos:[],nfs:[]};map[k].creditos.push(c);});nfs.forEach(function(n){var k=normDoc(docEfetivoNF(n))+'||'+norm(lojaEfetivaNF(n));if(!map[k])map[k]={doc:n.doc,cliente:n.cliente,loja:n.loja,creditos:[],nfs:[]};map[k].nfs.push(n);});return Object.values(map);}
@@ -1043,12 +1047,14 @@ function renderGraficoEvolucao(){
 
 function exportarRelatorioCSV(list,nomeArquivo){
   if(!list||!list.length){alert('Nada para exportar.');return;}
-  var headers=['Cliente','CPF/CNPJ','Placa','OC','IPVA','Loja','Vendedor','Valor Venda','Comissao Vendedor','Honorarios','Nossa Comissao','Cortesia','Venda Direta','Data Venda','Lancado Por'];
-  var rows=list.map(function(c){
+  var headers=['Cliente','CPF/CNPJ','Placa','Loja','Vendedor','Dt Recebimento NF','NF Fora','Motivo NF Fora','Vinculada','Honorarios','Nossa Comissao','Cortesia','Venda Direta'];
+  var rows=list.map(function(n){
+    var cred=creditoDaNF(n);
     return [
-      c.cliente||'',c.doc||'',c.placa||'',c.oc||'',(c.ipva===true||c.ipva==='TRUE')?'Sim':'Nao',
-      c.loja||'',c.vendedor||'',c.valor||0,c.comissao||0,c.honorarios||0,c.nossaCom||0,
-      isCortesia(c)?'Sim':'Nao',(c.vendaDireta===true||c.vendaDireta==='TRUE')?'Sim':'Nao',fmtD(c.dtVenda),c.editadoPor||c.criadoPor||''
+      n.cliente||'',n.doc||'',placaDaNF(n)||'',n.loja||'',n.vendedor||'',fmtD(n.dtReceb),
+      (n.nfFora===true||n.nfFora==='TRUE')?'Sim':'Nao',n.nfFora?motivoNfForaLabel(n.motivoNfFora):'',
+      cred?'Sim':'Nao',cred?(cred.honorarios||0):0,cred?(cred.nossaCom||0):0,
+      cred&&isCortesia(cred)?'Sim':'Nao',cred&&(cred.vendaDireta===true||cred.vendaDireta==='TRUE')?'Sim':'Nao'
     ].map(function(v){
       var s=String(v);
       if(s.indexOf(',')>=0||s.indexOf('"')>=0)s='"'+s.replace(/"/g,'""')+'"';
@@ -1721,57 +1727,127 @@ var ultimoRelatorioList=[];
 var ultimoRelatorioNome='relatorio';
 function calcularDadosRelatorio(){
   var loja=document.getElementById('rel-loja').value,vend=document.getElementById('rel-vendedor').value,motivoFora=document.getElementById('rel-motivo-nffora').value,di=document.getElementById('rel-dt-ini').value,df=document.getElementById('rel-dt-fim').value,ipvaF=document.getElementById('rel-ipva').value,cortFiltro=document.getElementById('rel-cortesia').value,vdFiltro=(document.getElementById('rel-vendaDireta')||{value:''}).value;
-  // Mapa de doc+loja -> NF correspondente (para checar motivo NF fora)
-  var nfMap={};
-  nfs.forEach(function(n){var k=normDoc(docEfetivoNF(n))+'||'+norm(lojaEfetivaNF(n));if(!nfMap[k])nfMap[k]=n;});
-  var list=creditos.filter(function(c){
-    if(loja&&norm(c.loja)!==norm(loja))return false;
-    if(vend&&norm(c.vendedor)!==norm(vend))return false;
-    if(cortFiltro==='1'&&!isCortesia(c))return false;
-    if(cortFiltro==='0'&&isCortesia(c))return false;
-    if(vdFiltro==='1'&&!(c.vendaDireta===true||c.vendaDireta==='TRUE'))return false;
-    if(vdFiltro==='0'&&(c.vendaDireta===true||c.vendaDireta==='TRUE'))return false;
-    if(motivoFora){
-      var nfMatch=nfMap[normDoc(c.doc)+'||'+norm(c.loja)];
-      if(!nfMatch||nfMatch.motivoNfFora!==motivoFora)return false;
-    }
-    if(di&&c.dtVenda&&c.dtVenda<di)return false;
-    if(df&&c.dtVenda&&c.dtVenda>df)return false;
-    if(ipvaF==='1'&&!(c.ipva===true||c.ipva==='TRUE'))return false;
-    if(ipvaF==='0'&&(c.ipva===true||c.ipva==='TRUE'))return false;
+
+  // Base do relatório agora é NF (não crédito) - usa lojaEfetivaNF pra considerar vínculo forçado por OC
+  var listAll=nfs.filter(function(n){
+    var ljEf=lojaEfetivaNF(n);
+    if(loja&&norm(ljEf)!==norm(loja))return false;
+    if(vend&&norm(n.vendedor)!==norm(vend))return false;
+    if(di&&n.dtReceb&&n.dtReceb<di)return false;
+    if(df&&n.dtReceb&&n.dtReceb>df)return false;
+    if(motivoFora&&n.motivoNfFora!==motivoFora)return false;
+    var cred=creditoDaNF(n);
+    if(cortFiltro==='1'&&!(cred&&isCortesia(cred)))return false;
+    if(cortFiltro==='0'&&(cred&&isCortesia(cred)))return false;
+    if(vdFiltro==='1'&&!(cred&&(cred.vendaDireta===true||cred.vendaDireta==='TRUE')))return false;
+    if(vdFiltro==='0'&&(cred&&(cred.vendaDireta===true||cred.vendaDireta==='TRUE')))return false;
+    if(ipvaF==='1'&&!(cred&&(cred.ipva===true||cred.ipva==='TRUE')))return false;
+    if(ipvaF==='0'&&(cred&&(cred.ipva===true||cred.ipva==='TRUE')))return false;
     return true;
   });
-  var cort=list.filter(function(c){return isCortesia(c);});
-  var nfsLoja=loja?nfs.filter(function(n){return norm(n.loja)===norm(loja);}):nfs;
-  var nfsForaFiltradas=nfsLoja.filter(function(n){return n.nfFora===true||n.nfFora==='TRUE';});
-  var perd=nfsForaFiltradas;
-  var tH=list.reduce(function(a,c){return a+(Number(c.honorarios)||0);},0),tN=list.reduce(function(a,c){return a+(Number(c.nossaCom)||0);},0),tC=list.reduce(function(a,c){return a+(Number(c.comissao)||0);},0),tV=list.reduce(function(a,c){return a+(Number(c.valor)||0);},0);
-  var cIPVA=list.filter(function(c){return c.ipva===true||c.ipva==='TRUE';}).length;
-  var cas=list.filter(function(c){return nfs.some(function(n){return normDoc(docEfetivoNF(n))===normDoc(c.doc)&&norm(lojaEfetivaNF(n))===norm(c.loja);});});
-  var pV={};list.forEach(function(c){if(!pV[c.vendedor])pV[c.vendedor]={q:0,c:0,h:0,n:0};pV[c.vendedor].q++;pV[c.vendedor].c+=Number(c.comissao)||0;pV[c.vendedor].h+=Number(c.honorarios)||0;pV[c.vendedor].n+=Number(c.nossaCom)||0;});
+
+  // Separa em 3 grupos: NF Fora (prioridade), Cortesias, Normais
+  var nfsFora=listAll.filter(function(n){return n.nfFora===true||n.nfFora==='TRUE';});
+  var nfsCortesia=listAll.filter(function(n){
+    if(n.nfFora===true||n.nfFora==='TRUE')return false;
+    var cred=creditoDaNF(n);
+    return cred&&isCortesia(cred);
+  });
+  var nfsNormais=listAll.filter(function(n){
+    if(n.nfFora===true||n.nfFora==='TRUE')return false;
+    var cred=creditoDaNF(n);
+    if(cred&&isCortesia(cred))return false;
+    return true;
+  });
+
+  function vinculadaNF(n){return!!creditoDaNF(n);}
+  var vinculadasAll=listAll.filter(vinculadaNF);
+
+  // Totais financeiros vêm do crédito vinculado de cada NF
+  var tH=0,tN=0,tC=0,tV=0,cIPVA=0;
+  listAll.forEach(function(n){
+    var cred=creditoDaNF(n);
+    if(cred){
+      tH+=Number(cred.honorarios)||0;
+      tN+=Number(cred.nossaCom)||0;
+      tC+=Number(cred.comissao)||0;
+      tV+=Number(cred.valor)||0;
+      if(cred.ipva===true||cred.ipva==='TRUE')cIPVA++;
+    }
+  });
+  var valorCortesia=nfsCortesia.reduce(function(a,n){var c=creditoDaNF(n);return a+(c?Number(c.valor)||0:0);},0);
+
+  // Resumo por vendedor: NFs | Vinculadas | Total honorários
+  var pV={};
+  listAll.forEach(function(n){
+    var v=n.vendedor||'—';
+    if(!pV[v])pV[v]={nfs:0,vinc:0,hon:0};
+    pV[v].nfs++;
+    var cred=creditoDaNF(n);
+    if(cred){pV[v].vinc++;pV[v].hon+=Number(cred.honorarios)||0;}
+  });
+
   var per=di&&df?fmtD(di)+' a '+fmtD(df):di?'a partir de '+fmtD(di):df?'até '+fmtD(df):'';
   var titulo=[loja,vend,per].filter(Boolean).join(' · ')||'Geral';
+
   // Por loja - só relevante quando o filtro é "Todas as lojas"
   var porLoja=null;
   if(!loja){
     var lojasUnicas=lojasDoUsuario();
     porLoja=lojasUnicas.map(function(l){
-      var lc=list.filter(function(c){return norm(c.loja)===norm(l);});
-      var ln=nfsLoja.filter(function(n){return norm(n.loja)===norm(l);});
-      return{loja:l,qtdCred:lc.length,qtdNf:ln.length,hon:lc.reduce(function(a,c){return a+(Number(c.honorarios)||0);},0),nossaCom:lc.reduce(function(a,c){return a+(Number(c.nossaCom)||0);},0)};
-    }).filter(function(x){return x.qtdCred>0||x.qtdNf>0;});
+      var ln=listAll.filter(function(n){return norm(lojaEfetivaNF(n))===norm(l);});
+      var hon=0;
+      ln.forEach(function(n){var c=creditoDaNF(n);if(c)hon+=Number(c.honorarios)||0;});
+      return{loja:l,qtdNf:ln.length,qtdVinc:ln.filter(vinculadaNF).length,hon:hon};
+    }).filter(function(x){return x.qtdNf>0;});
   }
+
   // NF Fora por motivo
   var motivosLista=['revenda','fora_estado','poupa_tempo','ja_tem_despachante','diretoria','nao_teve_atendimento','whatsapp'];
-  var nfForaPorMotivo=motivosLista.map(function(m){return{motivo:m,label:motivoNfForaLabel(m),qtd:nfsForaFiltradas.filter(function(n){return n.motivoNfFora===m;}).length};}).filter(function(x){return x.qtd>0;});
-  return{loja:loja,vend:vend,per:per,titulo:titulo,list:list,cort:cort,perd:perd,nfsLoja:nfsLoja,tH:tH,tN:tN,tC:tC,tV:tV,cIPVA:cIPVA,cas:cas,pV:pV,porLoja:porLoja,nfForaPorMotivo:nfForaPorMotivo,valorCortesia:cort.reduce(function(a,c){return a+(Number(c.valor)||0);},0)};
+  var nfForaPorMotivo=motivosLista.map(function(m){return{motivo:m,label:motivoNfForaLabel(m),qtd:nfsFora.filter(function(n){return n.motivoNfFora===m;}).length};}).filter(function(x){return x.qtd>0;});
+
+  return{loja:loja,vend:vend,per:per,titulo:titulo,listAll:listAll,nfsNormais:nfsNormais,nfsCortesia:nfsCortesia,nfsFora:nfsFora,vinculadasAll:vinculadasAll,tH:tH,tN:tN,tC:tC,tV:tV,cIPVA:cIPVA,pV:pV,porLoja:porLoja,nfForaPorMotivo:nfForaPorMotivo,valorCortesia:valorCortesia,vinculadaNF:vinculadaNF};
 }
 function gerarRelatorio(){
   var d=calcularDadosRelatorio();
-  var list=d.list,cort=d.cort,perd=d.perd,tH=d.tH,tN=d.tN,tC=d.tC,tV=d.tV,cIPVA=d.cIPVA,cas=d.cas,pV=d.pV,titulo=d.titulo;
-  ultimoRelatorioList=list;
-  ultimoRelatorioNome='relatorio_'+norm(titulo).replace(/[^a-z0-9]+/g,'_');
-  document.getElementById('rel-output').innerHTML='<div class="card"><div class="section-title" style="margin-bottom:1rem">Relatório: '+titulo+'</div><div class="metric-grid" style="margin-bottom:1.25rem"><div class="metric"><div class="lbl">Créditos</div><div class="val blue">'+list.length+'</div></div><div class="metric"><div class="lbl">Vinculados</div><div class="val green">'+cas.length+'</div></div><div class="metric"><div class="lbl">NF perdidas</div><div class="val red">'+perd.length+'</div></div><div class="metric"><div class="lbl">Cortesias</div><div class="val">'+cort.length+'</div></div><div class="metric"><div class="lbl">Com IPVA</div><div class="val blue">'+cIPVA+'</div></div><div class="metric"><div class="lbl">Total vendas</div><div class="val blue">'+fmtM(tV)+'</div></div><div class="metric"><div class="lbl">Com. vendedores</div><div class="val amber">'+fmtM(tC)+'</div></div><div class="metric"><div class="lbl">Total honorários</div><div class="val">'+fmtM(tH)+'</div></div><div class="metric"><div class="lbl">Nossa comissão</div><div class="val green">'+fmtM(tN)+'</div></div></div>'+(Object.keys(pV).length?'<div class="section-title" style="margin-bottom:.5rem">Por vendedor</div><table style="margin-bottom:1rem"><thead><tr><th>Vendedor</th><th>NFs</th><th>Com. vendedor</th><th>Honorários</th><th>Nossa com.</th></tr></thead><tbody>'+Object.entries(pV).sort(function(a,b){return b[1].n-a[1].n;}).map(function(e){return'<tr><td style="font-weight:600"><button onclick="abrirDashVendedor(\''+e[0].replace(/'/g,"\\'")+'\')" style="background:none;border:none;cursor:pointer;color:#185FA5;font-weight:600;font-size:13px;padding:0;text-decoration:underline">'+e[0]+'</button></td><td>'+e[1].q+'</td><td style="color:#854F0B">'+fmtM(e[1].c)+'</td><td>'+fmtM(e[1].h)+'</td><td style="color:#0F6E56;font-weight:600">'+fmtM(e[1].n)+'</td></tr>';}).join('')+'</tbody></table>':'')+'<div class="section-title" style="margin-bottom:.5rem">Detalhamento</div><div style="overflow-x:auto"><table><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>OC</th><th>IPVA</th><th>Loja</th><th>Vendedor</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Cortesia</th><th>Data</th><th>Lançado por</th></tr></thead><tbody>'+(list.length?list.map(function(c){var qm=(c.editadoPor?c.editadoPor:(c.criadoPor||'—'));return'<tr><td style="font-size:11px;color:#888">'+(c.doc||'—')+'</td><td>'+c.cliente+'</td><td>'+(c.placa||'—')+'</td><td style="font-size:11px;color:#888">'+(c.oc||'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+(c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+(isCortesia(c)?cortesiaBadge(true):'<span style="color:#ccc;font-size:12px">—</span>')+'</td><td>'+fmtD(c.dtVenda)+'</td><td style="font-size:12px;color:#666">'+qm+'</td></tr>';}).join(''):'<tr><td colspan="14" class="empty-state">Nenhum resultado</td></tr>')+'</tbody></table></div></div>';
+  ultimoRelatorioList=d.listAll;
+  ultimoRelatorioNome='relatorio_'+norm(d.titulo).replace(/[^a-z0-9]+/g,'_');
+
+  function linhaNF(n,mostrarVinculo){
+    var cred=creditoDaNF(n);
+    var vinc=!!cred;
+    var sinalVinc=mostrarVinculo?('<td>'+(vinc?'<span class="dot green" style="display:inline-block"></span> Vinculada':'<span class="dot red" style="display:inline-block"></span> Sem crédito')+'</td>'):'';
+    return'<tr><td style="font-size:11px;color:#888">'+(n.doc||'—')+'</td><td style="font-weight:600">'+(n.cliente||'—')+'</td><td>'+(placaDaNF(n)||'—')+'</td><td>'+n.loja+'</td><td>'+(n.vendedor||'—')+'</td><td>'+fmtD(n.dtReceb)+'</td><td>'+(cred?fmtM(cred.honorarios):'—')+'</td>'+sinalVinc+'</tr>';
+  }
+
+  var html='<div class="card"><div class="section-title" style="margin-bottom:1rem">Relatório: '+d.titulo+'</div>';
+  html+='<div class="metric-grid" style="margin-bottom:1.25rem"><div class="metric"><div class="lbl">NFs cadastradas</div><div class="val blue">'+d.listAll.length+'</div></div><div class="metric"><div class="lbl">Vinculadas</div><div class="val green">'+d.vinculadasAll.length+'</div></div><div class="metric"><div class="lbl">NF perdidas</div><div class="val red">'+d.nfsFora.length+'</div></div><div class="metric"><div class="lbl">Cortesias</div><div class="val">'+d.nfsCortesia.length+'</div></div><div class="metric"><div class="lbl">Com IPVA</div><div class="val blue">'+d.cIPVA+'</div></div><div class="metric"><div class="lbl">Total vendas</div><div class="val blue">'+fmtM(d.tV)+'</div></div><div class="metric"><div class="lbl">Com. vendedores</div><div class="val amber">'+fmtM(d.tC)+'</div></div><div class="metric"><div class="lbl">Total honorários</div><div class="val">'+fmtM(d.tH)+'</div></div><div class="metric"><div class="lbl">Nossa comissão</div><div class="val green">'+fmtM(d.tN)+'</div></div></div>';
+
+  // Resumo por vendedor: Vendedor | NFs | Vinculadas | Total honorários
+  var pvEntries=Object.entries(d.pV).sort(function(a,b){return b[1].hon-a[1].hon;});
+  if(pvEntries.length){
+    html+='<div class="section-title" style="margin-bottom:.5rem">Por vendedor</div><table style="margin-bottom:1.5rem"><thead><tr><th>Vendedor</th><th>Nº de NFs</th><th>Nº de docs feitos (vinculadas)</th><th>Total honorários</th></tr></thead><tbody>'+pvEntries.map(function(e){
+      return'<tr><td style="font-weight:600"><button onclick="abrirDashVendedor(\''+e[0].replace(/'/g,"\\'")+'\')" style="background:none;border:none;cursor:pointer;color:#185FA5;font-weight:600;font-size:13px;padding:0;text-decoration:underline">'+e[0]+'</button></td><td>'+e[1].nfs+'</td><td style="color:#0F6E56;font-weight:600">'+e[1].vinc+'</td><td>'+fmtM(e[1].hon)+'</td></tr>';
+    }).join('')+'</tbody></table>';
+  }
+
+  // Lista principal: NFs normais (sem cortesia, sem NF fora)
+  html+='<div class="section-title" style="margin-bottom:.5rem">Todas as NFs cadastradas'+(d.loja?' — '+d.loja:'')+'</div><div style="overflow-x:auto"><table style="margin-bottom:1.5rem"><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Dt. Receb.</th><th>Honorários</th><th>Vínculo</th></tr></thead><tbody>'+
+    (d.nfsNormais.length?d.nfsNormais.map(function(n){return linhaNF(n,true);}).join(''):'<tr><td colspan="8" class="empty-state">Nenhuma NF nesse período</td></tr>')+
+    '</tbody></table></div>';
+
+  // Seção Cortesias (separada, no final)
+  html+='<div class="section-title" style="margin-bottom:.5rem">🎁 Cortesias ('+d.nfsCortesia.length+')</div><div style="overflow-x:auto"><table style="margin-bottom:1.5rem"><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Dt. Receb.</th><th>Honorários</th><th>Vínculo</th></tr></thead><tbody>'+
+    (d.nfsCortesia.length?d.nfsCortesia.map(function(n){return linhaNF(n,true);}).join(''):'<tr><td colspan="8" class="empty-state">Nenhuma cortesia nesse período</td></tr>')+
+    '</tbody></table></div>';
+
+  // Seção Notas Fora (separada, no final)
+  html+='<div class="section-title" style="margin-bottom:.5rem">🚫 Notas Fora ('+d.nfsFora.length+')</div><div style="overflow-x:auto"><table><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Motivo</th><th>Dt. Receb.</th></tr></thead><tbody>'+
+    (d.nfsFora.length?d.nfsFora.map(function(n){return'<tr><td style="font-size:11px;color:#888">'+(n.doc||'—')+'</td><td style="font-weight:600">'+(n.cliente||'—')+'</td><td>'+(placaDaNF(n)||'—')+'</td><td>'+n.loja+'</td><td>'+(n.vendedor||'—')+'</td><td>'+motivoNfForaLabel(n.motivoNfFora)+'</td><td>'+fmtD(n.dtReceb)+'</td></tr>';}).join(''):'<tr><td colspan="7" class="empty-state">Nenhuma NF fora nesse período 🎉</td></tr>')+
+    '</tbody></table></div>';
+
+  html+='</div>';
+  document.getElementById('rel-output').innerHTML=html;
 }
 function exportarUltimoRelatorio(){
   if(!ultimoRelatorioList.length){alert('Gere um relatório primeiro antes de exportar.');return;}
@@ -1812,9 +1888,9 @@ function gerarPDF(tipo){
 
   // KPIs em cards (5 cards numa linha)
   var kpis=[
-    {label:'CRÉDITOS',val:String(d.list.length),cor:AZUL},
-    {label:'VINCULADOS',val:String(d.cas.length),cor:VERDE2},
-    {label:'NF PERDIDAS',val:String(d.perd.length),cor:VERMELHO},
+    {label:'NFS CADASTRADAS',val:String(d.listAll.length),cor:AZUL},
+    {label:'VINCULADAS',val:String(d.vinculadasAll.length),cor:VERDE2},
+    {label:'NF PERDIDAS',val:String(d.nfsFora.length),cor:VERMELHO},
     {label:'TOTAL HONORÁRIOS',val:fmtM(d.tH),cor:PRETO},
     {label:'NOSSA COMISSÃO',val:fmtM(d.tN),cor:VERDE2}
   ];
@@ -1840,7 +1916,7 @@ function gerarPDF(tipo){
       doc.setFont('helvetica','bold');doc.setFontSize(9);setText(PRETO);
       doc.text(lj.loja,MX,y+3.5);
       doc.setFont('helvetica','normal');doc.setFontSize(8);setText(CINZATXT);
-      doc.text(lj.qtdNf+' NFs · '+lj.qtdCred+' créditos',MX+60,y+3.5);
+      doc.text(lj.qtdNf+' NFs · '+lj.qtdVinc+' vinculadas',MX+60,y+3.5);
       doc.setFont('helvetica','bold');setText(AZUL);
       doc.text(fmtM(lj.hon),PW-MX,y+3.5,{align:'right'});
       // barra proporcional
@@ -1862,14 +1938,14 @@ function gerarPDF(tipo){
   doc.setFont('helvetica','normal');doc.setFontSize(8);setText(CINZATXT);
   doc.text('Cortesias',MX+4,y+15);
   doc.setFont('helvetica','bold');doc.setFontSize(13);setText(AZUL);
-  doc.text(String(d.cort.length),MX+4,y+21.5);
+  doc.text(String(d.nfsCortesia.length),MX+4,y+21.5);
   doc.setFont('helvetica','normal');doc.setFontSize(8);setText(CINZATXT);
   doc.text('Valor cedido',MX+colW/2+4,y+15);
   doc.setFont('helvetica','bold');doc.setFontSize(13);setText(VERMELHO);
   doc.text(fmtM(d.valorCortesia),MX+colW/2+4,y+21.5);
-  var vdCount=d.list.filter(function(c){return c.vendaDireta===true||c.vendaDireta==='TRUE';}).length;
+  var vdCount=d.listAll.filter(function(n){var c=creditoDaNF(n);return c&&(c.vendaDireta===true||c.vendaDireta==='TRUE');}).length;
   doc.setFont('helvetica','normal');doc.setFontSize(8);setText(CINZATXT);
-  doc.text('Venda direta: '+vdCount+' créditos',MX+4,y+30);
+  doc.text('Venda direta: '+vdCount+' NFs',MX+4,y+30);
 
   // NF Fora - motivos (barras horizontais)
   var x2=MX+colW+6;
@@ -1896,15 +1972,15 @@ function gerarPDF(tipo){
   y=yBlocoIni+44;
 
   // Por vendedor (se houver)
-  var pvEntries=Object.entries(d.pV).sort(function(a,b){return b[1].n-a[1].n;});
+  var pvEntries=Object.entries(d.pV).sort(function(a,b){return b[1].hon-a[1].hon;});
   if(pvEntries.length){
     doc.setFont('helvetica','bold');doc.setFontSize(11);setText(PRETO);
     doc.text('Por vendedor',MX,y);y+=5;
     if(typeof doc.autoTable==='function'){
       doc.autoTable({
         startY:y,margin:{left:MX,right:MX},
-        head:[['Vendedor','NFs','Com. vendedor','Honorários','Nossa com.']],
-        body:pvEntries.map(function(e){return[e[0],String(e[1].q),fmtM(e[1].c),fmtM(e[1].h),fmtM(e[1].n)];}),
+        head:[['Vendedor','Nº de NFs','Nº de docs feitos (vinculadas)','Total honorários']],
+        body:pvEntries.map(function(e){return[e[0],String(e[1].nfs),String(e[1].vinc),fmtM(e[1].hon)];}),
         theme:'plain',
         headStyles:{fillColor:AZUL,textColor:255,fontStyle:'bold',fontSize:8.5},
         bodyStyles:{fontSize:8.5,textColor:PRETO},
@@ -1915,24 +1991,63 @@ function gerarPDF(tipo){
     }
   }
 
-  // Tabela detalhada completa (só no modo "completo")
-  if(tipo==='completo'&&d.list.length){
+  // Tabela detalhada completa (só no modo "completo") - NFs normais, depois cortesias, depois fora
+  if(tipo==='completo'){
     if(y>PH-60){doc.addPage();y=18;}
     doc.setFont('helvetica','bold');doc.setFontSize(11);setText(PRETO);
-    doc.text('Detalhamento de créditos',MX,y);y+=5;
+    doc.text('Todas as NFs cadastradas'+(d.loja?' — '+d.loja:''),MX,y);y+=5;
     doc.autoTable({
       startY:y,margin:{left:MX,right:MX},
-      head:[['Cliente','Loja','Vendedor','Valor','Honorários','Nossa com.','Cortesia','Data']],
-      body:d.list.map(function(c){return[c.cliente||'',c.loja||'',c.vendedor||'',fmtM(c.valor),fmtM(c.honorarios),fmtM(c.nossaCom),isCortesia(c)?'Sim':'-',fmtD(c.dtVenda)];}),
+      head:[['Cliente','Placa','Loja','Vendedor','Dt. Receb.','Honorários','Vinculada']],
+      body:d.nfsNormais.map(function(n){var c=creditoDaNF(n);return[n.cliente||'',placaDaNF(n)||'',n.loja||'',n.vendedor||'',fmtD(n.dtReceb),c?fmtM(c.honorarios):'—',c?'Sim':'Não'];}),
       theme:'plain',
       headStyles:{fillColor:VERDE,textColor:255,fontStyle:'bold',fontSize:7.5},
       bodyStyles:{fontSize:7.5,textColor:PRETO},
       alternateRowStyles:{fillColor:CINZABG},
-      styles:{cellPadding:1.8},
-      didDrawPage:function(){
-        doc.setFont('helvetica','normal');doc.setFontSize(7);setText(CINZATXT);
-      }
+      styles:{cellPadding:1.8}
     });
+    y=doc.lastAutoTable.finalY+8;
+
+    // Seção Cortesias no final
+    if(y>PH-50){doc.addPage();y=18;}
+    doc.setFont('helvetica','bold');doc.setFontSize(11);setText(PRETO);
+    doc.text('🎁 Cortesias ('+d.nfsCortesia.length+')',MX,y);y+=5;
+    if(d.nfsCortesia.length){
+      doc.autoTable({
+        startY:y,margin:{left:MX,right:MX},
+        head:[['Cliente','Placa','Loja','Vendedor','Dt. Receb.','Honorários']],
+        body:d.nfsCortesia.map(function(n){var c=creditoDaNF(n);return[n.cliente||'',placaDaNF(n)||'',n.loja||'',n.vendedor||'',fmtD(n.dtReceb),c?fmtM(c.honorarios):'—'];}),
+        theme:'plain',
+        headStyles:{fillColor:AZUL,textColor:255,fontStyle:'bold',fontSize:7.5},
+        bodyStyles:{fontSize:7.5,textColor:PRETO},
+        alternateRowStyles:{fillColor:CINZABG},
+        styles:{cellPadding:1.8}
+      });
+      y=doc.lastAutoTable.finalY+8;
+    }else{
+      doc.setFont('helvetica','normal');doc.setFontSize(8.5);setText(CINZATXT);
+      doc.text('Nenhuma cortesia nesse período.',MX,y);y+=8;
+    }
+
+    // Seção Notas Fora no final
+    if(y>PH-50){doc.addPage();y=18;}
+    doc.setFont('helvetica','bold');doc.setFontSize(11);setText(PRETO);
+    doc.text('🚫 Notas Fora ('+d.nfsFora.length+')',MX,y);y+=5;
+    if(d.nfsFora.length){
+      doc.autoTable({
+        startY:y,margin:{left:MX,right:MX},
+        head:[['Cliente','Placa','Loja','Vendedor','Motivo','Dt. Receb.']],
+        body:d.nfsFora.map(function(n){return[n.cliente||'',placaDaNF(n)||'',n.loja||'',n.vendedor||'',motivoNfForaLabel(n.motivoNfFora),fmtD(n.dtReceb)];}),
+        theme:'plain',
+        headStyles:{fillColor:VERMELHO,textColor:255,fontStyle:'bold',fontSize:7.5},
+        bodyStyles:{fontSize:7.5,textColor:PRETO},
+        alternateRowStyles:{fillColor:CINZABG},
+        styles:{cellPadding:1.8}
+      });
+    }else{
+      doc.setFont('helvetica','normal');doc.setFontSize(8.5);setText(CINZATXT);
+      doc.text('Nenhuma NF fora nesse período 🎉',MX,y);
+    }
   }
 
   // Rodapé com numeração de página
