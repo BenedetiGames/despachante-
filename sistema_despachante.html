@@ -189,12 +189,12 @@ table tr:hover td{background:#fafafa}
   <div class="wrapper">
     <div class="nav">
       <button class="active" onclick="showTab('painel',this)">📊 Painel</button>
-      <button onclick="showTab('lancamento',this)">➕ Lançamento</button>
-      <button onclick="showTab('vinculo',this)">🔗 Vínculo</button>
-      <button onclick="showTab('notas',this)">📁 Registros</button>
+      <button class="gerencia-hide" onclick="showTab('lancamento',this)">➕ Lançamento</button>
+      <button class="gerencia-hide" onclick="showTab('vinculo',this)">🔗 Vínculo</button>
+      <button class="gerencia-hide" onclick="showTab('notas',this)">📁 Registros</button>
       <button onclick="showTab('relatorios',this)">📈 Relatórios</button>
       <button class="adm-only" onclick="showTab('usuarios',this)">👥 Usuários</button>
-      <button onclick="showTab('config',this)">⚙️ Config.</button>
+      <button class="gerencia-hide" onclick="showTab('config',this)">⚙️ Config.</button>
     </div>
 
     <!-- PAINEL -->
@@ -666,7 +666,7 @@ table tr:hover td{background:#fafafa}
       <div class="fg"><label>Nome completo</label><input type="text" id="m-nome" placeholder="Ex: Everton Silva"></div>
       <div class="fg"><label>Usuário (login)</label><input type="text" id="m-usuario" placeholder="Ex: everton"></div>
       <div class="fg"><label>Senha</label><input type="password" id="m-senha" placeholder="Senha de acesso"></div>
-      <div class="fg"><label>Perfil</label><select id="m-perfil"><option value="usuario">Usuário comum</option><option value="adm">Administrador</option></select></div>
+      <div class="fg"><label>Perfil</label><select id="m-perfil"><option value="usuario">Usuário comum</option><option value="gerencia">Gerência (só Painel e Relatórios)</option><option value="adm">Administrador</option></select></div>
     </div>
     <div class="fg" style="margin-bottom:1rem">
       <label>Lojas que este usuário pode acessar</label>
@@ -741,7 +741,8 @@ function nfForaBadge(n){if(!n||!(n.nfFora===true||n.nfFora==='TRUE'))return'';va
 function dotH(st){if(st==='casado')return'<span class="dot green"></span>';if(st==='semi')return'<span class="dot" style="background:#aaa" title="Semi-novo"></span>';if(st==='sem-nf')return'<span class="dot red"></span>';return'<span class="dot amber"></span>';}
 function ipvaB(v){return(v===true||v==='TRUE')?'<span class="badge ipva">✓ IPVA</span>':'<span style="color:#ccc;font-size:12px">—</span>';}
 function isAdm(){return usuarioLogado&&String(usuarioLogado.perfil||'').trim().toLowerCase()==='adm';}
-function lojasDoUsuario(){if(isAdm())return lojas;return usuarioLogado&&usuarioLogado.lojas&&usuarioLogado.lojas.length?usuarioLogado.lojas.filter(function(l){return lojas.indexOf(l)>=0;}):[];}
+function isGerencia(){return usuarioLogado&&String(usuarioLogado.perfil||'').trim().toLowerCase()==='gerencia';}
+function lojasDoUsuario(){if(isAdm()||isGerencia())return lojas;return usuarioLogado&&usuarioLogado.lojas&&usuarioLogado.lojas.length?usuarioLogado.lojas.filter(function(l){return lojas.indexOf(l)>=0;}):[];}
 
 async function api(p){if(!SURL)throw new Error('URL não configurada');var r=await fetch(SURL,{method:'POST',body:JSON.stringify(p)});return JSON.parse(await r.text());}
 function setAlert(el,tipo,msg,spin){el.innerHTML='<div class="alert '+tipo+'">'+(spin?'<span class="spinner"></span> ':'')+msg+'</div>';}
@@ -766,11 +767,16 @@ function entrarNoApp(){
   document.getElementById('user-nome').textContent=usuarioLogado.nome;
   document.getElementById('user-avatar').textContent=usuarioLogado.nome.charAt(0).toUpperCase();
   setCon(true);
-  // Força exibição das abas adm com pequeno delay para garantir que DOM está pronto
+  // Força exibição das abas adm/gerência com pequeno delay para garantir que DOM está pronto
   setTimeout(function(){
-    var adm=String(usuarioLogado.perfil||'').trim().toLowerCase()==='adm';
+    var perfil=String(usuarioLogado.perfil||'').trim().toLowerCase();
+    var adm=perfil==='adm';
+    var gerencia=perfil==='gerencia';
     document.querySelectorAll('.adm-only').forEach(function(el){
       el.style.display=adm?'inline-flex':'none';
+    });
+    document.querySelectorAll('.gerencia-hide').forEach(function(el){
+      el.style.display=gerencia?'none':'inline-flex';
     });
   }, 100);
   atualizarSelects();
@@ -830,6 +836,11 @@ function creditoDaNF(n){
 function placaDaNF(n){
   var cred=creditoDaNF(n);
   return cred&&cred.placa?cred.placa:'';
+}
+function vendedorNF(n){
+  var v=n.vendedor;
+  if(!v||v==='-- selecione --')return'Sem vendedor';
+  return v;
 }
 function creditoTemNfVinculada(c){
   // Mesma guarda: crédito sem doc válido nunca é considerado vinculado por essa via
@@ -915,9 +926,11 @@ function limparCred(){['c-doc','c-cliente','c-placa','c-oc','c-valor','c-comissa
 async function salvarNF(){
   var doc=normDoc(document.getElementById('n-doc').value);
   var loja=document.getElementById('n-loja').value;
+  var vendedor=document.getElementById('n-vendedor').value;
   if(doc.length<11){alert('CPF ou CNPJ inválido.');return;}
   if(loja==='-- selecione --'){alert('Selecione a loja.');return;}
-  var rec={id:Date.now(),doc:document.getElementById('n-doc').value,cliente:document.getElementById('n-cliente').value.trim(),chassi:document.getElementById('n-chassi').value.trim(),loja:loja,vendedor:document.getElementById('n-vendedor').value,dtFat:document.getElementById('n-dtfat').value,dtReceb:document.getElementById('n-dtreceb').value,obs:document.getElementById('n-obs').value,nfFora:nfForaAtiva,motivoNfFora:nfForaAtiva?document.getElementById('n-motivo').value.trim():'',criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:''};
+  if(vendedor==='-- selecione --'){alert('Selecione o vendedor.');return;}
+  var rec={id:Date.now(),doc:document.getElementById('n-doc').value,cliente:document.getElementById('n-cliente').value.trim(),chassi:document.getElementById('n-chassi').value.trim(),loja:loja,vendedor:vendedor,dtFat:document.getElementById('n-dtfat').value,dtReceb:document.getElementById('n-dtreceb').value,obs:document.getElementById('n-obs').value,nfFora:nfForaAtiva,motivoNfFora:nfForaAtiva?document.getElementById('n-motivo').value.trim():'',criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:''};
   try{var r=await api({action:'insert',sheet:'NFS',data:rec});if(r.error)throw new Error(r.error);nfs.unshift(rec);alert('✓ NF salva!');limparNF();renderPainel();}catch(e){alert('Erro: '+e.message);}
 }
 function limparNF(){['n-doc','n-cliente','n-chassi','n-dtfat','n-dtreceb','n-obs','n-motivo'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('n-loja').value='-- selecione --';document.getElementById('n-vendedor').value='-- selecione --';document.getElementById('n-doc-match').className='doc-match';document.getElementById('n-doc-tipo').innerHTML='';if(nfForaAtiva)toggleNfFora();}
@@ -1703,11 +1716,15 @@ async function salvarEdicaoNF(){
   var id=document.getElementById('en-id').value;
   var n=nfs.find(function(x){return x.id==id;});
   if(!n){alert('Registro não encontrado.');return;}
+  var lojaVal=document.getElementById('en-loja').value;
+  var vendVal=document.getElementById('en-vendedor').value;
+  if(!lojaVal||lojaVal==='-- selecione --'){alert('Selecione uma loja válida antes de salvar.');return;}
+  if(!vendVal||vendVal==='-- selecione --'){alert('Selecione um vendedor válido antes de salvar.');return;}
   n.doc=document.getElementById('en-doc').value;
   n.cliente=document.getElementById('en-cliente').value.trim();
   n.chassi=document.getElementById('en-chassi').value.trim();
-  n.loja=document.getElementById('en-loja').value;
-  n.vendedor=document.getElementById('en-vendedor').value;
+  n.loja=lojaVal;
+  n.vendedor=vendVal;
   n.dtFat=document.getElementById('en-dtfat').value;
   n.dtReceb=document.getElementById('en-dtreceb').value;
   n.obs=document.getElementById('en-obs').value;
@@ -1797,7 +1814,7 @@ function calcularDadosRelatorio(){
   // Resumo por vendedor: NFs | Vinculadas | Total honorários
   var pV={};
   listAll.forEach(function(n){
-    var v=n.vendedor||'—';
+    var v=vendedorNF(n);
     if(!pV[v])pV[v]={nfs:0,vinc:0,hon:0};
     pV[v].nfs++;
     var cred=creditoDaNF(n);
@@ -1805,7 +1822,9 @@ function calcularDadosRelatorio(){
   });
 
   var per=di&&df?fmtD(di)+' a '+fmtD(df):di?'a partir de '+fmtD(di):df?'até '+fmtD(df):'';
-  var titulo=[loja,vend,per].filter(Boolean).join(' · ')||'Geral';
+  var perTxt=per||'todos os períodos';
+  var titulo=[loja,vend].filter(Boolean).join(' · ')||'Geral';
+  titulo=titulo+' — '+perTxt;
 
   // Por loja - só relevante quando o filtro é "Todas as lojas"
   var porLoja=null;
@@ -1849,7 +1868,7 @@ function gerarRelatorio(){
   }
 
   // Lista principal: NFs normais (sem cortesia, sem NF fora)
-  html+='<div class="section-title" style="margin-bottom:.5rem">Todas as NFs cadastradas'+(d.loja?' — '+d.loja:'')+'</div><div style="overflow-x:auto"><table style="margin-bottom:1.5rem"><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Dt. Receb.</th><th>Honorários</th><th>Vínculo</th></tr></thead><tbody>'+
+  html+='<div class="section-title" style="margin-bottom:.3rem">Todas as NFs cadastradas'+(d.loja?' — '+d.loja:'')+'</div><div style="font-size:11px;color:#999;margin-bottom:.6rem"><span class="dot green" style="display:inline-block"></span> Vinculada = NF e crédito casados, documentação concluída &nbsp;·&nbsp; <span class="dot red" style="display:inline-block"></span> Sem crédito = ainda não encontrou o crédito correspondente</div><div style="overflow-x:auto"><table style="margin-bottom:1.5rem"><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Dt. Receb.</th><th>Honorários</th><th>Vínculo</th></tr></thead><tbody>'+
     (d.nfsNormais.length?d.nfsNormais.map(function(n){return linhaNF(n,true);}).join(''):'<tr><td colspan="8" class="empty-state">Nenhuma NF nesse período</td></tr>')+
     '</tbody></table></div>';
 
