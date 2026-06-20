@@ -234,7 +234,12 @@ table tr:hover td{background:#fafafa}
       </div>
 
       <div class="card">
-        <div class="section-title">Pendências de documentação</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+          <div class="section-title" style="margin:0">Enviado para documentar</div>
+          <select id="pend-doc-loja" onchange="renderPendDocumentacao()" style="border-radius:7px;border:1px solid #ddd;padding:5px 8px;font-size:12px;color:#333">
+            <option value="">Todas as lojas</option>
+          </select>
+        </div>
         <div style="font-size:12px;color:#888;margin-bottom:10px">NFs enviadas para documentação que ainda não voltaram</div>
         <div style="overflow-x:auto"><table><thead><tr><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Dt. envio</th><th>Dias em aberto</th><th></th></tr></thead><tbody id="tbl-painel-pend-doc"></tbody></table></div>
       </div>
@@ -1342,12 +1347,18 @@ function renderCortesiasEspeciais(){
 function renderPendDocumentacao(){
   var tbl=document.getElementById('tbl-painel-pend-doc');
   if(!tbl)return;
+  var selLoja=document.getElementById('pend-doc-loja');
+  var valorAtual=selLoja.value;
+  selLoja.innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+l+'</option>';}).join('');
+  selLoja.value=valorAtual;
+  var lojaFiltro=selLoja.value;
   var minhas=lojasDoUsuario().map(function(l){return norm(l);});
   var pend=nfs.filter(function(n){
     var enviado=(n.enviadoDocumentacao===true||n.enviadoDocumentacao==='TRUE');
     var pronto=(n.documentoPronto===true||n.documentoPronto==='TRUE');
     if(!enviado||pronto)return false;
     if(minhas.indexOf(norm(n.loja))<0)return false;
+    if(lojaFiltro&&norm(n.loja)!==norm(lojaFiltro))return false;
     return true;
   }).sort(function(a,b){
     var ua=(a.docUrgente===true||a.docUrgente==='TRUE')?1:0;
