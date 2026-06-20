@@ -818,14 +818,31 @@ function creditoDaNF(n){
   // Busca o crédito vinculado a uma NF (por OC forçada, ou por doc+loja)
   var cred=null;
   if(n.ocVinculada)cred=creditos.find(function(c){return norm(c.oc)===norm(n.ocVinculada);});
-  if(!cred)cred=creditos.find(function(c){return normDoc(c.doc)===normDoc(n.doc)&&norm(c.loja)===norm(n.loja);});
+  if(!cred){
+    var docNF=normDoc(n.doc);
+    // Guarda crítica: doc vazio NUNCA deve "casar" com outro doc vazio (evita pegar o 1º crédito qualquer da loja)
+    if(docNF.length>=11){
+      cred=creditos.find(function(c){return normDoc(c.doc)===docNF&&norm(c.loja)===norm(n.loja);});
+    }
+  }
   return cred||null;
 }
 function placaDaNF(n){
   var cred=creditoDaNF(n);
   return cred&&cred.placa?cred.placa:'';
 }
-function buildVin(){var map={};creditos.forEach(function(c){var k=normDoc(c.doc)+'||'+norm(c.loja);if(!map[k])map[k]={doc:c.doc,cliente:c.cliente,loja:c.loja,creditos:[],nfs:[]};map[k].creditos.push(c);});nfs.forEach(function(n){var k=normDoc(docEfetivoNF(n))+'||'+norm(lojaEfetivaNF(n));if(!map[k])map[k]={doc:n.doc,cliente:n.cliente,loja:n.loja,creditos:[],nfs:[]};map[k].nfs.push(n);});return Object.values(map);}
+function creditoTemNfVinculada(c){
+  // Mesma guarda: crédito sem doc válido nunca é considerado vinculado por essa via
+  if(normDoc(c.doc).length<11)return false;
+  return nfs.some(function(n){return creditoDaNF(n)===c;});
+}
+function chaveVinculo(docVal,lojaVal,idUnico){
+  var d=normDoc(docVal);
+  // Doc vazio/inválido (menos de 11 dígitos) nunca deve agrupar com outros vazios - usa o próprio id como chave isolada
+  if(d.length<11)return'__SEMDOC__'+idUnico+'||'+norm(lojaVal);
+  return d+'||'+norm(lojaVal);
+}
+function buildVin(){var map={};creditos.forEach(function(c){var k=chaveVinculo(c.doc,c.loja,'c'+c.id);if(!map[k])map[k]={doc:c.doc,cliente:c.cliente,loja:c.loja,creditos:[],nfs:[]};map[k].creditos.push(c);});nfs.forEach(function(n){var k=chaveVinculo(docEfetivoNF(n),lojaEfetivaNF(n),'n'+n.id);if(!map[k])map[k]={doc:n.doc,cliente:n.cliente,loja:n.loja,creditos:[],nfs:[]};map[k].nfs.push(n);});return Object.values(map);}
 function casSt(g){
   if(g.creditos.length>0&&g.nfs.length>0)return'casado';
   // Semi-novos não precisam de NF — tratar como "ok" (não pendente)
@@ -1475,7 +1492,7 @@ function renderRegNFs(){
     return true;
   });
   document.getElementById('tbl-nfs').innerHTML=list.length?list.map(function(n){
-    var tc=creditos.some(function(c){return normDoc(c.doc)===normDoc(docEfetivoNF(n))&&norm(c.loja)===norm(lojaEfetivaNF(n));});
+    var tc=!!creditoDaNF(n);
     return'<tr><td style="font-size:12px;color:#666">'+(n.doc||'—')+'</td><td style="font-weight:600">'+(n.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+(n.chassi||'—')+'</td><td>'+n.loja+'</td><td>'+(n.vendedor||'—')+'</td><td>'+fmtD(n.dtFat)+'</td><td>'+fmtD(n.dtReceb)+'</td><td>'+(nfForaBadge(n)||'<span style="color:#ccc;font-size:12px">—</span>')+'</td><td>'+(tc?'<span class="match-ok"><span class="dot green"></span> Casado</span>':'<span class="match-avulso"><span class="dot amber"></span> Sem crédito</span>')+'</td><td class="tbl-actions"><button onclick="editarNF('+n.id+')">✏️</button><button onclick="excNF('+n.id+')">🗑</button></td></tr>';
   }).join(''):'<tr><td colspan="10" class="empty-state">Nenhuma NF avulsa</td></tr>';
 }
@@ -1661,7 +1678,7 @@ function renderDashVendedor(){
   var vd=list.filter(function(c){return c.vendaDireta===true||c.vendaDireta==='TRUE';}).length;
   var ipvaCnt=list.filter(function(c){return c.ipva===true||c.ipva==='TRUE';}).length;
   var nfFora=nfsVend.filter(function(n){return n.nfFora===true||n.nfFora==='TRUE';}).length;
-  var vinc=list.filter(function(c){return nfs.some(function(n){return normDoc(docEfetivoNF(n))===normDoc(c.doc)&&norm(lojaEfetivaNF(n))===norm(c.loja);});}).length;
+  var vinc=list.filter(function(c){return creditoTemNfVinculada(c);}).length;
   document.getElementById('dash-vend-metricas').innerHTML=
     '<div class="metric"><div class="lbl">Créditos</div><div class="val blue">'+list.length+'</div></div>'+
     '<div class="metric"><div class="lbl">NFs vinculadas</div><div class="val green">'+vinc+'</div></div>'+
@@ -1967,7 +1984,7 @@ function gerarPDF(tipo){
     });
   }else{
     doc.setFont('helvetica','normal');doc.setFontSize(8);setText(CINZATXT);
-    doc.text('Nenhuma NF fora no período 🎉',x2+4,y+18);
+    doc.text('Nenhuma NF fora no período',x2+4,y+18);
   }
   y=yBlocoIni+44;
 
@@ -2011,7 +2028,7 @@ function gerarPDF(tipo){
     // Seção Cortesias no final
     if(y>PH-50){doc.addPage();y=18;}
     doc.setFont('helvetica','bold');doc.setFontSize(11);setText(PRETO);
-    doc.text('🎁 Cortesias ('+d.nfsCortesia.length+')',MX,y);y+=5;
+    doc.text('Cortesias ('+d.nfsCortesia.length+')',MX,y);y+=5;
     if(d.nfsCortesia.length){
       doc.autoTable({
         startY:y,margin:{left:MX,right:MX},
@@ -2032,7 +2049,7 @@ function gerarPDF(tipo){
     // Seção Notas Fora no final
     if(y>PH-50){doc.addPage();y=18;}
     doc.setFont('helvetica','bold');doc.setFontSize(11);setText(PRETO);
-    doc.text('🚫 Notas Fora ('+d.nfsFora.length+')',MX,y);y+=5;
+    doc.text('Notas Fora ('+d.nfsFora.length+')',MX,y);y+=5;
     if(d.nfsFora.length){
       doc.autoTable({
         startY:y,margin:{left:MX,right:MX},
@@ -2046,7 +2063,7 @@ function gerarPDF(tipo){
       });
     }else{
       doc.setFont('helvetica','normal');doc.setFontSize(8.5);setText(CINZATXT);
-      doc.text('Nenhuma NF fora nesse período 🎉',MX,y);
+      doc.text('Nenhuma NF fora nesse período',MX,y);
     }
   }
 
