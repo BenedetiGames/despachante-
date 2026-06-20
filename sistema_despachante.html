@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VeloDoc</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;color:#1a1a1a;background:#f5f5f3;min-height:100vh}
@@ -477,6 +479,8 @@ table tr:hover td{background:#fafafa}
         </div>
         <button class="btn primary" onclick="gerarRelatorio()">📊 Gerar relatório</button>
         <button class="btn success" onclick="exportarUltimoRelatorio()">⬇️ Exportar CSV</button>
+        <button class="btn" style="background:#185FA5;color:#fff;border-color:#185FA5" onclick="gerarPDF('resumido')">📄 PDF resumido</button>
+        <button class="btn" style="background:#0F6E56;color:#fff;border-color:#0F6E56" onclick="gerarPDF('completo')">📄 PDF completo</button>
       </div>
       <div id="rel-output"></div>
     </div>
@@ -1704,7 +1708,7 @@ async function excNF(id){if(!confirm('Remover NF?'))return;try{await api({action
 function renderRelFiltros(){document.getElementById('rel-loja').innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+l+'</option>';}).join('');document.getElementById('rel-vendedor').innerHTML='<option value="">Todos os vendedores</option>'+vendedores.map(function(v){return'<option>'+v+'</option>';}).join('');}
 var ultimoRelatorioList=[];
 var ultimoRelatorioNome='relatorio';
-function gerarRelatorio(){
+function calcularDadosRelatorio(){
   var loja=document.getElementById('rel-loja').value,vend=document.getElementById('rel-vendedor').value,motivoFora=document.getElementById('rel-motivo-nffora').value,di=document.getElementById('rel-dt-ini').value,df=document.getElementById('rel-dt-fim').value,ipvaF=document.getElementById('rel-ipva').value,cortFiltro=document.getElementById('rel-cortesia').value,vdFiltro=(document.getElementById('rel-vendaDireta')||{value:''}).value;
   // Mapa de doc+loja -> NF correspondente (para checar motivo NF fora)
   var nfMap={};
@@ -1726,22 +1730,211 @@ function gerarRelatorio(){
     if(ipvaF==='0'&&(c.ipva===true||c.ipva==='TRUE'))return false;
     return true;
   });
-  ultimoRelatorioList=list;
   var cort=list.filter(function(c){return isCortesia(c);});
   var nfsLoja=loja?nfs.filter(function(n){return norm(n.loja)===norm(loja);}):nfs;
-  var perd=nfsLoja.filter(function(n){return n.nfFora===true||n.nfFora==='TRUE';});
+  var nfsForaFiltradas=nfsLoja.filter(function(n){return n.nfFora===true||n.nfFora==='TRUE';});
+  var perd=nfsForaFiltradas;
   var tH=list.reduce(function(a,c){return a+(Number(c.honorarios)||0);},0),tN=list.reduce(function(a,c){return a+(Number(c.nossaCom)||0);},0),tC=list.reduce(function(a,c){return a+(Number(c.comissao)||0);},0),tV=list.reduce(function(a,c){return a+(Number(c.valor)||0);},0);
   var cIPVA=list.filter(function(c){return c.ipva===true||c.ipva==='TRUE';}).length;
   var cas=list.filter(function(c){return nfs.some(function(n){return normDoc(docEfetivoNF(n))===normDoc(c.doc)&&norm(lojaEfetivaNF(n))===norm(c.loja);});});
   var pV={};list.forEach(function(c){if(!pV[c.vendedor])pV[c.vendedor]={q:0,c:0,h:0,n:0};pV[c.vendedor].q++;pV[c.vendedor].c+=Number(c.comissao)||0;pV[c.vendedor].h+=Number(c.honorarios)||0;pV[c.vendedor].n+=Number(c.nossaCom)||0;});
   var per=di&&df?fmtD(di)+' a '+fmtD(df):di?'a partir de '+fmtD(di):df?'até '+fmtD(df):'';
   var titulo=[loja,vend,per].filter(Boolean).join(' · ')||'Geral';
+  // Por loja - só relevante quando o filtro é "Todas as lojas"
+  var porLoja=null;
+  if(!loja){
+    var lojasUnicas=lojasDoUsuario();
+    porLoja=lojasUnicas.map(function(l){
+      var lc=list.filter(function(c){return norm(c.loja)===norm(l);});
+      var ln=nfsLoja.filter(function(n){return norm(n.loja)===norm(l);});
+      return{loja:l,qtdCred:lc.length,qtdNf:ln.length,hon:lc.reduce(function(a,c){return a+(Number(c.honorarios)||0);},0),nossaCom:lc.reduce(function(a,c){return a+(Number(c.nossaCom)||0);},0)};
+    }).filter(function(x){return x.qtdCred>0||x.qtdNf>0;});
+  }
+  // NF Fora por motivo
+  var motivosLista=['revenda','fora_estado','poupa_tempo','ja_tem_despachante','diretoria','nao_teve_atendimento','whatsapp'];
+  var nfForaPorMotivo=motivosLista.map(function(m){return{motivo:m,label:motivoNfForaLabel(m),qtd:nfsForaFiltradas.filter(function(n){return n.motivoNfFora===m;}).length};}).filter(function(x){return x.qtd>0;});
+  return{loja:loja,vend:vend,per:per,titulo:titulo,list:list,cort:cort,perd:perd,nfsLoja:nfsLoja,tH:tH,tN:tN,tC:tC,tV:tV,cIPVA:cIPVA,cas:cas,pV:pV,porLoja:porLoja,nfForaPorMotivo:nfForaPorMotivo,valorCortesia:cort.reduce(function(a,c){return a+(Number(c.valor)||0);},0)};
+}
+function gerarRelatorio(){
+  var d=calcularDadosRelatorio();
+  var list=d.list,cort=d.cort,perd=d.perd,tH=d.tH,tN=d.tN,tC=d.tC,tV=d.tV,cIPVA=d.cIPVA,cas=d.cas,pV=d.pV,titulo=d.titulo;
+  ultimoRelatorioList=list;
   ultimoRelatorioNome='relatorio_'+norm(titulo).replace(/[^a-z0-9]+/g,'_');
   document.getElementById('rel-output').innerHTML='<div class="card"><div class="section-title" style="margin-bottom:1rem">Relatório: '+titulo+'</div><div class="metric-grid" style="margin-bottom:1.25rem"><div class="metric"><div class="lbl">Créditos</div><div class="val blue">'+list.length+'</div></div><div class="metric"><div class="lbl">Vinculados</div><div class="val green">'+cas.length+'</div></div><div class="metric"><div class="lbl">NF perdidas</div><div class="val red">'+perd.length+'</div></div><div class="metric"><div class="lbl">Cortesias</div><div class="val">'+cort.length+'</div></div><div class="metric"><div class="lbl">Com IPVA</div><div class="val blue">'+cIPVA+'</div></div><div class="metric"><div class="lbl">Total vendas</div><div class="val blue">'+fmtM(tV)+'</div></div><div class="metric"><div class="lbl">Com. vendedores</div><div class="val amber">'+fmtM(tC)+'</div></div><div class="metric"><div class="lbl">Total honorários</div><div class="val">'+fmtM(tH)+'</div></div><div class="metric"><div class="lbl">Nossa comissão</div><div class="val green">'+fmtM(tN)+'</div></div></div>'+(Object.keys(pV).length?'<div class="section-title" style="margin-bottom:.5rem">Por vendedor</div><table style="margin-bottom:1rem"><thead><tr><th>Vendedor</th><th>NFs</th><th>Com. vendedor</th><th>Honorários</th><th>Nossa com.</th></tr></thead><tbody>'+Object.entries(pV).sort(function(a,b){return b[1].n-a[1].n;}).map(function(e){return'<tr><td style="font-weight:600"><button onclick="abrirDashVendedor(\''+e[0].replace(/'/g,"\\'")+'\')" style="background:none;border:none;cursor:pointer;color:#185FA5;font-weight:600;font-size:13px;padding:0;text-decoration:underline">'+e[0]+'</button></td><td>'+e[1].q+'</td><td style="color:#854F0B">'+fmtM(e[1].c)+'</td><td>'+fmtM(e[1].h)+'</td><td style="color:#0F6E56;font-weight:600">'+fmtM(e[1].n)+'</td></tr>';}).join('')+'</tbody></table>':'')+'<div class="section-title" style="margin-bottom:.5rem">Detalhamento</div><div style="overflow-x:auto"><table><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>OC</th><th>IPVA</th><th>Loja</th><th>Vendedor</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Cortesia</th><th>Data</th><th>Lançado por</th></tr></thead><tbody>'+(list.length?list.map(function(c){var qm=(c.editadoPor?c.editadoPor:(c.criadoPor||'—'));return'<tr><td style="font-size:11px;color:#888">'+(c.doc||'—')+'</td><td>'+c.cliente+'</td><td>'+(c.placa||'—')+'</td><td style="font-size:11px;color:#888">'+(c.oc||'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+(c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+(isCortesia(c)?cortesiaBadge(true):'<span style="color:#ccc;font-size:12px">—</span>')+'</td><td>'+fmtD(c.dtVenda)+'</td><td style="font-size:12px;color:#666">'+qm+'</td></tr>';}).join(''):'<tr><td colspan="14" class="empty-state">Nenhum resultado</td></tr>')+'</tbody></table></div></div>';
 }
 function exportarUltimoRelatorio(){
   if(!ultimoRelatorioList.length){alert('Gere um relatório primeiro antes de exportar.');return;}
   exportarRelatorioCSV(ultimoRelatorioList,ultimoRelatorioNome);
+}
+
+// ── GERAÇÃO DE PDF ESTILO INFOGRÁFICO ───────────────────────────────
+function gerarPDF(tipo){
+  if(typeof window.jspdf==='undefined'){alert('Biblioteca de PDF não carregou. Verifique sua conexão com a internet e tente novamente.');return;}
+  var d=calcularDadosRelatorio();
+  var jsPDF=window.jspdf.jsPDF;
+  var doc=new jsPDF({unit:'mm',format:'a4'});
+  var PW=210,PH=297,MX=14;
+  var AZUL=[24,95,165],VERDE=[15,110,86],VERDE2=[29,158,117],AMBAR=[133,79,11],VERMELHO=[153,60,29],CINZABG=[245,245,243],CINZATXT=[120,120,120],PRETO=[26,26,26];
+
+  function setFill(rgb){doc.setFillColor(rgb[0],rgb[1],rgb[2]);}
+  function setText(rgb){doc.setTextColor(rgb[0],rgb[1],rgb[2]);}
+  function card(x,y,w,h){setFill(CINZABG);doc.roundedRect(x,y,w,h,2.5,2.5,'F');}
+
+  // Cabeçalho com "logo" (círculo estilo velocímetro) + nome
+  doc.setFillColor(255,255,255);doc.rect(0,0,PW,30,'F');
+  doc.setDrawColor(AZUL[0],AZUL[1],AZUL[2]);doc.setLineWidth(0.9);
+  doc.circle(MX+4,15,5,'S');
+  doc.line(MX+4,15,MX+7,11);
+  doc.setFont('helvetica','bold');doc.setFontSize(17);
+  setText(AZUL);doc.text('Velo',MX+14,17);
+  setText(PRETO);doc.text('Doc',MX+14+doc.getTextWidth('Velo'),17);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);
+  setText(CINZATXT);doc.text('Relatório de gestão de documentação automotiva',MX+14,22.5);
+  doc.setDrawColor(220,220,220);doc.setLineWidth(0.3);doc.line(0,30,PW,30);
+
+  var y=40;
+  doc.setFont('helvetica','bold');doc.setFontSize(13);setText(PRETO);
+  doc.text('Relatório: '+d.titulo,MX,y);
+  doc.setFont('helvetica','normal');doc.setFontSize(8.5);setText(CINZATXT);
+  doc.text('Gerado em '+new Date().toLocaleDateString('pt-BR')+' às '+new Date().toLocaleTimeString('pt-BR').slice(0,5),PW-MX,y,{align:'right'});
+  y+=8;
+
+  // KPIs em cards (5 cards numa linha)
+  var kpis=[
+    {label:'CRÉDITOS',val:String(d.list.length),cor:AZUL},
+    {label:'VINCULADOS',val:String(d.cas.length),cor:VERDE2},
+    {label:'NF PERDIDAS',val:String(d.perd.length),cor:VERMELHO},
+    {label:'TOTAL HONORÁRIOS',val:fmtM(d.tH),cor:PRETO},
+    {label:'NOSSA COMISSÃO',val:fmtM(d.tN),cor:VERDE2}
+  ];
+  var kpiW=(PW-2*MX-4*3)/5;
+  kpis.forEach(function(k,i){
+    var x=MX+i*(kpiW+3);
+    card(x,y,kpiW,20);
+    doc.setFont('helvetica','normal');doc.setFontSize(6.5);setText(CINZATXT);
+    doc.text(k.label,x+3,y+6);
+    doc.setFont('helvetica','bold');doc.setFontSize(12);setText(k.cor);
+    doc.text(k.val,x+3,y+15);
+  });
+  y+=28;
+
+  // Por loja (só quando filtro = todas as lojas)
+  if(d.porLoja&&d.porLoja.length){
+    doc.setFont('helvetica','bold');doc.setFontSize(11);setText(PRETO);
+    doc.text('Por loja',MX,y);y+=6;
+    var maxHon=Math.max.apply(null,d.porLoja.map(function(x){return x.hon;}))||1;
+    var coresLoja=[[24,95,165],[15,110,86],[186,117,23],[216,90,48],[127,119,221]];
+    d.porLoja.forEach(function(lj,i){
+      var cor=coresLoja[i%coresLoja.length];
+      doc.setFont('helvetica','bold');doc.setFontSize(9);setText(PRETO);
+      doc.text(lj.loja,MX,y+3.5);
+      doc.setFont('helvetica','normal');doc.setFontSize(8);setText(CINZATXT);
+      doc.text(lj.qtdNf+' NFs · '+lj.qtdCred+' créditos',MX+60,y+3.5);
+      doc.setFont('helvetica','bold');setText(AZUL);
+      doc.text(fmtM(lj.hon),PW-MX,y+3.5,{align:'right'});
+      // barra proporcional
+      var barW=PW-2*MX;var pct=lj.hon/maxHon;
+      doc.setFillColor(230,230,230);doc.roundedRect(MX,y+5,barW,2.2,1,1,'F');
+      doc.setFillColor(cor[0],cor[1],cor[2]);doc.roundedRect(MX,y+5,Math.max(barW*pct,3),2.2,1,1,'F');
+      y+=11;
+    });
+    y+=3;
+  }
+
+  // Linha dupla: Cortesias (esquerda) + NF Fora motivos (direita)
+  var colW=(PW-2*MX-6)/2;
+  var yBlocoIni=y;
+  // Cortesias
+  card(MX,y,colW,38);
+  doc.setFont('helvetica','bold');doc.setFontSize(10);setText(PRETO);
+  doc.text('Cortesias & Venda Direta',MX+4,y+7);
+  doc.setFont('helvetica','normal');doc.setFontSize(8);setText(CINZATXT);
+  doc.text('Cortesias',MX+4,y+15);
+  doc.setFont('helvetica','bold');doc.setFontSize(13);setText(AZUL);
+  doc.text(String(d.cort.length),MX+4,y+21.5);
+  doc.setFont('helvetica','normal');doc.setFontSize(8);setText(CINZATXT);
+  doc.text('Valor cedido',MX+colW/2+4,y+15);
+  doc.setFont('helvetica','bold');doc.setFontSize(13);setText(VERMELHO);
+  doc.text(fmtM(d.valorCortesia),MX+colW/2+4,y+21.5);
+  var vdCount=d.list.filter(function(c){return c.vendaDireta===true||c.vendaDireta==='TRUE';}).length;
+  doc.setFont('helvetica','normal');doc.setFontSize(8);setText(CINZATXT);
+  doc.text('Venda direta: '+vdCount+' créditos',MX+4,y+30);
+
+  // NF Fora - motivos (barras horizontais)
+  var x2=MX+colW+6;
+  card(x2,y,colW,38);
+  doc.setFont('helvetica','bold');doc.setFontSize(10);setText(PRETO);
+  doc.text('NF Fora — Motivos',x2+4,y+7);
+  if(d.nfForaPorMotivo.length){
+    var maxM=Math.max.apply(null,d.nfForaPorMotivo.map(function(x){return x.qtd;}));
+    var yy=y+11;
+    d.nfForaPorMotivo.slice(0,4).forEach(function(m){
+      doc.setFont('helvetica','normal');doc.setFontSize(7.5);setText(PRETO);
+      doc.text(m.label,x2+4,yy+2.3);
+      var bw=colW-50;var pct=m.qtd/maxM;
+      doc.setFillColor(230,230,230);doc.roundedRect(x2+42,yy,bw,2,1,1,'F');
+      doc.setFillColor(AMBAR[0],AMBAR[1],AMBAR[2]);doc.roundedRect(x2+42,yy,Math.max(bw*pct,2),2,1,1,'F');
+      doc.setFont('helvetica','bold');setText(PRETO);
+      doc.text(String(m.qtd),x2+colW-6,yy+2.3,{align:'right'});
+      yy+=6.5;
+    });
+  }else{
+    doc.setFont('helvetica','normal');doc.setFontSize(8);setText(CINZATXT);
+    doc.text('Nenhuma NF fora no período 🎉',x2+4,y+18);
+  }
+  y=yBlocoIni+44;
+
+  // Por vendedor (se houver)
+  var pvEntries=Object.entries(d.pV).sort(function(a,b){return b[1].n-a[1].n;});
+  if(pvEntries.length){
+    doc.setFont('helvetica','bold');doc.setFontSize(11);setText(PRETO);
+    doc.text('Por vendedor',MX,y);y+=5;
+    if(typeof doc.autoTable==='function'){
+      doc.autoTable({
+        startY:y,margin:{left:MX,right:MX},
+        head:[['Vendedor','NFs','Com. vendedor','Honorários','Nossa com.']],
+        body:pvEntries.map(function(e){return[e[0],String(e[1].q),fmtM(e[1].c),fmtM(e[1].h),fmtM(e[1].n)];}),
+        theme:'plain',
+        headStyles:{fillColor:AZUL,textColor:255,fontStyle:'bold',fontSize:8.5},
+        bodyStyles:{fontSize:8.5,textColor:PRETO},
+        alternateRowStyles:{fillColor:CINZABG},
+        styles:{cellPadding:2.2}
+      });
+      y=doc.lastAutoTable.finalY+8;
+    }
+  }
+
+  // Tabela detalhada completa (só no modo "completo")
+  if(tipo==='completo'&&d.list.length){
+    if(y>PH-60){doc.addPage();y=18;}
+    doc.setFont('helvetica','bold');doc.setFontSize(11);setText(PRETO);
+    doc.text('Detalhamento de créditos',MX,y);y+=5;
+    doc.autoTable({
+      startY:y,margin:{left:MX,right:MX},
+      head:[['Cliente','Loja','Vendedor','Valor','Honorários','Nossa com.','Cortesia','Data']],
+      body:d.list.map(function(c){return[c.cliente||'',c.loja||'',c.vendedor||'',fmtM(c.valor),fmtM(c.honorarios),fmtM(c.nossaCom),isCortesia(c)?'Sim':'-',fmtD(c.dtVenda)];}),
+      theme:'plain',
+      headStyles:{fillColor:VERDE,textColor:255,fontStyle:'bold',fontSize:7.5},
+      bodyStyles:{fontSize:7.5,textColor:PRETO},
+      alternateRowStyles:{fillColor:CINZABG},
+      styles:{cellPadding:1.8},
+      didDrawPage:function(){
+        doc.setFont('helvetica','normal');doc.setFontSize(7);setText(CINZATXT);
+      }
+    });
+  }
+
+  // Rodapé com numeração de página
+  var totalPages=doc.internal.getNumberOfPages();
+  for(var p=1;p<=totalPages;p++){
+    doc.setPage(p);
+    doc.setFont('helvetica','normal');doc.setFontSize(7.5);setText(CINZATXT);
+    doc.text('VeloDoc · '+d.titulo,MX,PH-8);
+    doc.text('Página '+p+' de '+totalPages,PW-MX,PH-8,{align:'right'});
+  }
+
+  var nomeArq='relatorio_'+(tipo==='completo'?'completo_':'resumido_')+norm(d.titulo).replace(/[^a-z0-9]+/g,'_')+'.pdf';
+  doc.save(nomeArq);
 }
 
 function renderTblUsuarios(){document.getElementById('tbl-usuarios').innerHTML=usuarios.length?usuarios.map(function(u){var ll=u.lojas?String(u.lojas).split(',').filter(Boolean).join(', '):'Todas';return'<tr><td style="font-weight:600">'+u.nome+'</td><td style="color:#888">'+u.usuario+'</td><td><span class="badge '+(u.perfil==='adm'?'adm':'usuario')+'">'+u.perfil+'</span></td><td style="font-size:12px;color:#666">'+ll+'</td><td class="tbl-actions"><button onclick="editarUsuario(\''+u.id+'\')">✏️</button><button onclick="removerUsuario(\''+u.id+'\')">🗑</button></td></tr>';}).join(''):'<tr><td colspan="5" class="empty-state">Nenhum usuário</td></tr>';}
