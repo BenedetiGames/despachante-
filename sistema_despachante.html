@@ -610,6 +610,9 @@ table tr:hover td{background:#fafafa}
       <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#f5f5f3;padding:7px 12px;border-radius:8px;border:1px solid #e5e5e5">
         <input type="checkbox" id="en-docPronto" style="accent-color:#1D9E75"> Documento pronto
       </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#fef2f2;padding:7px 12px;border-radius:8px;border:1px solid #fca5a5">
+        <input type="checkbox" id="en-urgente" style="accent-color:#dc2626"> 🔥 Urgente
+      </label>
     </div>
     <div style="display:flex;gap:8px;margin-top:.5rem;flex-wrap:wrap">
       <button class="btn success" onclick="salvarEdicaoNF()">💾 Salvar alterações</button>
@@ -1342,27 +1345,57 @@ function renderPendDocumentacao(){
     if(!enviado||pronto)return false;
     if(minhas.indexOf(norm(n.loja))<0)return false;
     return true;
-  }).sort(function(a,b){return diasDesde(b.dtEnvioDoc)-diasDesde(a.dtEnvioDoc);});
+  }).sort(function(a,b){
+    var ua=(a.docUrgente===true||a.docUrgente==='TRUE')?1:0;
+    var ub=(b.docUrgente===true||b.docUrgente==='TRUE')?1:0;
+    if(ua!==ub)return ub-ua; // urgentes primeiro
+    return diasDesde(b.dtEnvioDoc)-diasDesde(a.dtEnvioDoc);
+  });
   tbl.innerHTML=pend.length?pend.map(function(n){
     var dias=diasDesde(n.dtEnvioDoc);
     var corDias=dias>=7?'#993C1D':(dias>=3?'#854F0B':'#666');
-    return'<tr><td style="font-weight:600">'+(n.cliente||'—')+'</td><td>'+(placaDaNF(n)||'—')+'</td><td>'+n.loja+'</td><td>'+(n.vendedor||'—')+'</td><td>'+fmtD(n.dtEnvioDoc)+'</td><td style="color:'+corDias+';font-weight:600">'+dias+' dia'+(dias!==1?'s':'')+'</td><td><button style="font-size:12px;padding:7px 14px;background:#1D9E75;color:#fff;border:none;border-radius:7px;cursor:pointer;font-weight:600" onclick="marcarDocPronto('+n.id+')">✓ Marcar pronto</button></td></tr>';
+    var urgente=(n.docUrgente===true||n.docUrgente==='TRUE');
+    var trStyle=urgente?' style="background:#fef2f2"':'';
+    var nomeCliente=(urgente?'🔥 ':'')+(n.cliente||'—');
+    return'<tr id="pend-doc-row-'+n.id+'"'+trStyle+'><td style="font-weight:600">'+nomeCliente+'</td><td>'+(placaDaNF(n)||'—')+'</td><td>'+n.loja+'</td><td>'+(n.vendedor||'—')+'</td><td>'+fmtD(n.dtEnvioDoc)+'</td><td style="color:'+corDias+';font-weight:600">'+dias+' dia'+(dias!==1?'s':'')+'</td><td><button style="font-size:12px;padding:7px 14px;background:#fff8e1;color:#92400e;border:1px solid #FAC775;border-radius:7px;cursor:pointer;font-weight:600" onclick="marcarDocPronto('+n.id+')">☐ Marcar pronto</button></td></tr>';
   }).join(''):'<tr><td colspan="7" class="empty-state">Nenhuma pendência de documentação 🎉</td></tr>';
 }
+var idsProcessandoDoc={};
 async function marcarDocPronto(id){
+  if(idsProcessandoDoc[id])return;
+  idsProcessandoDoc[id]=true;
   try{
     var n=nfs.find(function(x){return String(x.id)===String(id);});
     if(!n){alert('Registro não encontrado (id: '+id+').');return;}
+    var dtAntiga=n.dtDocPronto;
     n.documentoPronto=true;
     if(!n.dtDocPronto)n.dtDocPronto=new Date().toISOString().slice(0,10);
-    if(SURL){
-      await api({action:'delete',sheet:'NFS',id:id});
-      await api({action:'insert',sheet:'NFS',data:n});
+    // Feedback visual: linha fica verde por um instante antes de sumir, confirmando a ação
+    var row=document.getElementById('pend-doc-row-'+id);
+    if(row){
+      row.style.transition='background-color .2s';
+      row.style.backgroundColor='#d1f5e8';
+      var btn=row.querySelector('button');
+      if(btn){btn.disabled=true;btn.textContent='✓ Pronto!';btn.style.background='#1D9E75';btn.style.color='#fff';btn.style.borderColor='#1D9E75';}
+      await new Promise(function(resolve){setTimeout(resolve,450);});
     }
     renderPendDocumentacao();
     renderPainel();
-  }catch(e){
-    alert('Erro ao marcar documento pronto: '+e.message);
+    if(SURL){
+      try{
+        await api({action:'delete',sheet:'NFS',id:id});
+        await api({action:'insert',sheet:'NFS',data:n});
+      }catch(e){
+        // Reverte o estado local já que o servidor não confirmou a alteração
+        n.documentoPronto=false;
+        n.dtDocPronto=dtAntiga;
+        renderPendDocumentacao();
+        renderPainel();
+        alert('Erro ao marcar documento pronto: '+e.message+'\n\nA alteração foi desfeita. Tente novamente.');
+      }
+    }
+  }finally{
+    delete idsProcessandoDoc[id];
   }
 }
 
@@ -1542,6 +1575,7 @@ function editarNF(id){
   document.getElementById('en-motivo').value=n.motivoNfFora||'';
   document.getElementById('en-enviadoDoc').checked=(n.enviadoDocumentacao===true||n.enviadoDocumentacao==='TRUE');
   document.getElementById('en-docPronto').checked=(n.documentoPronto===true||n.documentoPronto==='TRUE');
+  document.getElementById('en-urgente').checked=(n.docUrgente===true||n.docUrgente==='TRUE');
   document.getElementById('en-ocVinculada').value=n.ocVinculada||'';
   checarOcVinculada();
   var enloja=document.getElementById('en-loja');
@@ -1651,6 +1685,7 @@ async function salvarEdicaoNF(){
   if(!prontoMarcado)n.dtDocPronto='';
   n.enviadoDocumentacao=enviadoMarcado;
   n.documentoPronto=prontoMarcado;
+  n.docUrgente=document.getElementById('en-urgente').checked;
   n.ocVinculada=(document.getElementById('en-ocVinculada').value||'').trim();
   n.editadoPor=usuarioLogado?usuarioLogado.nome:'';
   if(SURL){
