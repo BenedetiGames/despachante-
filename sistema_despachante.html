@@ -520,19 +520,24 @@ table tr:hover td{background:#fafafa}
 
     <!-- RELATÓRIOS -->
     <div id="sec-relatorios" class="section">
+      <div class="tabs-inner" style="margin-bottom:1rem">
+        <button class="active" id="btn-relmodo-nf" onclick="setModoRelatorio('nf')">📄 Relatório de NFs</button>
+        <button id="btn-relmodo-comissao" onclick="setModoRelatorio('comissao')">💰 Fechamento de Comissão</button>
+      </div>
       <div class="card">
         <div class="section-title">Filtros</div>
+        <div style="font-size:12px;color:#888;margin-bottom:.75rem" id="rel-modo-explicacao">Baseado nas NFs recebidas — útil pra acompanhar documentação.</div>
         <div class="form-grid">
           <div class="fg"><label>Loja</label><select id="rel-loja"><option value="">Todas as lojas</option></select></div>
           <div class="fg"><label>Vendedor</label><select id="rel-vendedor"><option value="">Todos os vendedores</option></select></div>
-          <div class="fg"><label>Data inicial</label><input type="date" id="rel-dt-ini"></div>
-          <div class="fg"><label>Data final</label><input type="date" id="rel-dt-fim"></div>
-          <div class="fg"><label>Motivo NF Fora</label><select id="rel-motivo-nffora"><option value="">Todos</option><option value="revenda">Revenda</option><option value="fora_estado">Fora do Estado</option><option value="poupa_tempo">Poupa-tempo</option><option value="ja_tem_despachante">Já tem despachante</option><option value="diretoria">Diretoria</option><option value="nao_teve_atendimento">Não teve atendimento</option><option value="whatsapp">Whatsapp</option></select></div>
+          <div class="fg"><label id="rel-dt-ini-label">Data inicial</label><input type="date" id="rel-dt-ini"></div>
+          <div class="fg"><label id="rel-dt-fim-label">Data final</label><input type="date" id="rel-dt-fim"></div>
+          <div class="fg" id="rel-motivo-g"><label>Motivo NF Fora</label><select id="rel-motivo-nffora"><option value="">Todos</option><option value="revenda">Revenda</option><option value="fora_estado">Fora do Estado</option><option value="poupa_tempo">Poupa-tempo</option><option value="ja_tem_despachante">Já tem despachante</option><option value="diretoria">Diretoria</option><option value="nao_teve_atendimento">Não teve atendimento</option><option value="whatsapp">Whatsapp</option></select></div>
           <div class="fg"><label>Cortesia</label><select id="rel-cortesia"><option value="">Todos</option><option value="1">Só cortesias</option><option value="0">Sem cortesia</option></select></div>
           <div class="fg"><label>Venda direta</label><select id="rel-vendaDireta"><option value="">Todos</option><option value="1">Só venda direta</option><option value="0">Sem venda direta</option></select></div>
           <div class="fg"><label>IPVA</label><select id="rel-ipva"><option value="">Todos</option><option value="1">Com IPVA</option><option value="0">Sem IPVA</option></select></div>
         </div>
-        <button class="btn primary" onclick="gerarRelatorio()">📊 Gerar relatório</button>
+        <button class="btn primary" id="btn-gerar-relatorio" onclick="gerarRelatorio()">📊 Gerar relatório</button>
         <button class="btn success" onclick="exportarUltimoRelatorio()">⬇️ Exportar CSV</button>
         <button class="btn" style="background:#185FA5;color:#fff;border-color:#185FA5" onclick="gerarPDF('resumido')">📄 PDF resumido</button>
         <button class="btn" style="background:#0F6E56;color:#fff;border-color:#0F6E56" onclick="gerarPDF('completo')">📄 PDF completo</button>
@@ -1994,6 +1999,74 @@ async function excNF(id){if(!confirm('Remover NF?'))return;try{await api({action
 function renderRelFiltros(){document.getElementById('rel-loja').innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+l+'</option>';}).join('');document.getElementById('rel-vendedor').innerHTML='<option value="">Todos os vendedores</option>'+vendedores.map(function(v){return'<option>'+v+'</option>';}).join('');}
 var ultimoRelatorioList=[];
 var ultimoRelatorioNome='relatorio';
+var modoRelatorio='nf';
+function setModoRelatorio(modo){
+  modoRelatorio=modo;
+  document.getElementById('btn-relmodo-nf').classList.toggle('active',modo==='nf');
+  document.getElementById('btn-relmodo-comissao').classList.toggle('active',modo==='comissao');
+  document.getElementById('rel-motivo-g').style.display=modo==='nf'?'block':'none';
+  document.getElementById('rel-dt-ini-label').textContent=modo==='nf'?'Data inicial (recebimento NF)':'Data inicial (venda)';
+  document.getElementById('rel-dt-fim-label').textContent=modo==='nf'?'Data final (recebimento NF)':'Data final (venda)';
+  document.getElementById('rel-modo-explicacao').textContent=modo==='nf'?'Baseado nas NFs recebidas — útil pra acompanhar documentação.':'Baseado direto nos créditos lançados — não depende da NF já ter chegado. Útil pra fechar comissão de vendedor.';
+  document.getElementById('rel-output').innerHTML='';
+}
+function calcularDadosComissao(){
+  var loja=document.getElementById('rel-loja').value,vend=document.getElementById('rel-vendedor').value,di=document.getElementById('rel-dt-ini').value,df=document.getElementById('rel-dt-fim').value,ipvaF=document.getElementById('rel-ipva').value,cortFiltro=document.getElementById('rel-cortesia').value,vdFiltro=(document.getElementById('rel-vendaDireta')||{value:''}).value;
+  var list=creditos.filter(function(c){
+    if(loja&&norm(c.loja)!==norm(loja))return false;
+    if(vend&&norm(c.vendedor)!==norm(vend))return false;
+    if(di&&c.dtVenda&&c.dtVenda<di)return false;
+    if(df&&c.dtVenda&&c.dtVenda>df)return false;
+    if(cortFiltro==='1'&&!isCortesia(c))return false;
+    if(cortFiltro==='0'&&isCortesia(c))return false;
+    if(vdFiltro==='1'&&!(c.vendaDireta===true||c.vendaDireta==='TRUE'))return false;
+    if(vdFiltro==='0'&&(c.vendaDireta===true||c.vendaDireta==='TRUE'))return false;
+    if(ipvaF==='1'&&!(c.ipva===true||c.ipva==='TRUE'))return false;
+    if(ipvaF==='0'&&(c.ipva===true||c.ipva==='TRUE'))return false;
+    return true;
+  });
+  var tH=list.reduce(function(a,c){return a+(Number(c.honorarios)||0);},0);
+  var tN=list.reduce(function(a,c){return a+(Number(c.nossaCom)||0);},0);
+  var tC=list.reduce(function(a,c){return a+(Number(c.comissao)||0);},0);
+  var tV=list.reduce(function(a,c){return a+(Number(c.valor)||0);},0);
+  var cIPVA=list.filter(function(c){return c.ipva===true||c.ipva==='TRUE';}).length;
+  var cortQtd=list.filter(function(c){return isCortesia(c);}).length;
+  var pV={};
+  list.forEach(function(c){
+    var v=c.vendedor||'Sem vendedor';
+    if(!pV[v])pV[v]={qtd:0,comissao:0,hon:0,nossaCom:0};
+    pV[v].qtd++;
+    pV[v].comissao+=Number(c.comissao)||0;
+    pV[v].hon+=Number(c.honorarios)||0;
+    pV[v].nossaCom+=Number(c.nossaCom)||0;
+  });
+  var per=di&&df?fmtD(di)+' a '+fmtD(df):di?'a partir de '+fmtD(di):df?'até '+fmtD(df):'';
+  var perTxt=per||'todos os períodos';
+  var titulo=[loja,vend].filter(Boolean).join(' · ')||'Geral';
+  titulo=titulo+' — '+perTxt;
+  return{loja:loja,vend:vend,titulo:titulo,list:list,tH:tH,tN:tN,tC:tC,tV:tV,cIPVA:cIPVA,cortQtd:cortQtd,pV:pV};
+}
+function gerarFechamentoComissao(){
+  var d=calcularDadosComissao();
+  ultimoRelatorioList=d.list;
+  ultimoRelatorioNome='comissao_'+norm(d.titulo).replace(/[^a-z0-9]+/g,'_');
+  var pvEntries=Object.entries(d.pV).sort(function(a,b){return b[1].comissao-a[1].comissao;});
+  var html='<div class="card"><div class="section-title" style="margin-bottom:1rem">Fechamento de Comissão: '+d.titulo+'</div>';
+  html+='<div class="metric-grid" style="margin-bottom:1.25rem"><div class="metric"><div class="lbl">Créditos</div><div class="val blue">'+d.list.length+'</div></div><div class="metric"><div class="lbl">Cortesias</div><div class="val">'+d.cortQtd+'</div></div><div class="metric"><div class="lbl">Com IPVA</div><div class="val blue">'+d.cIPVA+'</div></div><div class="metric"><div class="lbl">Total vendas</div><div class="val blue">'+fmtM(d.tV)+'</div></div><div class="metric"><div class="lbl">Com. vendedores</div><div class="val amber">'+fmtM(d.tC)+'</div></div><div class="metric"><div class="lbl">Total honorários</div><div class="val">'+fmtM(d.tH)+'</div></div><div class="metric"><div class="lbl">Nossa comissão</div><div class="val green">'+fmtM(d.tN)+'</div></div></div>';
+  if(pvEntries.length){
+    html+='<div class="section-title" style="margin-bottom:.5rem">Comissão por vendedor</div><table style="margin-bottom:1.5rem"><thead><tr><th>Vendedor</th><th>Qtd créditos</th><th>Comissão a pagar</th><th>Honorários</th><th>Nossa com.</th></tr></thead><tbody>'+pvEntries.map(function(e){
+      return'<tr><td style="font-weight:600"><button onclick="abrirDashVendedor(\''+e[0].replace(/'/g,"\\'")+'\')" style="background:none;border:none;cursor:pointer;color:#185FA5;font-weight:600;font-size:13px;padding:0;text-decoration:underline">'+e[0]+'</button></td><td>'+e[1].qtd+'</td><td style="color:#854F0B;font-weight:600">'+fmtM(e[1].comissao)+'</td><td>'+fmtM(e[1].hon)+'</td><td style="color:#0F6E56;font-weight:600">'+fmtM(e[1].nossaCom)+'</td></tr>';
+    }).join('')+'</tbody></table>';
+  }
+  html+='<div class="section-title" style="margin-bottom:.5rem">Créditos no período'+(d.loja?' — '+d.loja:'')+'</div><div style="overflow-x:auto"><table><thead><tr><th>OC</th><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Valor</th><th>Com. vendedor</th><th>Honorários</th><th>Marcadores</th><th>Data venda</th></tr></thead><tbody>'+
+    (d.list.length?d.list.map(function(c){
+      var badges=[cortesiaBadge(isCortesia(c)),vendaDiretaBadge(c)].filter(Boolean).join(' ')||'—';
+      return'<tr><td style="font-size:11px;color:#888">'+(c.oc||'—')+'</td><td style="font-weight:600">'+(c.cliente||'—')+'</td><td>'+(c.placa||'—')+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B;font-weight:600">'+fmtM(c.comissao)+'</td><td>'+fmtM(c.honorarios)+'</td><td>'+badges+'</td><td>'+fmtD(c.dtVenda)+'</td></tr>';
+    }).join(''):'<tr><td colspan="10" class="empty-state">Nenhum crédito nesse período</td></tr>')+
+    '</tbody></table></div></div>';
+  document.getElementById('rel-output').innerHTML=html;
+}
+
 function calcularDadosRelatorio(){
   var loja=document.getElementById('rel-loja').value,vend=document.getElementById('rel-vendedor').value,motivoFora=document.getElementById('rel-motivo-nffora').value,di=document.getElementById('rel-dt-ini').value,df=document.getElementById('rel-dt-fim').value,ipvaF=document.getElementById('rel-ipva').value,cortFiltro=document.getElementById('rel-cortesia').value,vdFiltro=(document.getElementById('rel-vendaDireta')||{value:''}).value;
 
@@ -2080,6 +2153,7 @@ function calcularDadosRelatorio(){
   return{loja:loja,vend:vend,per:per,titulo:titulo,listAll:listAll,nfsNormais:nfsNormais,nfsCortesia:nfsCortesia,nfsFora:nfsFora,vinculadasAll:vinculadasAll,tH:tH,tN:tN,tC:tC,tV:tV,cIPVA:cIPVA,pV:pV,porLoja:porLoja,nfForaPorMotivo:nfForaPorMotivo,valorCortesia:valorCortesia,vinculadaNF:vinculadaNF};
 }
 function gerarRelatorio(){
+  if(modoRelatorio==='comissao'){gerarFechamentoComissao();return;}
   var d=calcularDadosRelatorio();
   ultimoRelatorioList=d.listAll;
   ultimoRelatorioNome='relatorio_'+norm(d.titulo).replace(/[^a-z0-9]+/g,'_');
@@ -2120,13 +2194,36 @@ function gerarRelatorio(){
   html+='</div>';
   document.getElementById('rel-output').innerHTML=html;
 }
+function exportarComissaoCSV(list,nomeArquivo){
+  if(!list||!list.length){alert('Nada para exportar.');return;}
+  var headers=['OC','Cliente','CPF/CNPJ','Placa','Loja','Vendedor','Valor','Comissao Vendedor','Honorarios','Nossa Comissao','Cortesia','Venda Direta','Data Venda'];
+  var rows=list.map(function(c){
+    return [
+      c.oc||'',c.cliente||'',c.doc||'',c.placa||'',c.loja||'',c.vendedor||'',c.valor||0,c.comissao||0,c.honorarios||0,c.nossaCom||0,
+      isCortesia(c)?'Sim':'Nao',(c.vendaDireta===true||c.vendaDireta==='TRUE')?'Sim':'Nao',fmtD(c.dtVenda)
+    ].map(function(v){
+      var s=String(v);
+      if(s.indexOf(',')>=0||s.indexOf('"')>=0)s='"'+s.replace(/"/g,'""')+'"';
+      return s;
+    }).join(',');
+  });
+  var csv='\uFEFF'+headers.join(',')+'\n'+rows.join('\n');
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download=nomeArquivo+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 function exportarUltimoRelatorio(){
   if(!ultimoRelatorioList.length){alert('Gere um relatório primeiro antes de exportar.');return;}
-  exportarRelatorioCSV(ultimoRelatorioList,ultimoRelatorioNome);
+  if(modoRelatorio==='comissao')exportarComissaoCSV(ultimoRelatorioList,ultimoRelatorioNome);
+  else exportarRelatorioCSV(ultimoRelatorioList,ultimoRelatorioNome);
 }
 
 // ── GERAÇÃO DE PDF ESTILO INFOGRÁFICO ───────────────────────────────
 function gerarPDF(tipo){
+  if(modoRelatorio==='comissao'){gerarPDFComissao(tipo);return;}
   if(typeof window.jspdf==='undefined'){alert('Biblioteca de PDF não carregou. Verifique sua conexão com a internet e tente novamente.');return;}
   var d=calcularDadosRelatorio();
   var jsPDF=window.jspdf.jsPDF;
@@ -2331,6 +2428,98 @@ function gerarPDF(tipo){
   }
 
   var nomeArq='relatorio_'+(tipo==='completo'?'completo_':'resumido_')+norm(d.titulo).replace(/[^a-z0-9]+/g,'_')+'.pdf';
+  doc.save(nomeArq);
+}
+
+function gerarPDFComissao(tipo){
+  if(typeof window.jspdf==='undefined'){alert('Biblioteca de PDF não carregou. Verifique sua conexão com a internet e tente novamente.');return;}
+  var d=calcularDadosComissao();
+  var jsPDF=window.jspdf.jsPDF;
+  var doc=new jsPDF({unit:'mm',format:'a4'});
+  var PW=210,PH=297,MX=14;
+  var AZUL=[24,95,165],VERDE2=[29,158,117],AMBAR=[133,79,11],CINZABG=[245,245,243],CINZATXT=[120,120,120],PRETO=[26,26,26];
+  function setFill(rgb){doc.setFillColor(rgb[0],rgb[1],rgb[2]);}
+  function setText(rgb){doc.setTextColor(rgb[0],rgb[1],rgb[2]);}
+  function card(x,y,w,h){setFill(CINZABG);doc.roundedRect(x,y,w,h,2.5,2.5,'F');}
+
+  doc.setFillColor(255,255,255);doc.rect(0,0,PW,30,'F');
+  doc.setDrawColor(AZUL[0],AZUL[1],AZUL[2]);doc.setLineWidth(0.9);
+  doc.circle(MX+4,15,5,'S');
+  doc.line(MX+4,15,MX+7,11);
+  doc.setFont('helvetica','bold');doc.setFontSize(17);
+  setText(AZUL);doc.text('Velo',MX+14,17);
+  setText(PRETO);doc.text('Doc',MX+14+doc.getTextWidth('Velo'),17);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);
+  setText(CINZATXT);doc.text('Fechamento de comissão',MX+14,22.5);
+  doc.setDrawColor(220,220,220);doc.setLineWidth(0.3);doc.line(0,30,PW,30);
+
+  var y=40;
+  doc.setFont('helvetica','bold');doc.setFontSize(13);setText(PRETO);
+  doc.text('Fechamento de Comissão: '+d.titulo,MX,y);
+  doc.setFont('helvetica','normal');doc.setFontSize(8.5);setText(CINZATXT);
+  doc.text('Gerado em '+new Date().toLocaleDateString('pt-BR')+' às '+new Date().toLocaleTimeString('pt-BR').slice(0,5),PW-MX,y,{align:'right'});
+  y+=8;
+
+  var kpis=[
+    {label:'CRÉDITOS',val:String(d.list.length),cor:AZUL},
+    {label:'CORTESIAS',val:String(d.cortQtd),cor:PRETO},
+    {label:'COM IPVA',val:String(d.cIPVA),cor:AZUL},
+    {label:'COM. VENDEDORES',val:fmtM(d.tC),cor:AMBAR},
+    {label:'TOTAL HONORÁRIOS',val:fmtM(d.tH),cor:PRETO}
+  ];
+  var kpiW=(PW-2*MX-4*3)/5;
+  kpis.forEach(function(k,i){
+    var x=MX+i*(kpiW+3);
+    card(x,y,kpiW,20);
+    doc.setFont('helvetica','normal');doc.setFontSize(6.5);setText(CINZATXT);
+    doc.text(k.label,x+3,y+6);
+    doc.setFont('helvetica','bold');doc.setFontSize(11);setText(k.cor);
+    doc.text(k.val,x+3,y+15);
+  });
+  y+=28;
+
+  var pvEntries=Object.entries(d.pV).sort(function(a,b){return b[1].comissao-a[1].comissao;});
+  if(pvEntries.length){
+    doc.setFont('helvetica','bold');doc.setFontSize(11);setText(PRETO);
+    doc.text('Comissão por vendedor',MX,y);y+=5;
+    doc.autoTable({
+      startY:y,margin:{left:MX,right:MX},
+      head:[['Vendedor','Qtd créditos','Comissão a pagar','Honorários','Nossa com.']],
+      body:pvEntries.map(function(e){return[e[0],String(e[1].qtd),fmtM(e[1].comissao),fmtM(e[1].hon),fmtM(e[1].nossaCom)];}),
+      theme:'plain',
+      headStyles:{fillColor:AZUL,textColor:255,fontStyle:'bold',fontSize:8.5},
+      bodyStyles:{fontSize:8.5,textColor:PRETO},
+      alternateRowStyles:{fillColor:CINZABG},
+      styles:{cellPadding:2.2}
+    });
+    y=doc.lastAutoTable.finalY+8;
+  }
+
+  if(tipo==='completo'&&d.list.length){
+    if(y>PH-60){doc.addPage();y=18;}
+    doc.setFont('helvetica','bold');doc.setFontSize(11);setText(PRETO);
+    doc.text('Créditos no período'+(d.loja?' — '+d.loja:''),MX,y);y+=5;
+    doc.autoTable({
+      startY:y,margin:{left:MX,right:MX},
+      head:[['OC','Cliente','Loja','Vendedor','Valor','Com. vendedor','Honorários','Data']],
+      body:d.list.map(function(c){return[c.oc||'',c.cliente||'',c.loja||'',c.vendedor||'',fmtM(c.valor),fmtM(c.comissao),fmtM(c.honorarios),fmtD(c.dtVenda)];}),
+      theme:'plain',
+      headStyles:{fillColor:VERDE2,textColor:255,fontStyle:'bold',fontSize:7.5},
+      bodyStyles:{fontSize:7.5,textColor:PRETO},
+      alternateRowStyles:{fillColor:CINZABG},
+      styles:{cellPadding:1.8}
+    });
+  }
+
+  var totalPages=doc.internal.getNumberOfPages();
+  for(var p=1;p<=totalPages;p++){
+    doc.setPage(p);
+    doc.setFont('helvetica','normal');doc.setFontSize(7.5);setText(CINZATXT);
+    doc.text('VeloDoc · '+d.titulo,MX,PH-8);
+    doc.text('Página '+p+' de '+totalPages,PW-MX,PH-8,{align:'right'});
+  }
+
+  var nomeArq='comissao_'+(tipo==='completo'?'completo_':'resumido_')+norm(d.titulo).replace(/[^a-z0-9]+/g,'_')+'.pdf';
   doc.save(nomeArq);
 }
 
