@@ -820,7 +820,16 @@ function dotH(st){if(st==='casado')return'<span class="dot green"></span>';if(st
 function ipvaB(v){return(v===true||v==='TRUE')?'<span class="badge ipva">✓ IPVA</span>':'<span style="color:#ccc;font-size:12px">—</span>';}
 function isAdm(){return usuarioLogado&&String(usuarioLogado.perfil||'').trim().toLowerCase()==='adm';}
 function isGerencia(){return usuarioLogado&&String(usuarioLogado.perfil||'').trim().toLowerCase()==='gerencia';}
-function lojasDoUsuario(){if(isAdm()||isGerencia())return lojas;return usuarioLogado&&usuarioLogado.lojas&&usuarioLogado.lojas.length?usuarioLogado.lojas.filter(function(l){return lojas.indexOf(l)>=0;}):[];}
+function lojasDoUsuario(){
+  if(isAdm()||isGerencia())return lojas;
+  if(!usuarioLogado||!usuarioLogado.lojas||!usuarioLogado.lojas.length)return[];
+  // Compara de forma tolerante a maiúsculas/minúsculas - evita quebrar se a capitalização salva no usuário
+  // for diferente da lista atual de lojas (ex: "FIAT OROZIMBO" vs "Fiat Orozimbo")
+  return usuarioLogado.lojas.map(function(lu){
+    var match=lojas.find(function(l){return norm(l)===norm(lu);});
+    return match||lu;
+  }).filter(function(l){return lojas.indexOf(l)>=0;});
+}
 
 async function api(p){if(!SURL)throw new Error('URL não configurada');var r=await fetch(SURL,{method:'POST',body:JSON.stringify(p)});return JSON.parse(await r.text());}
 function setAlert(el,tipo,msg,spin){el.innerHTML='<div class="alert '+tipo+'">'+(spin?'<span class="spinner"></span> ':'')+msg+'</div>';}
