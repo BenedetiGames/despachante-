@@ -233,7 +233,7 @@ table tr:hover td{background:#fafafa}
         </div>
       </div>
 
-      <div class="card">
+      <div class="card gerencia-hide-block">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
           <div class="section-title" style="margin:0">Aguardando protocolo Forte</div>
           <select id="prot-forte-loja" onchange="renderAguardandoProtocoloForte()" style="border-radius:7px;border:1px solid #ddd;padding:5px 8px;font-size:12px;color:#333">
@@ -251,8 +251,8 @@ table tr:hover td{background:#fafafa}
             <option value="">Todas as lojas</option>
           </select>
         </div>
-        <div style="font-size:12px;color:#888;margin-bottom:10px">NFs e fichões enviados para documentação que ainda não voltaram</div>
-        <div style="overflow-x:auto"><table><thead><tr><th>Tipo</th><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Dt. envio</th><th>Dias em aberto</th><th></th></tr></thead><tbody id="tbl-painel-pend-doc"></tbody></table></div>
+        <div style="font-size:12px;color:#888;margin-bottom:10px" id="pend-doc-desc">NFs e fichões enviados para documentação que ainda não voltaram</div>
+        <div style="overflow-x:auto"><table><thead><tr><th id="pend-doc-th-tipo">Tipo</th><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Dt. envio</th><th>Dias em aberto</th><th></th></tr></thead><tbody id="tbl-painel-pend-doc"></tbody></table></div>
       </div>
 
       <div class="bi-grid-3">
@@ -421,14 +421,14 @@ table tr:hover td{background:#fafafa}
             <div class="fg"><label>Nome do cliente</label><input type="text" id="f-cliente" placeholder="Nome do cliente (preenche automático se achar o CPF/CNPJ)"></div>
             <div class="fg"><label>Placa</label><input type="text" id="f-placa" placeholder="ABC1D23"></div>
             <div class="fg"><label>Loja de origem</label><select id="f-loja-origem"><option>-- selecione --</option></select></div>
-            <div class="fg"><label>Loja destino (protocolo)</label><input type="text" id="f-loja-destino" placeholder="Ex: Fiat Forte"></div>
+            <div class="fg"><label>Loja destino (protocolo)</label><input type="text" id="f-loja-destino" value="Fiat Forte" readonly style="background:#f5f5f3;color:#666"></div>
             <div class="fg"><label>Vendedor</label><select id="f-vendedor"><option>-- selecione --</option></select></div>
           </div>
-          <div class="fg" style="margin-bottom:1rem;max-width:300px">
+          <div class="fg" style="margin-bottom:1rem;max-width:300px;display:none">
             <label>OC do crédito a vincular (opcional)</label>
             <input type="text" id="f-ocVinculada" placeholder="Ex: 104.731" oninput="checarOcVinculadaFichao()">
           </div>
-          <div id="f-oc-match" class="doc-match" style="margin-bottom:1rem"></div>
+          <div id="f-oc-match" class="doc-match" style="margin-bottom:1rem;display:none"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn success" onclick="salvarFichao()">💾 Salvar Fichão</button>
             <button class="btn" onclick="limparFichao()">✕ Limpar</button>
@@ -712,6 +712,29 @@ table tr:hover td{background:#fafafa}
   </div>
 </div>
 
+<!-- MODAL EDIÇÃO FICHÃO -->
+<div class="edit-modal-bg" id="modal-editar-fichao">
+  <div class="edit-modal">
+    <div class="edit-modal-header">
+      <h2>Editar Fichão</h2>
+      <button style="border:none;background:none;cursor:pointer;font-size:20px;color:#888;line-height:1" onclick="fecharModalEditarFichao()">×</button>
+    </div>
+    <input type="hidden" id="ef-id">
+    <div class="form-grid">
+      <div class="fg"><label>CPF ou CNPJ</label><input type="text" id="ef-doc" oninput="fmtDoc('ef-doc')" maxlength="18"></div>
+      <div class="fg"><label>Nome do cliente</label><input type="text" id="ef-cliente"></div>
+      <div class="fg"><label>Placa</label><input type="text" id="ef-placa"></div>
+      <div class="fg"><label>Loja de origem</label><select id="ef-loja-origem"><option>-- selecione --</option></select></div>
+      <div class="fg"><label>Loja destino</label><input type="text" id="ef-loja-destino" value="Fiat Forte" readonly style="background:#f5f5f3;color:#666"></div>
+      <div class="fg"><label>Vendedor</label><select id="ef-vendedor"><option>-- selecione --</option></select></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:.5rem;flex-wrap:wrap">
+      <button class="btn primary" onclick="salvarEdicaoFichao()">💾 Salvar alterações</button>
+      <button class="btn" onclick="fecharModalEditarFichao()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL USUÁRIO -->
 <div class="modal-bg" id="modal-usuario">
   <div class="modal">
@@ -833,6 +856,9 @@ function entrarNoApp(){
     document.querySelectorAll('.gerencia-hide').forEach(function(el){
       el.style.display=gerencia?'none':'inline-flex';
     });
+    document.querySelectorAll('.gerencia-hide-block').forEach(function(el){
+      el.style.display=gerencia?'none':'block';
+    });
   }, 100);
   atualizarSelects();
   carregarDados();
@@ -897,11 +923,11 @@ function placaDaNF(n){
   var cred=creditoDaNF(n);
   return cred&&cred.placa?cred.placa:'';
 }
-function vendedorNF(n){
-  var v=n.vendedor;
+function vendedorValido(v){
   if(!v||v==='-- selecione --')return'Sem vendedor';
   return v;
 }
+function vendedorNF(n){return vendedorValido(n.vendedor);}
 function creditoTemNfVinculada(c){
   // Mesma guarda: crédito sem doc válido nunca é considerado vinculado por essa via
   if(normDoc(c.doc).length<11)return false;
@@ -1004,7 +1030,7 @@ async function salvarFichao(){
   var rec={id:Date.now(),doc:document.getElementById('f-doc').value,cliente:cliente,placa:document.getElementById('f-placa').value.trim().toUpperCase(),lojaOrigem:lojaOrigem,lojaDestino:lojaDestino,vendedor:vendedor,ocVinculada:(document.getElementById('f-ocVinculada').value||'').trim(),enviadoForte:false,dtEnviadoForte:'',protocoladoForte:false,dtProtocoladoForte:'',dutRecebido:false,dtDutRecebido:'',enviadoDocumentacao:false,dtEnvioDoc:'',documentoPronto:false,dtDocPronto:'',criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:''};
   try{var r=await api({action:'insert',sheet:'FICHOES',data:rec});if(r.error)throw new Error(r.error);fichoes.unshift(rec);alert('✓ Fichão salvo!');limparFichao();renderPainel();}catch(e){alert('Erro: '+e.message);}
 }
-function limparFichao(){['f-doc','f-cliente','f-placa','f-loja-destino','f-ocVinculada'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('f-loja-origem').value='-- selecione --';document.getElementById('f-vendedor').value='-- selecione --';document.getElementById('f-doc-match').className='doc-match';document.getElementById('f-doc-tipo').innerHTML='';document.getElementById('f-oc-match').className='doc-match';document.getElementById('f-oc-match').textContent='';}
+function limparFichao(){['f-doc','f-cliente','f-placa'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('f-loja-origem').value='-- selecione --';document.getElementById('f-vendedor').value='-- selecione --';document.getElementById('f-doc-match').className='doc-match';document.getElementById('f-doc-tipo').innerHTML='';}
 
 function toggleIPVA(){ipvaAtivo=!ipvaAtivo;document.getElementById('ipva-toggle').classList.toggle('checked',ipvaAtivo);document.getElementById('ipva-toggle').setAttribute('aria-checked',ipvaAtivo);document.getElementById('ipva-icon').textContent=ipvaAtivo?'✓':'';document.getElementById('ipva-label').textContent=ipvaAtivo?'IPVA incluso':'IPVA não incluso';}
 function toggleCortesia(){cortesiaAtiva=!cortesiaAtiva;document.getElementById('cortesia-toggle').classList.toggle('checked',cortesiaAtiva);document.getElementById('cortesia-toggle').setAttribute('aria-checked',cortesiaAtiva);document.getElementById('cortesia-icon').textContent=cortesiaAtiva?'✓':'';document.getElementById('cortesia-label').textContent=cortesiaAtiva?'É cortesia':'Não é cortesia';}
@@ -1340,7 +1366,7 @@ function renderRankingVendedores(){
   // Agrupar por vendedor
   var map={};
   lista.forEach(function(c){
-    var v=c.vendedor||'—';
+    var v=vendedorValido(c.vendedor);
     if(!map[v])map[v]={vendedor:v,qtd:0,hon:0,com:0,nossaCom:0,cortesias:0,vd:0};
     map[v].qtd++;
     map[v].hon+=Number(c.honorarios)||0;
@@ -1487,6 +1513,8 @@ function renderCortesiasEspeciais(){
 function renderPendDocumentacao(){
   var tbl=document.getElementById('tbl-painel-pend-doc');
   if(!tbl)return;
+  var descEl=document.getElementById('pend-doc-desc');
+  if(descEl)descEl.textContent=isGerencia()?'NFs enviadas para documentação que ainda não voltaram':'NFs e fichões enviados para documentação que ainda não voltaram';
   var selLoja=document.getElementById('pend-doc-loja');
   var valorAtual=selLoja.value;
   selLoja.innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+l+'</option>';}).join('');
@@ -1501,7 +1529,7 @@ function renderPendDocumentacao(){
     if(lojaFiltro&&norm(n.loja)!==norm(lojaFiltro))return false;
     return true;
   }).map(function(n){return{tipo:'nf',item:n,loja:n.loja,placa:placaDaNF(n)||'—'};});
-  var pendFichao=fichoes.filter(function(f){
+  var pendFichao=isGerencia()?[]:fichoes.filter(function(f){
     var enviado=(f.enviadoDocumentacao===true||f.enviadoDocumentacao==='TRUE');
     var pronto=(f.documentoPronto===true||f.documentoPronto==='TRUE');
     if(!enviado||pronto)return false;
@@ -1712,7 +1740,7 @@ function renderRegFichoes(){
       '<td>'+botaoStatus(f,'protocoladoForte','dtProtocoladoForte','Marcar protocolado','marcarProtocoladoForte',enviado)+'</td>'+
       '<td>'+botaoStatus(f,'dutRecebido','dtDutRecebido','DUT recebido','marcarDutRecebido',protocolado)+'</td>'+
       '<td>'+botaoStatus(f,'enviadoDocumentacao','dtEnvioDoc','Enviei p/ documentar','marcarEnviadoDocumentarFichao',dutRec)+'</td>'+
-      '<td class="tbl-actions"><button onclick="excFichao('+f.id+')">🗑</button></td></tr>';
+      '<td class="tbl-actions"><button onclick="editarFichao('+f.id+')">✏️</button><button onclick="excFichao('+f.id+')">🗑</button></td></tr>';
   }).join(''):'<tr><td colspan="11" class="empty-state">Nenhum fichão cadastrado</td></tr>';
 }
 var idsProcessandoFichao={};
@@ -1748,6 +1776,45 @@ function marcarProtocoladoForte(id){salvarStatusFichao(id,'protocoladoForte','dt
 function marcarDutRecebido(id){salvarStatusFichao(id,'dutRecebido','dtDutRecebido');}
 function marcarEnviadoDocumentarFichao(id){salvarStatusFichao(id,'enviadoDocumentacao','dtEnvioDoc');}
 async function excFichao(id){if(!confirm('Remover fichão?'))return;try{await api({action:'delete',sheet:'FICHOES',id:id});}catch(e){alert('Erro: '+e.message);return;}fichoes=fichoes.filter(function(f){return f.id!=id;});renderRegFichoes();renderPainel();}
+function editarFichao(id){
+  var f=fichoes.find(function(x){return String(x.id)===String(id);});
+  if(!f)return;
+  document.getElementById('ef-id').value=f.id;
+  document.getElementById('ef-doc').value=f.doc||'';
+  document.getElementById('ef-cliente').value=f.cliente||'';
+  document.getElementById('ef-placa').value=f.placa||'';
+  var efloja=document.getElementById('ef-loja-origem');
+  efloja.innerHTML='<option>-- selecione --</option>'+lojasDoUsuario().map(function(l){return'<option'+(f.lojaOrigem===l?' selected':'')+'>'+l+'</option>';}).join('');
+  var efvend=document.getElementById('ef-vendedor');
+  efvend.innerHTML='<option>-- selecione --</option>'+vendedores.map(function(v){return'<option'+(f.vendedor===v?' selected':'')+'>'+v+'</option>';}).join('');
+  document.getElementById('modal-editar-fichao').classList.add('open');
+}
+function fecharModalEditarFichao(){document.getElementById('modal-editar-fichao').classList.remove('open');}
+async function salvarEdicaoFichao(){
+  var id=document.getElementById('ef-id').value;
+  var f=fichoes.find(function(x){return String(x.id)===String(id);});
+  if(!f){alert('Fichão não encontrado.');return;}
+  var lojaVal=document.getElementById('ef-loja-origem').value;
+  var vendVal=document.getElementById('ef-vendedor').value;
+  if(!lojaVal||lojaVal==='-- selecione --'){alert('Selecione uma loja de origem válida antes de salvar.');return;}
+  if(!vendVal||vendVal==='-- selecione --'){alert('Selecione um vendedor válido antes de salvar.');return;}
+  f.doc=document.getElementById('ef-doc').value;
+  f.cliente=document.getElementById('ef-cliente').value.trim();
+  f.placa=document.getElementById('ef-placa').value.trim().toUpperCase();
+  f.lojaOrigem=lojaVal;
+  f.vendedor=vendVal;
+  f.editadoPor=usuarioLogado?usuarioLogado.nome:'';
+  if(SURL){
+    try{
+      await api({action:'delete',sheet:'FICHOES',id:id});
+      await api({action:'insert',sheet:'FICHOES',data:f});
+    }catch(e){alert('Erro ao salvar: '+e.message);return;}
+  }
+  fecharModalEditarFichao();
+  renderRegFichoes();
+  renderPainel();
+  alert('✓ Fichão atualizado!');
+}
 
 function renderRegDocPronto(){
   var busca=(document.getElementById('rd-busca').value||'').toLowerCase();
@@ -2033,7 +2100,7 @@ function calcularDadosComissao(){
   var cortQtd=list.filter(function(c){return isCortesia(c);}).length;
   var pV={};
   list.forEach(function(c){
-    var v=c.vendedor||'Sem vendedor';
+    var v=vendedorValido(c.vendedor);
     if(!pV[v])pV[v]={qtd:0,comissao:0,hon:0,nossaCom:0};
     pV[v].qtd++;
     pV[v].comissao+=Number(c.comissao)||0;
