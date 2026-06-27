@@ -288,7 +288,7 @@ table tr:hover td{background:#fafafa}
 
       <div class="card">
         <div class="section-title">Pendências de vínculo</div>
-        <div class="leg"><span><span class="dot green" style="display:inline-block"></span> Vinculado</span><span><span class="dot red" style="display:inline-block"></span> Aguardando NF</span><span><span class="dot amber" style="display:inline-block"></span> NF sem crédito</span><span><span class="dot" style="background:#aaa;display:inline-block"></span> Semi-novo</span></div>
+        <div class="leg"><span><span class="dot green" style="display:inline-block"></span> Vinculado</span><span><span class="dot red" style="display:inline-block"></span> Aguardando NF</span><span><span class="dot amber" style="display:inline-block"></span> NF sem crédito</span><span><span class="dot" style="background:#aaa;display:inline-block"></span> Semi-novo</span><span><span class="dot" style="background:#185FA5;display:inline-block"></span> Somente comissão</span></div>
         <div style="overflow-x:auto"><table><thead><tr><th>OC</th><th>Cliente</th><th>CPF/CNPJ</th><th>Loja</th><th>Vendedor</th><th>Placa</th><th>Valor</th><th>Status</th></tr></thead><tbody id="tbl-painel-pend"></tbody></table></div>
       </div>
     </div>
@@ -341,6 +341,13 @@ table tr:hover td{background:#fafafa}
               <div class="ipva-toggle" id="vendaDireta-toggle" onclick="toggleVendaDireta()" role="checkbox" aria-checked="false" tabindex="0">
                 <div class="ipva-icon" id="vendaDireta-icon"></div>
                 <span class="ipva-label" id="vendaDireta-label">Não é venda direta</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">Somente comissão</div>
+              <div class="ipva-toggle" id="somenteComissao-toggle" onclick="toggleSomenteComissao()" role="checkbox" aria-checked="false" tabindex="0" title="Marque se este lançamento é só para fechar comissão, sem documentação real — ele nunca vai vincular com NF">
+                <div class="ipva-icon" id="somenteComissao-icon"></div>
+                <span class="ipva-label" id="somenteComissao-label">Não é somente comissão</span>
               </div>
             </div>
           </div>
@@ -445,10 +452,10 @@ table tr:hover td{background:#fafafa}
           <input type="text" id="vin-busca" placeholder="Buscar CPF/CNPJ, cliente, placa..." oninput="renderVinculo()" style="width:100%;padding-left:30px;border-radius:7px;border:1px solid #ddd;padding-top:7px;padding-bottom:7px;padding-right:10px;font-size:13px">
         </div>
         <select id="vin-loja" onchange="renderVinculo()"><option value="">Todas as lojas</option></select>
-        <select id="vin-filtro" onchange="renderVinculo()"><option value="">Todos</option><option value="casado">Vinculados</option><option value="sem-nf">Aguardando NF</option><option value="sem-cred">NF sem crédito</option><option value="semi">Semi-novo</option></select>
+        <select id="vin-filtro" onchange="renderVinculo()"><option value="">Todos</option><option value="casado">Vinculados</option><option value="sem-nf">Aguardando NF</option><option value="sem-cred">NF sem crédito</option><option value="semi">Semi-novo</option><option value="comissao">Somente comissão</option></select>
         <button class="btn" onclick="carregarDados()">🔄 Atualizar</button>
       </div>
-      <div class="leg"><span><span class="dot green" style="display:inline-block"></span> Vinculado</span><span><span class="dot red" style="display:inline-block"></span> Aguardando NF</span><span><span class="dot amber" style="display:inline-block"></span> NF sem crédito</span><span><span class="dot" style="background:#aaa;display:inline-block"></span> Semi-novo</span></div>
+      <div class="leg"><span><span class="dot green" style="display:inline-block"></span> Vinculado</span><span><span class="dot red" style="display:inline-block"></span> Aguardando NF</span><span><span class="dot amber" style="display:inline-block"></span> NF sem crédito</span><span><span class="dot" style="background:#aaa;display:inline-block"></span> Semi-novo</span><span><span class="dot" style="background:#185FA5;display:inline-block"></span> Somente comissão</span></div>
       <div class="card" style="padding:0;overflow-x:auto">
         <table><thead><tr><th></th><th>OC</th><th>Cliente</th><th>CPF/CNPJ</th><th>Loja</th><th>Vendedor</th><th>Placa</th><th>IPVA</th><th>Valor</th><th>Com. vend.</th><th>Honorários</th><th>Nossa com.</th><th>Marcadores</th><th>Dt. venda</th><th>Dt. NF</th></tr></thead><tbody id="tbl-vinculo"></tbody></table>
       </div>
@@ -608,6 +615,9 @@ table tr:hover td{background:#fafafa}
       <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#f5f5f3;padding:7px 12px;border-radius:8px;border:1px solid #e5e5e5">
         <input type="checkbox" id="e-vendaDireta" style="accent-color:#1D9E75"> Venda direta
       </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#f5f5f3;padding:7px 12px;border-radius:8px;border:1px solid #e5e5e5" title="Marque se este lançamento é só para fechar comissão, sem documentação real">
+        <input type="checkbox" id="e-somenteComissao" style="accent-color:#1D9E75"> Somente comissão
+      </label>
     </div>
     <div style="font-size:13px;font-weight:600;margin-bottom:.75rem;margin-top:.5rem">Valores financeiros</div>
     <div class="form-grid">
@@ -761,7 +771,7 @@ table tr:hover td{background:#fafafa}
 var COM_0KM=[[1750,75],[1850,125],[1950,175],[2150,225],[2202,250],[2402,300],[2502,350]];
 var COM_SEMI=[[1550,75],[1650,125],[1740,175],[1890,225],[2050,300]];
 var CORT_SALDO=178.68,NOSSA=0.10;
-var ipvaAtivo=false,cortesiaAtiva=false,nfForaAtiva=false,vendaDiretaAtiva=false;
+var ipvaAtivo=false,cortesiaAtiva=false,nfForaAtiva=false,vendaDiretaAtiva=false,somenteComissaoAtiva=false;
 var SURL='https://script.google.com/macros/s/AKfycbwvtY2fzH6u2WjQ1si8HVLEi33-x3VUg2BaYMZaFzYXGMY9iuPTFj004KFLLjOxTgjc/exec'; // URL fixa - só o adm altera aqui no código
 var creditos=[],nfs=[],fichoes=[],usuarios=[];
 var usuarioLogado=null;
@@ -815,8 +825,9 @@ function getSem(ds){if(!ds)return'';var d=new Date(ds+'T12:00:00');var j=new Dat
 function stBadge(s){var m={ok:['ok','Normal'],pendente:['pendente','Pendente'],abaixo:['abaixo','Abaixo custo'],revenda:['revenda','Revenda'],diretoria:['diretoria','Diretoria'],fora_estado:['fora_estado','Fora do Estado']};var r=m[s]||['',s||''];return'<span class="badge '+r[0]+'">'+r[1]+'</span>';}
 function cortesiaBadge(c){return c?'<span class="badge cortesia">🎁 Cortesia</span>':'';}
 function vendaDiretaBadge(c){return(c&&(c.vendaDireta===true||c.vendaDireta==='TRUE'))?'<span class="badge vendaDireta">⚡ VD Direta</span>':'';}
+function somenteComissaoBadge(c){return(c&&isSomenteComissao(c))?'<span class="badge" style="background:#e6f1fb;color:#185FA5">💰 Só comissão</span>':'';}
 function nfForaBadge(n){if(!n||!(n.nfFora===true||n.nfFora==='TRUE'))return'';var m=motivoNfForaLabel(n.motivoNfFora);return'<span class="badge perdida">NF Fora'+(m?': '+m:'')+'</span>';}
-function dotH(st){if(st==='casado')return'<span class="dot green"></span>';if(st==='semi')return'<span class="dot" style="background:#aaa" title="Semi-novo"></span>';if(st==='sem-nf')return'<span class="dot red"></span>';return'<span class="dot amber"></span>';}
+function dotH(st){if(st==='casado')return'<span class="dot green"></span>';if(st==='semi')return'<span class="dot" style="background:#aaa" title="Semi-novo"></span>';if(st==='comissao')return'<span class="dot" style="background:#185FA5" title="Somente comissão"></span>';if(st==='sem-nf')return'<span class="dot red"></span>';return'<span class="dot amber"></span>';}
 function ipvaB(v){return(v===true||v==='TRUE')?'<span class="badge ipva">✓ IPVA</span>':'<span style="color:#ccc;font-size:12px">—</span>';}
 function isAdm(){return usuarioLogado&&String(usuarioLogado.perfil||'').trim().toLowerCase()==='adm';}
 function isGerencia(){return usuarioLogado&&String(usuarioLogado.perfil||'').trim().toLowerCase()==='gerencia';}
@@ -915,6 +926,7 @@ function lojaEfetivaNF(n){
   }
   return n.loja;
 }
+function isSomenteComissao(c){return c.somenteComissao===true||c.somenteComissao==='TRUE';}
 function creditoDaNF(n){
   // Busca o crédito vinculado a uma NF (por OC forçada, ou por doc+loja)
   var cred=null;
@@ -923,7 +935,9 @@ function creditoDaNF(n){
     var docNF=normDoc(n.doc);
     // Guarda crítica: doc vazio NUNCA deve "casar" com outro doc vazio (evita pegar o 1º crédito qualquer da loja)
     if(docNF.length>=11){
-      cred=creditos.find(function(c){return normDoc(c.doc)===docNF&&norm(c.loja)===norm(n.loja);});
+      // Créditos "somente comissão" nunca entram na busca automática - evita vincular com o crédito errado
+      // quando o mesmo cliente tem 2 lançamentos (um só de comissão, outro com a documentação real)
+      cred=creditos.find(function(c){return normDoc(c.doc)===docNF&&norm(c.loja)===norm(n.loja)&&!isSomenteComissao(c);});
     }
   }
   return cred||null;
@@ -948,9 +962,11 @@ function chaveVinculo(docVal,lojaVal,idUnico){
   if(d.length<11)return'__SEMDOC__'+idUnico+'||'+norm(lojaVal);
   return d+'||'+norm(lojaVal);
 }
-function buildVin(){var map={};creditos.forEach(function(c){var k=chaveVinculo(c.doc,c.loja,'c'+c.id);if(!map[k])map[k]={doc:c.doc,cliente:c.cliente,loja:c.loja,creditos:[],nfs:[]};map[k].creditos.push(c);});nfs.forEach(function(n){var k=chaveVinculo(docEfetivoNF(n),lojaEfetivaNF(n),'n'+n.id);if(!map[k])map[k]={doc:n.doc,cliente:n.cliente,loja:n.loja,creditos:[],nfs:[]};map[k].nfs.push(n);});return Object.values(map);}
+function buildVin(){var map={};creditos.forEach(function(c){var k=isSomenteComissao(c)?'__SOCOM__c'+c.id:chaveVinculo(c.doc,c.loja,'c'+c.id);if(!map[k])map[k]={doc:c.doc,cliente:c.cliente,loja:c.loja,creditos:[],nfs:[]};map[k].creditos.push(c);});nfs.forEach(function(n){var k=chaveVinculo(docEfetivoNF(n),lojaEfetivaNF(n),'n'+n.id);if(!map[k])map[k]={doc:n.doc,cliente:n.cliente,loja:n.loja,creditos:[],nfs:[]};map[k].nfs.push(n);});return Object.values(map);}
 function casSt(g){
   if(g.creditos.length>0&&g.nfs.length>0)return'casado';
+  // Somente comissão nunca tem NF de propósito — não é pendência, status próprio
+  if(g.creditos.length>0&&g.creditos.every(function(c){return isSomenteComissao(c);}))return'comissao';
   // Semi-novos não precisam de NF — tratar como "ok" (não pendente)
   if(g.creditos.length>0&&g.creditos.every(function(c){return norm(c.tipo)==='semi';}))return'semi';
   if(g.creditos.length>0)return'sem-nf';
@@ -1044,6 +1060,7 @@ function limparFichao(){['f-doc','f-cliente','f-placa'].forEach(function(id){var
 function toggleIPVA(){ipvaAtivo=!ipvaAtivo;document.getElementById('ipva-toggle').classList.toggle('checked',ipvaAtivo);document.getElementById('ipva-toggle').setAttribute('aria-checked',ipvaAtivo);document.getElementById('ipva-icon').textContent=ipvaAtivo?'✓':'';document.getElementById('ipva-label').textContent=ipvaAtivo?'IPVA incluso':'IPVA não incluso';}
 function toggleCortesia(){cortesiaAtiva=!cortesiaAtiva;document.getElementById('cortesia-toggle').classList.toggle('checked',cortesiaAtiva);document.getElementById('cortesia-toggle').setAttribute('aria-checked',cortesiaAtiva);document.getElementById('cortesia-icon').textContent=cortesiaAtiva?'✓':'';document.getElementById('cortesia-label').textContent=cortesiaAtiva?'É cortesia':'Não é cortesia';}
 function toggleVendaDireta(){vendaDiretaAtiva=!vendaDiretaAtiva;document.getElementById('vendaDireta-toggle').classList.toggle('checked',vendaDiretaAtiva);document.getElementById('vendaDireta-toggle').setAttribute('aria-checked',vendaDiretaAtiva);document.getElementById('vendaDireta-icon').textContent=vendaDiretaAtiva?'✓':'';document.getElementById('vendaDireta-label').textContent=vendaDiretaAtiva?'É venda direta':'Não é venda direta';}
+function toggleSomenteComissao(){somenteComissaoAtiva=!somenteComissaoAtiva;document.getElementById('somenteComissao-toggle').classList.toggle('checked',somenteComissaoAtiva);document.getElementById('somenteComissao-toggle').setAttribute('aria-checked',somenteComissaoAtiva);document.getElementById('somenteComissao-icon').textContent=somenteComissaoAtiva?'✓':'';document.getElementById('somenteComissao-label').textContent=somenteComissaoAtiva?'É somente comissão':'Não é somente comissão';}
 function toggleNfFora(){nfForaAtiva=!nfForaAtiva;document.getElementById('nfFora-toggle').classList.toggle('checked',nfForaAtiva);document.getElementById('nfFora-toggle').setAttribute('aria-checked',nfForaAtiva);document.getElementById('nfFora-icon').textContent=nfForaAtiva?'✓':'';document.getElementById('nfFora-label').textContent=nfForaAtiva?'NF ficou fora':'NF não ficou fora';document.getElementById('n-motivo-g').style.display=nfForaAtiva?'block':'none';}
 function calcRef(){var ref=getRef(document.getElementById('c-tipo').value,parseFloat(document.getElementById('c-valor').value)||0);document.getElementById('c-ref-tabela').textContent=ref?'Tabela sugere: '+fmtM(ref):'';calcNossaCom();}
 function calcNossaCom(){var hon=parseFloat(document.getElementById('c-honorarios').value)||0;document.getElementById('box-hon').textContent=hon?fmtM(hon):'R$ —';document.getElementById('box-nossa-com').textContent=hon?fmtM(hon*NOSSA):'R$ —';}
@@ -1056,10 +1073,10 @@ async function salvarCredito(){
   if(doc.length<11){alert('CPF ou CNPJ inválido.');return;}
   if(!cliente||loja==='-- selecione --'||vendedor==='-- selecione --'){alert('Preencha nome, loja e vendedor.');return;}
   var hon=parseFloat(document.getElementById('c-honorarios').value)||0;var dt=document.getElementById('c-dtvenda').value;
-  var rec={id:Date.now(),doc:document.getElementById('c-doc').value,cliente:cliente,placa:document.getElementById('c-placa').value.trim().toUpperCase(),oc:document.getElementById('c-oc').value.trim(),ipva:ipvaAtivo,cortesia:cortesiaAtiva,vendaDireta:vendaDiretaAtiva,loja:loja,vendedor:vendedor,tipo:document.getElementById('c-tipo').value,valor:parseFloat(document.getElementById('c-valor').value)||0,comissao:parseFloat(document.getElementById('c-comissao').value)||0,honorarios:hon,nossaCom:parseFloat((hon*NOSSA).toFixed(2)),status:'ok',motivo:'',obs:document.getElementById('c-obs').value,dtVenda:dt,semana:getSem(dt||new Date().toISOString().slice(0,10)),criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:'',classificacaoPendencia:''};
+  var rec={id:Date.now(),doc:document.getElementById('c-doc').value,cliente:cliente,placa:document.getElementById('c-placa').value.trim().toUpperCase(),oc:document.getElementById('c-oc').value.trim(),ipva:ipvaAtivo,cortesia:cortesiaAtiva,vendaDireta:vendaDiretaAtiva,somenteComissao:somenteComissaoAtiva,loja:loja,vendedor:vendedor,tipo:document.getElementById('c-tipo').value,valor:parseFloat(document.getElementById('c-valor').value)||0,comissao:parseFloat(document.getElementById('c-comissao').value)||0,honorarios:hon,nossaCom:parseFloat((hon*NOSSA).toFixed(2)),status:'ok',motivo:'',obs:document.getElementById('c-obs').value,dtVenda:dt,semana:getSem(dt||new Date().toISOString().slice(0,10)),criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:'',classificacaoPendencia:''};
   try{var r=await api({action:'insert',sheet:'CREDITOS',data:rec});if(r.error)throw new Error(r.error);creditos.unshift(rec);alert('✓ Crédito salvo!');limparCred();renderPainel();}catch(e){alert('Erro: '+e.message);}
 }
-function limparCred(){['c-doc','c-cliente','c-placa','c-oc','c-valor','c-comissao','c-honorarios','c-obs','c-dtvenda'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('c-loja').value='-- selecione --';document.getElementById('c-vendedor').value='-- selecione --';document.getElementById('box-hon').textContent='R$ —';document.getElementById('box-nossa-com').textContent='R$ —';document.getElementById('c-ref-tabela').textContent='';document.getElementById('c-doc-match').className='doc-match';document.getElementById('c-doc-tipo').innerHTML='';if(ipvaAtivo)toggleIPVA();if(cortesiaAtiva)toggleCortesia();if(vendaDiretaAtiva)toggleVendaDireta();}
+function limparCred(){['c-doc','c-cliente','c-placa','c-oc','c-valor','c-comissao','c-honorarios','c-obs','c-dtvenda'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('c-loja').value='-- selecione --';document.getElementById('c-vendedor').value='-- selecione --';document.getElementById('box-hon').textContent='R$ —';document.getElementById('box-nossa-com').textContent='R$ —';document.getElementById('c-ref-tabela').textContent='';document.getElementById('c-doc-match').className='doc-match';document.getElementById('c-doc-tipo').innerHTML='';if(ipvaAtivo)toggleIPVA();if(cortesiaAtiva)toggleCortesia();if(vendaDiretaAtiva)toggleVendaDireta();if(somenteComissaoAtiva)toggleSomenteComissao();}
 
 async function salvarNF(){
   var doc=normDoc(document.getElementById('n-doc').value);
@@ -1298,7 +1315,7 @@ function renderPainel(){
     '<div class="metric"><div class="lbl">Total honorários</div><div class="val blue">'+fmtM(tH)+'</div></div>'+
     '<div class="metric"><div class="lbl">Nossa comissão</div><div class="val green">'+fmtM(tN)+'</div></div>';
 
-  var pend=gsAll.filter(function(g){var st=casSt(g);return st!=='casado'&&st!=='semi';}).sort(function(a,b){
+  var pend=gsAll.filter(function(g){var st=casSt(g);return st!=='casado'&&st!=='semi'&&st!=='comissao';}).sort(function(a,b){
     var da=a.creditos[0]?diasDesde(a.creditos[0].dtVenda):0;
     var db=b.creditos[0]?diasDesde(b.creditos[0].dtVenda):0;
     return db-da;
@@ -1703,7 +1720,7 @@ function renderRegCreditos(){
   });
   document.getElementById('tbl-creditos').innerHTML=list.length?list.map(function(c){
     var quemLancou=(c.editadoPor?c.editadoPor+' <span style="color:#aaa">(edit)</span>':(c.criadoPor||'—'));
-    var badges=[cortesiaBadge(isCortesia(c)),vendaDiretaBadge(c)].filter(Boolean).join(' ');
+    var badges=[cortesiaBadge(isCortesia(c)),vendaDiretaBadge(c),somenteComissaoBadge(c)].filter(Boolean).join(' ');
     var stHtml=badges||'<span style="color:#ccc;font-size:12px">—</span>';
     return'<tr><td style="font-weight:600;color:#185FA5">'+(c.oc||'—')+'</td><td style="font-weight:600">'+(c.cliente||'—')+'</td><td style="font-size:11px;color:#888">'+(c.doc||'—')+'</td><td>'+(c.placa||'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+(c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom&&!isNaN(Number(c.nossaCom))?fmtM(c.nossaCom):'—')+'</td><td>'+stHtml+'</td><td>'+fmtD(c.dtVenda)+'</td><td style="font-size:12px;color:#666">'+quemLancou+'</td><td class="tbl-actions"><button onclick="editarCredito('+c.id+')">✏️</button><button onclick="excCred('+c.id+')">🗑</button></td></tr>';
   }).join(''):'<tr><td colspan="15" class="empty-state">Nenhum crédito</td></tr>';
@@ -1875,6 +1892,7 @@ function editarCredito(id){
   document.getElementById('e-ipva').checked=(c.ipva===true||c.ipva==='TRUE');
   document.getElementById('e-cortesia').checked=isCortesia(c);
   document.getElementById('e-vendaDireta').checked=(c.vendaDireta===true||c.vendaDireta==='TRUE');
+  document.getElementById('e-somenteComissao').checked=isSomenteComissao(c);
   calcEditCom();
   var eloja=document.getElementById('e-loja');
   eloja.innerHTML='<option>-- selecione --</option>'+lojas.map(function(l){return'<option'+(c.loja===l?' selected':'')+'>'+l+'</option>';}).join('');
@@ -1913,6 +1931,7 @@ async function salvarEdicao(){
   c.ipva=document.getElementById('e-ipva').checked;
   c.cortesia=document.getElementById('e-cortesia').checked;
   c.vendaDireta=document.getElementById('e-vendaDireta').checked;
+  c.somenteComissao=document.getElementById('e-somenteComissao').checked;
   c.editadoPor=usuarioLogado?usuarioLogado.nome:'';
   if(SURL){
     try{
@@ -2023,7 +2042,7 @@ function renderDashVendedor(){
     '<div style="font-size:12px;font-weight:600;color:#666;margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px">Lançamentos</div>'+
     '<div style="overflow-x:auto"><table><thead><tr><th>OC</th><th>Cliente</th><th>Loja</th><th>Valor</th><th>Honorários</th><th>Nossa com.</th><th>Marcadores</th><th>Dt. venda</th></tr></thead><tbody>'+
     list.map(function(c){
-      var badges=[cortesiaBadge(isCortesia(c)),vendaDiretaBadge(c)].filter(Boolean).join(' ')||'—';
+      var badges=[cortesiaBadge(isCortesia(c)),vendaDiretaBadge(c),somenteComissaoBadge(c)].filter(Boolean).join(' ')||'—';
       return'<tr><td style="font-weight:600;color:#185FA5;font-size:12px">'+(c.oc||'—')+'</td><td style="font-weight:600;font-size:13px">'+c.cliente+'</td><td style="font-size:12px">'+c.loja+'</td><td>'+fmtM(c.valor)+'</td><td>'+fmtM(c.honorarios)+'</td><td style="color:#0F6E56;font-weight:600">'+fmtM(c.nossaCom)+'</td><td>'+badges+'</td><td style="font-size:12px;color:#666">'+fmtD(c.dtVenda)+'</td></tr>';
     }).join('')+'</tbody></table></div>':
     '<div class="empty-state" style="padding:1.5rem;text-align:center;color:#aaa">Nenhum lançamento neste período</div>';
@@ -2136,7 +2155,7 @@ function gerarFechamentoComissao(){
   }
   html+='<div class="section-title" style="margin-bottom:.5rem">Créditos no período'+(d.loja?' — '+d.loja:'')+'</div><div style="overflow-x:auto"><table><thead><tr><th>OC</th><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Valor</th><th>Com. vendedor</th><th>Honorários</th><th>Marcadores</th><th>Data venda</th></tr></thead><tbody>'+
     (d.list.length?d.list.map(function(c){
-      var badges=[cortesiaBadge(isCortesia(c)),vendaDiretaBadge(c)].filter(Boolean).join(' ')||'—';
+      var badges=[cortesiaBadge(isCortesia(c)),vendaDiretaBadge(c),somenteComissaoBadge(c)].filter(Boolean).join(' ')||'—';
       return'<tr><td style="font-size:11px;color:#888">'+(c.oc||'—')+'</td><td style="font-weight:600">'+(c.cliente||'—')+'</td><td>'+(c.placa||'—')+'</td><td>'+c.loja+'</td><td>'+c.vendedor+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B;font-weight:600">'+fmtM(c.comissao)+'</td><td>'+fmtM(c.honorarios)+'</td><td>'+badges+'</td><td>'+fmtD(c.dtVenda)+'</td></tr>';
     }).join(''):'<tr><td colspan="10" class="empty-state">Nenhum crédito nesse período</td></tr>')+
     '</tbody></table></div></div>';
