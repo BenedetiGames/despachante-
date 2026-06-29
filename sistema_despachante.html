@@ -371,7 +371,7 @@ table tr:hover td{background:#fafafa}
             <div class="calc-item"><div class="lbl">Nossa comissão (10%)</div><div class="num green" id="box-nossa-com">R$ —</div></div>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn primary" onclick="salvarCredito()">💾 Salvar crédito</button>
+            <button class="btn primary" id="btn-salvar-credito" onclick="salvarCredito()">💾 Salvar crédito</button>
             <button class="btn" onclick="limparCred()">✕ Limpar</button>
           </div>
         </div>
@@ -417,7 +417,7 @@ table tr:hover td{background:#fafafa}
             </select>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn success" onclick="salvarNF()">💾 Salvar NF</button>
+            <button class="btn success" id="btn-salvar-nf" onclick="salvarNF()">💾 Salvar NF</button>
             <button class="btn" onclick="limparNF()">✕ Limpar</button>
           </div>
         </div>
@@ -444,7 +444,7 @@ table tr:hover td{background:#fafafa}
           </div>
           <div id="f-oc-match" class="doc-match" style="margin-bottom:1rem;display:none"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn success" onclick="salvarFichao()">💾 Salvar Fichão</button>
+            <button class="btn success" id="btn-salvar-fichao" onclick="salvarFichao()">💾 Salvar Fichão</button>
             <button class="btn" onclick="limparFichao()">✕ Limpar</button>
           </div>
         </div>
@@ -829,6 +829,14 @@ function fmtDoc(fieldId){
 }
 
 function norm(s){if(s===null||s===undefined)return'';return String(s).toLowerCase().trim();}
+function gerarIdUnico(){
+  // Combina timestamp + número aleatório de 3 dígitos (0-999). Isso é uma segunda camada
+  // de proteção: a principal já é a flag que bloqueia clique duplo na mesma aba antes mesmo
+  // de chegar aqui. Esse sufixo cobre o caso raro de 2 abas/dispositivos do mesmo usuário
+  // gerando um registro no mesmo milissegundo. Multiplicador de 1000 mantém o número dentro
+  // do limite seguro de inteiro do JavaScript (Number.MAX_SAFE_INTEGER).
+  return Date.now()*1000+Math.floor(Math.random()*1000);
+}
 function isCortesia(c){return c.cortesia===true||c.cortesia==='TRUE'||c.status==='cortesia';}
 function motivoNfForaLabel(m){var map={revenda:'Revenda',fora_estado:'Fora do Estado',poupa_tempo:'Poupa-tempo',ja_tem_despachante:'Já tem despachante',diretoria:'Diretoria',nao_teve_atendimento:'Não teve atendimento',whatsapp:'Whatsapp'};return map[m]||m||'';}
 function diasDesde(dataStr){if(!dataStr)return 0;var d=new Date(dataStr+'T00:00:00');var hoje=new Date();return Math.floor((hoje-d)/86400000);}
@@ -1056,7 +1064,9 @@ function checarOcVinculadaFichao(){
     hint.textContent='⚠️ Nenhum crédito com essa OC. Confira o número.';
   }
 }
+var salvandoFichao=false;
 async function salvarFichao(){
+  if(salvandoFichao)return;
   var doc=normDoc(document.getElementById('f-doc').value);
   var lojaOrigem=document.getElementById('f-loja-origem').value;
   var lojaDestino=(document.getElementById('f-loja-destino').value||'').trim();
@@ -1067,8 +1077,12 @@ async function salvarFichao(){
   if(lojaOrigem==='-- selecione --'){alert('Selecione a loja de origem.');return;}
   if(!lojaDestino){alert('Preencha a loja destino (onde o fichão será protocolado).');return;}
   if(vendedor==='-- selecione --'){alert('Selecione o vendedor.');return;}
-  var rec={id:Date.now(),doc:document.getElementById('f-doc').value,cliente:cliente,placa:document.getElementById('f-placa').value.trim().toUpperCase(),lojaOrigem:lojaOrigem,lojaDestino:lojaDestino,vendedor:vendedor,ocVinculada:(document.getElementById('f-ocVinculada').value||'').trim(),enviadoForte:false,dtEnviadoForte:'',protocoladoForte:false,dtProtocoladoForte:'',dutRecebido:false,dtDutRecebido:'',enviadoDocumentacao:false,dtEnvioDoc:'',documentoPronto:false,dtDocPronto:'',criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:''};
-  try{var r=await api({action:'insert',sheet:'FICHOES',data:rec});if(r.error)throw new Error(r.error);fichoes.unshift(rec);alert('✓ Fichão salvo!');limparFichao();renderPainel();}catch(e){alert('Erro: '+e.message);}
+  var rec={id:gerarIdUnico(),doc:document.getElementById('f-doc').value,cliente:cliente,placa:document.getElementById('f-placa').value.trim().toUpperCase(),lojaOrigem:lojaOrigem,lojaDestino:lojaDestino,vendedor:vendedor,ocVinculada:(document.getElementById('f-ocVinculada').value||'').trim(),enviadoForte:false,dtEnviadoForte:'',protocoladoForte:false,dtProtocoladoForte:'',dutRecebido:false,dtDutRecebido:'',enviadoDocumentacao:false,dtEnvioDoc:'',documentoPronto:false,dtDocPronto:'',criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:''};
+  salvandoFichao=true;
+  var btn=document.getElementById('btn-salvar-fichao');
+  var txtOriginal=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+  try{var r=await api({action:'insert',sheet:'FICHOES',data:rec});if(r.error)throw new Error(r.error);fichoes.unshift(rec);alert('✓ Fichão salvo!');limparFichao();renderPainel();}catch(e){alert('Erro: '+e.message);}finally{salvandoFichao=false;if(btn){btn.disabled=false;btn.textContent=txtOriginal;}}
 }
 function limparFichao(){['f-doc','f-cliente','f-placa'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('f-loja-origem').value='-- selecione --';document.getElementById('f-vendedor').value='-- selecione --';document.getElementById('f-doc-match').className='doc-match';document.getElementById('f-doc-tipo').innerHTML='';}
 
@@ -1080,7 +1094,9 @@ function toggleNfFora(){nfForaAtiva=!nfForaAtiva;document.getElementById('nfFora
 function calcRef(){var ref=getRef(document.getElementById('c-tipo').value,parseFloat(document.getElementById('c-valor').value)||0);document.getElementById('c-ref-tabela').textContent=ref?'Tabela sugere: '+fmtM(ref):'';calcNossaCom();}
 function calcNossaCom(){var hon=parseFloat(document.getElementById('c-honorarios').value)||0;document.getElementById('box-hon').textContent=hon?fmtM(hon):'R$ —';document.getElementById('box-nossa-com').textContent=hon?fmtM(hon*NOSSA):'R$ —';}
 
+var salvandoCredito=false;
 async function salvarCredito(){
+  if(salvandoCredito)return;
   var doc=normDoc(document.getElementById('c-doc').value);
   var cliente=document.getElementById('c-cliente').value.trim();
   var loja=document.getElementById('c-loja').value;
@@ -1088,20 +1104,30 @@ async function salvarCredito(){
   if(doc.length<11){alert('CPF ou CNPJ inválido.');return;}
   if(!cliente||loja==='-- selecione --'||vendedor==='-- selecione --'){alert('Preencha nome, loja e vendedor.');return;}
   var hon=parseFloat(document.getElementById('c-honorarios').value)||0;var dt=document.getElementById('c-dtvenda').value;
-  var rec={id:Date.now(),doc:document.getElementById('c-doc').value,cliente:cliente,placa:document.getElementById('c-placa').value.trim().toUpperCase(),oc:document.getElementById('c-oc').value.trim(),ipva:ipvaAtivo,cortesia:cortesiaAtiva,vendaDireta:vendaDiretaAtiva,somenteComissao:somenteComissaoAtiva,loja:loja,vendedor:vendedor,tipo:document.getElementById('c-tipo').value,valor:parseFloat(document.getElementById('c-valor').value)||0,comissao:parseFloat(document.getElementById('c-comissao').value)||0,honorarios:hon,nossaCom:parseFloat((hon*NOSSA).toFixed(2)),status:'ok',motivo:'',obs:document.getElementById('c-obs').value,dtVenda:dt,semana:getSem(dt||new Date().toISOString().slice(0,10)),criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:'',classificacaoPendencia:''};
-  try{var r=await api({action:'insert',sheet:'CREDITOS',data:rec});if(r.error)throw new Error(r.error);creditos.unshift(rec);alert('✓ Crédito salvo!');limparCred();renderPainel();}catch(e){alert('Erro: '+e.message);}
+  var rec={id:gerarIdUnico(),doc:document.getElementById('c-doc').value,cliente:cliente,placa:document.getElementById('c-placa').value.trim().toUpperCase(),oc:document.getElementById('c-oc').value.trim(),ipva:ipvaAtivo,cortesia:cortesiaAtiva,vendaDireta:vendaDiretaAtiva,somenteComissao:somenteComissaoAtiva,loja:loja,vendedor:vendedor,tipo:document.getElementById('c-tipo').value,valor:parseFloat(document.getElementById('c-valor').value)||0,comissao:parseFloat(document.getElementById('c-comissao').value)||0,honorarios:hon,nossaCom:parseFloat((hon*NOSSA).toFixed(2)),status:'ok',motivo:'',obs:document.getElementById('c-obs').value,dtVenda:dt,semana:getSem(dt||new Date().toISOString().slice(0,10)),criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:'',classificacaoPendencia:''};
+  salvandoCredito=true;
+  var btn=document.getElementById('btn-salvar-credito');
+  var txtOriginal=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+  try{var r=await api({action:'insert',sheet:'CREDITOS',data:rec});if(r.error)throw new Error(r.error);creditos.unshift(rec);alert('✓ Crédito salvo!');limparCred();renderPainel();}catch(e){alert('Erro: '+e.message);}finally{salvandoCredito=false;if(btn){btn.disabled=false;btn.textContent=txtOriginal;}}
 }
 function limparCred(){['c-doc','c-cliente','c-placa','c-oc','c-valor','c-comissao','c-honorarios','c-obs','c-dtvenda'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('c-loja').value='-- selecione --';document.getElementById('c-vendedor').value='-- selecione --';document.getElementById('box-hon').textContent='R$ —';document.getElementById('box-nossa-com').textContent='R$ —';document.getElementById('c-ref-tabela').textContent='';document.getElementById('c-doc-match').className='doc-match';document.getElementById('c-doc-tipo').innerHTML='';if(ipvaAtivo)toggleIPVA();if(cortesiaAtiva)toggleCortesia();if(vendaDiretaAtiva)toggleVendaDireta();if(somenteComissaoAtiva)toggleSomenteComissao();}
 
+var salvandoNF=false;
 async function salvarNF(){
+  if(salvandoNF)return;
   var doc=normDoc(document.getElementById('n-doc').value);
   var loja=document.getElementById('n-loja').value;
   var vendedor=document.getElementById('n-vendedor').value;
   if(doc.length<11){alert('CPF ou CNPJ inválido.');return;}
   if(loja==='-- selecione --'){alert('Selecione a loja.');return;}
   if(vendedor==='-- selecione --'){alert('Selecione o vendedor.');return;}
-  var rec={id:Date.now(),doc:document.getElementById('n-doc').value,cliente:document.getElementById('n-cliente').value.trim(),chassi:document.getElementById('n-chassi').value.trim(),loja:loja,vendedor:vendedor,dtFat:document.getElementById('n-dtfat').value,dtReceb:document.getElementById('n-dtreceb').value,obs:document.getElementById('n-obs').value,nfFora:nfForaAtiva,motivoNfFora:nfForaAtiva?document.getElementById('n-motivo').value.trim():'',criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:''};
-  try{var r=await api({action:'insert',sheet:'NFS',data:rec});if(r.error)throw new Error(r.error);nfs.unshift(rec);alert('✓ NF salva!');limparNF();renderPainel();}catch(e){alert('Erro: '+e.message);}
+  var rec={id:gerarIdUnico(),doc:document.getElementById('n-doc').value,cliente:document.getElementById('n-cliente').value.trim(),chassi:document.getElementById('n-chassi').value.trim(),loja:loja,vendedor:vendedor,dtFat:document.getElementById('n-dtfat').value,dtReceb:document.getElementById('n-dtreceb').value,obs:document.getElementById('n-obs').value,nfFora:nfForaAtiva,motivoNfFora:nfForaAtiva?document.getElementById('n-motivo').value.trim():'',criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:''};
+  salvandoNF=true;
+  var btn=document.getElementById('btn-salvar-nf');
+  var txtOriginal=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+  try{var r=await api({action:'insert',sheet:'NFS',data:rec});if(r.error)throw new Error(r.error);nfs.unshift(rec);alert('✓ NF salva!');limparNF();renderPainel();}catch(e){alert('Erro: '+e.message);}finally{salvandoNF=false;if(btn){btn.disabled=false;btn.textContent=txtOriginal;}}
 }
 function limparNF(){['n-doc','n-cliente','n-chassi','n-dtfat','n-dtreceb','n-obs','n-motivo'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('n-loja').value='-- selecione --';document.getElementById('n-vendedor').value='-- selecione --';document.getElementById('n-doc-match').className='doc-match';document.getElementById('n-doc-tipo').innerHTML='';if(nfForaAtiva)toggleNfFora();}
 
