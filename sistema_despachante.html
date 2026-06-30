@@ -932,9 +932,14 @@ function sair(){usuarioLogado=null;creditos=[];nfs=[];document.getElementById('a
 async function carregarDados(){
   if(!SURL)return;
   try{
-    var res=await Promise.all([api({action:'getAll',sheet:'CREDITOS'}),api({action:'getAll',sheet:'NFS'}),api({action:'getAll',sheet:'FICHOES'})]);
+    // Chamadas sequenciais (uma de cada vez), não simultâneas - evita sobrecarregar
+    // o limite de execuções concorrentes do Google Apps Script, especialmente quando
+    // vários usuários usam o sistema ao mesmo tempo.
+    var rCred=await api({action:'getAll',sheet:'CREDITOS'});
+    var rNf=await api({action:'getAll',sheet:'NFS'});
+    var rFichao=await api({action:'getAll',sheet:'FICHOES'});
     var ml=lojasDoUsuario().map(function(l){return norm(l);});
-    var ac=res[0].data||[];var an=res[1].data||[];var af=res[2].data||[];
+    var ac=rCred.data||[];var an=rNf.data||[];var af=rFichao.data||[];
     if(isAdm()||isGerencia()){creditos=ac;nfs=an;fichoes=af;}
     else{
       creditos=ac.filter(function(c){return ml.indexOf(norm(c.loja))>=0;});
@@ -943,10 +948,24 @@ async function carregarDados(){
       fichoes=af.filter(function(f){return ml.indexOf(norm(f.lojaOrigem))>=0||ml.indexOf(norm(f.lojaDestino))>=0;});
     }
     renderPainel();
-  }catch(e){console.warn(e);}
+  }catch(e){
+    console.warn(e);
+    // Antes isso falhava silenciosamente e a tela ficava vazia sem explicação - agora avisa
+    // claramente que os dados NÃO sumiram, só não foi possível buscá-los agora.
+    alert('⚠️ Não consegui buscar os dados agora (problema de conexão com o Google).\n\nSeus dados continuam salvos normalmente na planilha - nada foi perdido. Aguarde alguns segundos e clique em "Atualizar" para tentar de novo.\n\nDetalhe técnico: '+e.message);
+  }
 }
 async function carregarUsuarios(){try{var r=await api({action:'getAll',sheet:'USUARIOS'});usuarios=r.data||[];renderTblUsuarios();}catch(e){}}
-async function syncLV(){if(!SURL)return;try{await Promise.all([api({action:'replaceAll',sheet:'LOJAS',data:lojas.map(function(n){return{nome:n};})}),api({action:'replaceAll',sheet:'VENDEDORES',data:vendedores.map(function(n){return{nome:n};})})]);} catch(e){}}
+async function syncLV(){
+  if(!SURL)return;
+  try{
+    await api({action:'replaceAll',sheet:'LOJAS',data:lojas.map(function(n){return{nome:n};})});
+    await api({action:'replaceAll',sheet:'VENDEDORES',data:vendedores.map(function(n){return{nome:n};})});
+  }catch(e){
+    console.warn(e);
+    alert('⚠️ Não consegui sincronizar lojas/vendedores agora. Tente novamente em alguns segundos.\n\nDetalhe: '+e.message);
+  }
+}
 
 function showTab(t,btn){document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});document.querySelectorAll('.nav button').forEach(function(b){b.classList.remove('active');});document.getElementById('sec-'+t).classList.add('active');btn.classList.add('active');if(t==='painel')renderPainel();if(t==='vinculo')renderVinculo();if(t==='notas')renderRegistros();if(t==='relatorios')renderRelFiltros();if(t==='usuarios')carregarUsuarios();if(t==='config')renderConfig();}
 function showInner(v){document.getElementById('inner-credito').style.display=v==='credito'?'block':'none';document.getElementById('inner-nf').style.display=v==='nf'?'block':'none';document.getElementById('inner-fichao').style.display=v==='fichao'?'block':'none';document.getElementById('btn-tab-cred').classList.toggle('active',v==='credito');document.getElementById('btn-tab-nf').classList.toggle('active',v==='nf');document.getElementById('btn-tab-fichao').classList.toggle('active',v==='fichao');}
