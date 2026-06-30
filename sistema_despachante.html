@@ -4,13 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VeloDoc</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#185FA5">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="VeloDoc">
-<link rel="apple-touch-icon" href="icon-180.png">
-<link rel="icon" href="icon-192.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
@@ -783,12 +776,18 @@ var SURL='https://script.google.com/macros/s/AKfycbwvtY2fzH6u2WjQ1si8HVLEi33-x3V
 var creditos=[],nfs=[],fichoes=[],usuarios=[];
 var usuarioLogado=null;
 
-// Registra o Service Worker pra habilitar instalação como app (PWA).
-// Sem isso, o navegador não oferece a opção de "Instalar" / "Adicionar à tela inicial".
+// PWA removido (estava causando cache de versão antiga do sistema). Este bloco desregistra
+// ativamente qualquer Service Worker que já tenha sido instalado antes em algum navegador,
+// e limpa o cache antigo - garante que todo mundo volte a carregar a versão mais nova sempre.
 if('serviceWorker' in navigator){
-  window.addEventListener('load',function(){
-    navigator.serviceWorker.register('sw.js').catch(function(e){console.warn('SW não registrado:',e);});
-  });
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    regs.forEach(function(reg){reg.unregister();});
+  }).catch(function(){});
+}
+if('caches' in window){
+  caches.keys().then(function(nomes){
+    nomes.forEach(function(n){caches.delete(n);});
+  }).catch(function(){});
 }
 
 var lojas=['LeapMotor','Fiat Orozimbo','Jeep Orozimbo'];
