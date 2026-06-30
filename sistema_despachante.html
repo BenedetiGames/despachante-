@@ -865,7 +865,27 @@ function lojasDoUsuario(){
   }).filter(function(l){return lojas.indexOf(l)>=0;});
 }
 
-async function api(p){if(!SURL)throw new Error('URL não configurada');var r=await fetch(SURL,{method:'POST',body:JSON.stringify(p)});return JSON.parse(await r.text());}
+async function api(p){
+  if(!SURL)throw new Error('URL não configurada');
+  var controller=new AbortController();
+  var timeoutId=setTimeout(function(){controller.abort();},25000);
+  try{
+    var r=await fetch(SURL,{method:'POST',body:JSON.stringify(p),signal:controller.signal});
+    clearTimeout(timeoutId);
+    var texto=await r.text();
+    try{
+      return JSON.parse(texto);
+    }catch(eParse){
+      throw new Error('O servidor respondeu algo inesperado (não foi JSON válido). Pode ser instabilidade temporária do Google - tente novamente em alguns segundos.');
+    }
+  }catch(e){
+    clearTimeout(timeoutId);
+    if(e.name==='AbortError'){
+      throw new Error('O servidor demorou demais para responder (mais de 25 segundos). Verifique sua internet e tente novamente. Se continuar, pode ser instabilidade temporária do Google Apps Script.');
+    }
+    throw e;
+  }
+}
 function setAlert(el,tipo,msg,spin){el.innerHTML='<div class="alert '+tipo+'">'+(spin?'<span class="spinner"></span> ':'')+msg+'</div>';}
 function setCon(ok){var p=document.getElementById('conn-pill');p.className='conn-pill '+(ok?'on':'off');document.getElementById('conn-label').textContent=ok?'Conectado':'Sem conexão';}
 // URL fixa no código, funções de edição via login removidas
