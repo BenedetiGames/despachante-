@@ -1444,11 +1444,11 @@ function renderGraficoEvolucao(){
 
 function exportarRelatorioCSV(list,nomeArquivo){
   if(!list||!list.length){alert('Nada para exportar.');return;}
-  var headers=['Cliente','CPF/CNPJ','Placa','Loja','Vendedor','Dt Recebimento NF','NF Fora','Motivo NF Fora','Vinculada','Honorarios','Nossa Comissao','Cortesia','Venda Direta'];
+  var headers=['Cliente','CPF/CNPJ','Placa','Loja','Vendedor','Dt Faturamento NF','Dt Recebimento NF','NF Fora','Motivo NF Fora','Vinculada','Honorarios','Nossa Comissao','Cortesia','Venda Direta'];
   var rows=list.map(function(n){
     var cred=creditoDaNF(n);
     return [
-      n.cliente||'',n.doc||'',placaDaNF(n)||'',n.loja||'',n.vendedor||'',fmtD(n.dtReceb),
+      n.cliente||'',n.doc||'',placaDaNF(n)||'',n.loja||'',n.vendedor||'',fmtD(n.dtFat),fmtD(n.dtReceb),
       (n.nfFora===true||n.nfFora==='TRUE')?'Sim':'Nao',n.nfFora?motivoNfForaLabel(n.motivoNfFora):'',
       cred?'Sim':'Nao',cred?(cred.honorarios||0):0,cred?(cred.nossaCom||0):0,
       cred&&isCortesia(cred)?'Sim':'Nao',cred&&(cred.vendaDireta===true||cred.vendaDireta==='TRUE')?'Sim':'Nao'
@@ -2486,7 +2486,7 @@ function gerarRelatorio(){
     var cred=creditoDaNF(n);
     var vinc=!!cred;
     var sinalVinc=mostrarVinculo?('<td>'+(vinc?'<span class="dot green" style="display:inline-block"></span> Vinculada':'<span class="dot red" style="display:inline-block"></span> Sem crédito')+'</td>'):'';
-    return'<tr><td style="font-size:11px;color:#888">'+(n.doc?esc(n.doc):'—')+'</td><td style="font-weight:600">'+(n.cliente?esc(n.cliente):'—')+'</td><td>'+(placaDaNF(n)?esc(placaDaNF(n)):'—')+'</td><td>'+esc(n.loja)+'</td><td>'+(n.vendedor?esc(n.vendedor):'—')+'</td><td>'+fmtD(n.dtReceb)+'</td><td>'+(cred?fmtM(cred.honorarios):'—')+'</td>'+sinalVinc+'</tr>';
+    return'<tr><td style="font-size:11px;color:#888">'+(n.doc?esc(n.doc):'—')+'</td><td style="font-weight:600">'+(n.cliente?esc(n.cliente):'—')+'</td><td>'+(placaDaNF(n)?esc(placaDaNF(n)):'—')+'</td><td>'+esc(n.loja)+'</td><td>'+(n.vendedor?esc(n.vendedor):'—')+'</td><td>'+fmtD(n.dtFat)+'</td><td>'+fmtD(n.dtReceb)+'</td><td>'+(cred?fmtM(cred.honorarios):'—')+'</td>'+sinalVinc+'</tr>';
   }
 
   var html='<div class="card"><div class="section-title" style="margin-bottom:1rem">Relatório: '+esc(d.titulo)+'</div>';
@@ -2501,18 +2501,18 @@ function gerarRelatorio(){
   }
 
   // Lista principal: NFs normais (sem cortesia, sem NF fora)
-  html+='<div class="section-title" style="margin-bottom:.3rem">Todas as NFs cadastradas'+(d.loja?' — '+esc(d.loja):'')+'</div><div style="font-size:11px;color:#999;margin-bottom:.6rem"><span class="dot green" style="display:inline-block"></span> Vinculada = NF e crédito casados, documentação concluída &nbsp;·&nbsp; <span class="dot red" style="display:inline-block"></span> Sem crédito = ainda não encontrou o crédito correspondente</div><div style="overflow-x:auto"><table style="margin-bottom:1.5rem"><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Dt. Receb.</th><th>Honorários</th><th>Vínculo</th></tr></thead><tbody>'+
-    (d.nfsNormais.length?d.nfsNormais.map(function(n){return linhaNF(n,true);}).join(''):'<tr><td colspan="8" class="empty-state">Nenhuma NF nesse período</td></tr>')+
+  html+='<div class="section-title" style="margin-bottom:.3rem">Todas as NFs cadastradas'+(d.loja?' — '+esc(d.loja):'')+'</div><div style="font-size:11px;color:#999;margin-bottom:.6rem"><span class="dot green" style="display:inline-block"></span> Vinculada = NF e crédito casados, documentação concluída &nbsp;·&nbsp; <span class="dot red" style="display:inline-block"></span> Sem crédito = ainda não encontrou o crédito correspondente</div><div style="overflow-x:auto"><table style="margin-bottom:1.5rem"><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Dt. Fat.</th><th>Dt. Receb.</th><th>Honorários</th><th>Vínculo</th></tr></thead><tbody>'+
+    (d.nfsNormais.length?d.nfsNormais.map(function(n){return linhaNF(n,true);}).join(''):'<tr><td colspan="9" class="empty-state">Nenhuma NF nesse período</td></tr>')+
     '</tbody></table></div>';
 
   // Seção Cortesias (separada, no final)
-  html+='<div class="section-title" style="margin-bottom:.5rem">🎁 Cortesias ('+d.nfsCortesia.length+')</div><div style="overflow-x:auto"><table style="margin-bottom:1.5rem"><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Dt. Receb.</th><th>Honorários</th><th>Vínculo</th></tr></thead><tbody>'+
-    (d.nfsCortesia.length?d.nfsCortesia.map(function(n){return linhaNF(n,true);}).join(''):'<tr><td colspan="8" class="empty-state">Nenhuma cortesia nesse período</td></tr>')+
+  html+='<div class="section-title" style="margin-bottom:.5rem">🎁 Cortesias ('+d.nfsCortesia.length+')</div><div style="overflow-x:auto"><table style="margin-bottom:1.5rem"><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Dt. Fat.</th><th>Dt. Receb.</th><th>Honorários</th><th>Vínculo</th></tr></thead><tbody>'+
+    (d.nfsCortesia.length?d.nfsCortesia.map(function(n){return linhaNF(n,true);}).join(''):'<tr><td colspan="9" class="empty-state">Nenhuma cortesia nesse período</td></tr>')+
     '</tbody></table></div>';
 
   // Seção Notas Fora (separada, no final)
-  html+='<div class="section-title" style="margin-bottom:.5rem">🚫 Notas Fora ('+d.nfsFora.length+')</div><div style="overflow-x:auto"><table><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Motivo</th><th>Dt. Receb.</th></tr></thead><tbody>'+
-    (d.nfsFora.length?d.nfsFora.map(function(n){return'<tr><td style="font-size:11px;color:#888">'+(n.doc?esc(n.doc):'—')+'</td><td style="font-weight:600">'+(n.cliente?esc(n.cliente):'—')+'</td><td>'+(placaDaNF(n)?esc(placaDaNF(n)):'—')+'</td><td>'+esc(n.loja)+'</td><td>'+(n.vendedor?esc(n.vendedor):'—')+'</td><td>'+esc(motivoNfForaLabel(n.motivoNfFora))+'</td><td>'+fmtD(n.dtReceb)+'</td></tr>';}).join(''):'<tr><td colspan="7" class="empty-state">Nenhuma NF fora nesse período 🎉</td></tr>')+
+  html+='<div class="section-title" style="margin-bottom:.5rem">🚫 Notas Fora ('+d.nfsFora.length+')</div><div style="overflow-x:auto"><table><thead><tr><th>CPF/CNPJ</th><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Motivo</th><th>Dt. Fat.</th><th>Dt. Receb.</th></tr></thead><tbody>'+
+    (d.nfsFora.length?d.nfsFora.map(function(n){return'<tr><td style="font-size:11px;color:#888">'+(n.doc?esc(n.doc):'—')+'</td><td style="font-weight:600">'+(n.cliente?esc(n.cliente):'—')+'</td><td>'+(placaDaNF(n)?esc(placaDaNF(n)):'—')+'</td><td>'+esc(n.loja)+'</td><td>'+(n.vendedor?esc(n.vendedor):'—')+'</td><td>'+esc(motivoNfForaLabel(n.motivoNfFora))+'</td><td>'+fmtD(n.dtFat)+'</td><td>'+fmtD(n.dtReceb)+'</td></tr>';}).join(''):'<tr><td colspan="8" class="empty-state">Nenhuma NF fora nesse período 🎉</td></tr>')+
     '</tbody></table></div>';
 
   html+='</div>';
@@ -2690,8 +2690,8 @@ function gerarPDF(tipo){
     doc.text('Todas as NFs cadastradas'+(d.loja?' — '+d.loja:''),MX,y);y+=5;
     doc.autoTable({
       startY:y,margin:{left:MX,right:MX},
-      head:[['Cliente','Placa','Loja','Vendedor','Dt. Receb.','Honorários','Vinculada']],
-      body:d.nfsNormais.map(function(n){var c=creditoDaNF(n);return[n.cliente||'',placaDaNF(n)||'',n.loja||'',n.vendedor||'',fmtD(n.dtReceb),c?fmtM(c.honorarios):'—',c?'Sim':'Não'];}),
+      head:[['Cliente','Placa','Loja','Vendedor','Dt. Fat.','Dt. Receb.','Honorários','Vinculada']],
+      body:d.nfsNormais.map(function(n){var c=creditoDaNF(n);return[n.cliente||'',placaDaNF(n)||'',n.loja||'',n.vendedor||'',fmtD(n.dtFat),fmtD(n.dtReceb),c?fmtM(c.honorarios):'—',c?'Sim':'Não'];}),
       theme:'plain',
       headStyles:{fillColor:VERDE,textColor:255,fontStyle:'bold',fontSize:7.5},
       bodyStyles:{fontSize:7.5,textColor:PRETO},
@@ -2707,8 +2707,8 @@ function gerarPDF(tipo){
     if(d.nfsCortesia.length){
       doc.autoTable({
         startY:y,margin:{left:MX,right:MX},
-        head:[['Cliente','Placa','Loja','Vendedor','Dt. Receb.','Honorários']],
-        body:d.nfsCortesia.map(function(n){var c=creditoDaNF(n);return[n.cliente||'',placaDaNF(n)||'',n.loja||'',n.vendedor||'',fmtD(n.dtReceb),c?fmtM(c.honorarios):'—'];}),
+        head:[['Cliente','Placa','Loja','Vendedor','Dt. Fat.','Dt. Receb.','Honorários']],
+        body:d.nfsCortesia.map(function(n){var c=creditoDaNF(n);return[n.cliente||'',placaDaNF(n)||'',n.loja||'',n.vendedor||'',fmtD(n.dtFat),fmtD(n.dtReceb),c?fmtM(c.honorarios):'—'];}),
         theme:'plain',
         headStyles:{fillColor:AZUL,textColor:255,fontStyle:'bold',fontSize:7.5},
         bodyStyles:{fontSize:7.5,textColor:PRETO},
@@ -2728,8 +2728,8 @@ function gerarPDF(tipo){
     if(d.nfsFora.length){
       doc.autoTable({
         startY:y,margin:{left:MX,right:MX},
-        head:[['Cliente','Placa','Loja','Vendedor','Motivo','Dt. Receb.']],
-        body:d.nfsFora.map(function(n){return[n.cliente||'',placaDaNF(n)||'',n.loja||'',n.vendedor||'',motivoNfForaLabel(n.motivoNfFora),fmtD(n.dtReceb)];}),
+        head:[['Cliente','Placa','Loja','Vendedor','Motivo','Dt. Fat.','Dt. Receb.']],
+        body:d.nfsFora.map(function(n){return[n.cliente||'',placaDaNF(n)||'',n.loja||'',n.vendedor||'',motivoNfForaLabel(n.motivoNfFora),fmtD(n.dtFat),fmtD(n.dtReceb)];}),
         theme:'plain',
         headStyles:{fillColor:VERMELHO,textColor:255,fontStyle:'bold',fontSize:7.5},
         bodyStyles:{fontSize:7.5,textColor:PRETO},
