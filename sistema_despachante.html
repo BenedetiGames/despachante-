@@ -926,10 +926,10 @@ function lojasDoUsuario(){
   }).filter(function(l){return lojas.indexOf(l)>=0;});
 }
 
-async function api(p){
-  if(!SURL)throw new Error('URL não configurada');
+// Faz UMA tentativa de chamada (interna - não usar direto)
+async function apiTentativa(p,timeoutMs){
   var controller=new AbortController();
-  var timeoutId=setTimeout(function(){controller.abort();},25000);
+  var timeoutId=setTimeout(function(){controller.abort();},timeoutMs);
   try{
     var r=await fetch(SURL,{method:'POST',body:JSON.stringify(p),signal:controller.signal});
     clearTimeout(timeoutId);
@@ -937,15 +937,53 @@ async function api(p){
     try{
       return JSON.parse(texto);
     }catch(eParse){
-      throw new Error('O servidor respondeu algo inesperado (não foi JSON válido). Pode ser instabilidade temporária do Google - tente novamente em alguns segundos.');
+      throw new Error('O servidor respondeu algo inesperado (não foi JSON válido).');
     }
   }catch(e){
     clearTimeout(timeoutId);
     if(e.name==='AbortError'){
-      throw new Error('O servidor demorou demais para responder (mais de 25 segundos). Verifique sua internet e tente novamente. Se continuar, pode ser instabilidade temporária do Google Apps Script.');
+      var err=new Error('timeout');
+      err.isTimeout=true;
+      throw err;
     }
     throw e;
   }
+}
+// Ações que podem ser repetidas com segurança sem risco de duplicar/estragar nada.
+// 'update' é idempotente porque o backend usa upsert por id.
+// Leituras (getAll, getAllMulti, login, init) são sempre idempotentes.
+// NÃO incluímos 'insert', 'delete', 'cleanup', 'saveUsuario', 'deleteUsuario', 'replaceAll' -
+// se essas derem timeout, o usuário decide se refaz.
+var ACOES_IDEMPOTENTES={update:1,getAll:1,getAllMulti:1,login:1,init:1};
+
+async function api(p){
+  if(!SURL)throw new Error('URL não configurada');
+  var idempotente=p&&p.action&&ACOES_IDEMPOTENTES[p.action];
+  // Ações idempotentes: até 3 tentativas com backoff (0s, 1.5s, 3s)
+  // Ações não-idempotentes: 1 tentativa só, timeout maior
+  var maxTentativas=idempotente?3:1;
+  var timeoutMs=40000;
+  var ultimoErro=null;
+  for(var tentativa=0;tentativa<maxTentativas;tentativa++){
+    if(tentativa>0){
+      // Backoff antes de reenviar (dá tempo do Google se recuperar)
+      await new Promise(function(resolve){setTimeout(resolve,1500*tentativa);});
+    }
+    try{
+      return await apiTentativa(p,timeoutMs);
+    }catch(e){
+      ultimoErro=e;
+      // Só refaz se foi timeout OU erro de rede - erros de aplicação (ex: "sem permissão") não devem ser repetidos
+      var vaiRefazer=idempotente&&(e.isTimeout||e.message.indexOf('Failed to fetch')>=0||e.message.indexOf('network')>=0);
+      if(!vaiRefazer)break;
+    }
+  }
+  // Mensagem final amigável
+  if(ultimoErro.isTimeout){
+    var msgExtra=maxTentativas>1?' (já tentei '+maxTentativas+' vezes).':'.';
+    throw new Error('O servidor demorou demais para responder'+msgExtra+' Pode ser instabilidade temporária do Google Apps Script. Aguarde alguns instantes e tente novamente - seus dados não foram perdidos.');
+  }
+  throw ultimoErro;
 }
 // Salva/atualiza um registro em UMA chamada só (upsert atômico no servidor).
 // Substitui o antigo padrão delete+insert, que era 2x mais lento e podia PERDER o registro
