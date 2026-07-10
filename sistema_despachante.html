@@ -899,6 +899,9 @@ function gerarIdUnico(){
   return Date.now()*1000+Math.floor(Math.random()*1000);
 }
 function isCortesia(c){return c.cortesia===true||c.cortesia==='TRUE'||c.status==='cortesia';}
+// Retorna true se o crédito tem comissão a pagar pro vendedor (> 0).
+// Usado no Fechamento de Comissão e Dashboard do Vendedor - só entra quem tem valor a receber.
+function temComissao(c){return(Number(c&&c.comissao)||0)>0;}
 function motivoNfForaLabel(m){var map={revenda:'Revenda',fora_estado:'Fora do Estado',poupa_tempo:'Poupa-tempo',ja_tem_despachante:'Já tem despachante',diretoria:'Diretoria',nao_teve_atendimento:'Não teve atendimento',whatsapp:'Whatsapp'};return map[m]||m||'';}
 function diasDesde(dataStr){if(!dataStr)return 0;var d=new Date(String(dataStr).split('T')[0]+'T00:00:00');var hoje=new Date();return Math.floor((hoje-d)/86400000);}
 function isPendenciaAntiga(c){return diasDesde(c.dtVenda)>=60;}
@@ -2243,7 +2246,8 @@ function fecharModalEditarNF(){document.getElementById('modal-editar-nf').classL
 var dashVendAtual='';
 function abrirDashVendedor(nome){
   dashVendAtual=nome;
-  document.getElementById('dash-vend-titulo').textContent='📊 '+nome;
+  var sufixoTitulo=(modoRelatorio==='comissao')?' — Fechamento de comissão':'';
+  document.getElementById('dash-vend-titulo').textContent='📊 '+nome+sufixoTitulo;
   dashVendPeriodo('mes');
   document.getElementById('modal-dash-vendedor').classList.add('open');
 }
@@ -2274,7 +2278,10 @@ function renderDashVendedor(){
   var nome=dashVendAtual;
   var ini=document.getElementById('dash-vend-ini').value;
   var fim=document.getElementById('dash-vend-fim').value;
+  // Filtra pelo modo do relatório: no fechamento de comissão, só vendas com comissão a pagar
+  var soComissao=(modoRelatorio==='comissao');
   var list=creditos.filter(function(c){
+    if(soComissao&&!temComissao(c))return false;
     if(norm(c.vendedor)!==norm(nome))return false;
     if(ini&&c.dtVenda&&c.dtVenda<ini)return false;
     if(fim&&c.dtVenda&&c.dtVenda>fim)return false;
@@ -2369,12 +2376,16 @@ function setModoRelatorio(modo){
   document.getElementById('rel-motivo-g').style.display=modo==='nf'?'block':'none';
   document.getElementById('rel-dt-ini-label').textContent=modo==='nf'?'Data inicial (recebimento NF)':'Data inicial (venda)';
   document.getElementById('rel-dt-fim-label').textContent=modo==='nf'?'Data final (recebimento NF)':'Data final (venda)';
-  document.getElementById('rel-modo-explicacao').textContent=modo==='nf'?'Baseado nas NFs recebidas — útil pra acompanhar documentação.':'Baseado direto nos créditos lançados — não depende da NF já ter chegado. Útil pra fechar comissão de vendedor.';
+  document.getElementById('rel-modo-explicacao').textContent=modo==='nf'?'Baseado nas NFs recebidas — útil pra acompanhar documentação.':'Baseado direto nos créditos lançados — não depende da NF já ter chegado. Só aparecem vendas com comissão a pagar (comissão > 0) — cortesias e vendas sem comissão são ignoradas.';
   document.getElementById('rel-output').innerHTML='';
 }
 function calcularDadosComissao(){
   var loja=document.getElementById('rel-loja').value,vend=document.getElementById('rel-vendedor').value,di=document.getElementById('rel-dt-ini').value,df=document.getElementById('rel-dt-fim').value,ipvaF=document.getElementById('rel-ipva').value,cortFiltro=document.getElementById('rel-cortesia').value,vdFiltro=(document.getElementById('rel-vendaDireta')||{value:''}).value;
   var list=creditos.filter(function(c){
+    // REGRA DO FECHAMENTO: só entra crédito que tem comissão a pagar pro vendedor.
+    // Cortesias (comissão zero), venda direta sem comissão e "somente comissão" com valor
+    // zero saem completamente - fechamento não é lista de vendas, é lista de pagamentos.
+    if(!temComissao(c))return false;
     if(loja&&norm(c.loja)!==norm(loja))return false;
     if(vend&&norm(c.vendedor)!==norm(vend))return false;
     if(di&&c.dtVenda&&c.dtVenda<di)return false;
@@ -2392,7 +2403,6 @@ function calcularDadosComissao(){
   var tC=list.reduce(function(a,c){return a+(Number(c.comissao)||0);},0);
   var tV=list.reduce(function(a,c){return a+(Number(c.valor)||0);},0);
   var cIPVA=list.filter(function(c){return c.ipva===true||c.ipva==='TRUE';}).length;
-  var cortQtd=list.filter(function(c){return isCortesia(c);}).length;
   var pV={};
   list.forEach(function(c){
     var v=vendedorValido(c.vendedor);
@@ -2406,7 +2416,7 @@ function calcularDadosComissao(){
   var perTxt=per||'todos os períodos';
   var titulo=[loja,vend].filter(Boolean).join(' · ')||'Geral';
   titulo=titulo+' — '+perTxt;
-  return{loja:loja,vend:vend,titulo:titulo,list:list,tH:tH,tN:tN,tC:tC,tV:tV,cIPVA:cIPVA,cortQtd:cortQtd,pV:pV};
+  return{loja:loja,vend:vend,titulo:titulo,list:list,tH:tH,tN:tN,tC:tC,tV:tV,cIPVA:cIPVA,pV:pV};
 }
 function gerarFechamentoComissao(){
   var d=calcularDadosComissao();
@@ -2414,7 +2424,7 @@ function gerarFechamentoComissao(){
   ultimoRelatorioNome='comissao_'+norm(d.titulo).replace(/[^a-z0-9]+/g,'_');
   var pvEntries=Object.entries(d.pV).sort(function(a,b){return b[1].comissao-a[1].comissao;});
   var html='<div class="card"><div class="section-title" style="margin-bottom:1rem">Fechamento de Comissão: '+esc(d.titulo)+'</div>';
-  html+='<div class="metric-grid" style="margin-bottom:1.25rem"><div class="metric"><div class="lbl">Créditos</div><div class="val blue">'+d.list.length+'</div></div><div class="metric"><div class="lbl">Cortesias</div><div class="val">'+d.cortQtd+'</div></div><div class="metric"><div class="lbl">Com IPVA</div><div class="val blue">'+d.cIPVA+'</div></div><div class="metric"><div class="lbl">Total vendas</div><div class="val blue">'+fmtM(d.tV)+'</div></div><div class="metric"><div class="lbl">Com. vendedores</div><div class="val amber">'+fmtM(d.tC)+'</div></div><div class="metric"><div class="lbl">Total honorários</div><div class="val">'+fmtM(d.tH)+'</div></div><div class="metric"><div class="lbl">Nossa comissão</div><div class="val green">'+fmtM(d.tN)+'</div></div></div>';
+  html+='<div class="metric-grid" style="margin-bottom:1.25rem"><div class="metric"><div class="lbl">Créditos com comissão</div><div class="val blue">'+d.list.length+'</div></div><div class="metric"><div class="lbl">Com IPVA</div><div class="val blue">'+d.cIPVA+'</div></div><div class="metric"><div class="lbl">Total vendas</div><div class="val blue">'+fmtM(d.tV)+'</div></div><div class="metric"><div class="lbl">Com. vendedores</div><div class="val amber">'+fmtM(d.tC)+'</div></div><div class="metric"><div class="lbl">Total honorários</div><div class="val">'+fmtM(d.tH)+'</div></div><div class="metric"><div class="lbl">Nossa comissão</div><div class="val green">'+fmtM(d.tN)+'</div></div></div>';
   if(pvEntries.length){
     html+='<div class="section-title" style="margin-bottom:.5rem">Comissão por vendedor</div><table style="margin-bottom:1.5rem"><thead><tr><th>Vendedor</th><th>Qtd créditos</th><th>Comissão a pagar</th><th>Honorários</th><th>Nossa com.</th></tr></thead><tbody>'+pvEntries.map(function(e){
       return'<tr><td style="font-weight:600"><button data-v="'+esc(e[0])+'" onclick="abrirDashVendedor(this.dataset.v)" style="background:none;border:none;cursor:pointer;color:#185FA5;font-weight:600;font-size:13px;padding:0;text-decoration:underline">'+esc(e[0])+'</button></td><td>'+e[1].qtd+'</td><td style="color:#854F0B;font-weight:600">'+fmtM(e[1].comissao)+'</td><td>'+fmtM(e[1].hon)+'</td><td style="color:#0F6E56;font-weight:600">'+fmtM(e[1].nossaCom)+'</td></tr>';
@@ -2823,9 +2833,9 @@ function gerarPDFComissao(tipo){
   y+=8;
 
   var kpis=[
-    {label:'CRÉDITOS',val:String(d.list.length),cor:AZUL},
-    {label:'CORTESIAS',val:String(d.cortQtd),cor:PRETO},
+    {label:'CRÉDITOS C/ COMISSÃO',val:String(d.list.length),cor:AZUL},
     {label:'COM IPVA',val:String(d.cIPVA),cor:AZUL},
+    {label:'TOTAL VENDAS',val:fmtM(d.tV),cor:AZUL},
     {label:'COM. VENDEDORES',val:fmtM(d.tC),cor:AMBAR},
     {label:'TOTAL HONORÁRIOS',val:fmtM(d.tH),cor:PRETO}
   ];
