@@ -54,6 +54,12 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
 .conn-pill.on .conn-dot{background:#2FCF9A;box-shadow:0 0 6px rgba(47,207,154,.8)}.conn-pill.off .conn-dot{background:#E24B4A}
 .btn-sair{padding:5px 13px;border-radius:8px;border:1px solid rgba(255,255,255,.18);background:transparent;cursor:pointer;font-size:12px;font-family:inherit;color:#C4D3E2;transition:all .15s}
 .btn-sair:hover{background:rgba(226,75,74,.15);color:#F3A9A0;border-color:rgba(226,75,74,.4)}
+/* Botão atualizar da topbar: ícone único, sem texto */
+.btn-refresh{width:29px;height:29px;padding:0;border-radius:8px;border:1px solid rgba(255,255,255,.18);background:transparent;cursor:pointer;font-size:14px;font-family:inherit;color:#C4D3E2;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;line-height:1}
+.btn-refresh:hover:not(:disabled){background:rgba(127,184,234,.15);color:#7FB8EA;border-color:rgba(127,184,234,.4)}
+.btn-refresh:disabled{opacity:.7;cursor:wait}
+.btn-refresh.spinning span{display:inline-block;animation:refresh-spin .8s linear infinite}
+@keyframes refresh-spin{to{transform:rotate(360deg)}}
 .wrapper{max-width:1400px;margin:0 auto;padding:1.1rem 1rem 2.5rem}
 
 /* ── NAV ── */
@@ -229,6 +235,7 @@ table tr:hover td{background:#F7FAFD}
 </svg> <span>Velo</span>Doc</div>
     <div class="topbar-right">
       <div class="conn-pill off" id="conn-pill"><div class="conn-dot"></div><span id="conn-label">Sem conexão</span></div>
+      <button class="btn-refresh" id="btn-refresh" onclick="atualizarDados()" title="Atualizar dados"><span>🔄</span></button>
       <div class="user-pill"><div class="avatar" id="user-avatar">?</div><span id="user-nome">-</span></div>
       <button class="btn-sair" onclick="sair()">Sair</button>
     </div>
@@ -1065,6 +1072,36 @@ function limparLista(arr){
   return ordem.map(function(k){return map[k];});
 }
 
+// Botão 🔄 da topbar: recarrega os dados do servidor SEM deslogar,
+// mostra feedback visual (ícone girando + botão desabilitado) e mantém
+// a aba/seção que o usuário estava vendo. Rerenderiza a tela ativa
+// pra ele ver as mudanças na mesma hora, sem precisar clicar em outra aba.
+async function atualizarDados(){
+  var btn=document.getElementById('btn-refresh');
+  if(!btn||btn.disabled)return;
+  btn.disabled=true;
+  btn.classList.add('spinning');
+  try{
+    await carregarDados();
+    // Descobre qual seção está aberta e chama o render dela
+    var ativa=document.querySelector('.section.active');
+    if(ativa){
+      var id=ativa.id.replace('sec-','');
+      if(id==='painel')renderPainel();
+      else if(id==='vinculo')renderVinculo();
+      else if(id==='notas')renderRegistros();
+      else if(id==='relatorios')renderRelFiltros();
+      else if(id==='usuarios')carregarUsuarios();
+      else if(id==='config')renderConfig();
+    }
+  }catch(e){
+    // carregarDados() já mostra alert em caso de erro, não precisa duplicar
+  }finally{
+    btn.classList.remove('spinning');
+    btn.disabled=false;
+  }
+}
+
 async function carregarDados(){
   if(!SURL)return;
   try{
@@ -1837,7 +1874,7 @@ function renderPendDocumentacao(){
     var urgente=(n.docUrgente===true||n.docUrgente==='TRUE');
     var trStyle=urgente?' style="background:#fef2f2"':'';
     var nomeCliente=(urgente?'🔥 ':'')+(n.cliente?esc(n.cliente):'—');
-    var tipoBadge=p.tipo==='fichao'?'<span class="badge" style="background:#e6f1fb;color:#185FA5">📋 Fichão</span>':'<span class="badge" style="background:#f0faf6;color:#0F6E56">📄 NF</span>';
+    var tipoBadge=p.tipo==='fichao'?'<span class="badge" style="background:#e6f1fb;color:#185FA5">📋 Semi-novo</span>':'<span class="badge" style="background:#f0faf6;color:#0F6E56">📄 0km</span>';
     return'<tr id="pend-doc-row-'+p.tipo+'-'+n.id+'"'+trStyle+'><td>'+tipoBadge+'</td><td style="font-weight:600">'+nomeCliente+'</td><td>'+esc(p.placa)+'</td><td>'+esc(p.loja)+'</td><td>'+(n.vendedor?esc(n.vendedor):'—')+'</td><td>'+fmtD(n.dtEnvioDoc)+'</td><td style="color:'+corDias+';font-weight:600">'+dias+' dia'+(dias!==1?'s':'')+'</td><td><button style="font-size:12px;padding:7px 14px;background:#fff8e1;color:#92400e;border:1px solid #FAC775;border-radius:7px;cursor:pointer;font-weight:600" onclick="marcarDocPronto('+n.id+',\''+p.tipo+'\')">☐ Marcar pronto</button></td></tr>';
   }).join(''):'<tr><td colspan="8" class="empty-state">Nenhuma pendência de documentação 🎉</td></tr>';
 }
