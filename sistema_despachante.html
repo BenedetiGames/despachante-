@@ -25,11 +25,11 @@
 /* ── MODO ESCURO ── ativado por data-theme="dark" no <html> */
 html[data-theme="dark"]{
   --navy:#0A1520;--navy2:#132538;
-  --blue:#4A9EE8;--blue-soft:#1A2C3F;
-  --green:#2FBF8F;--green-dark:#248F6B;--green-soft:#132A22;
-  --bg:#0D141B;--card:#161F29;--line:#26313D;--line-soft:#1E2732;
-  --txt:#E5EAF0;--txt2:#9BA9B8;--txt3:#6B7A89;
-  --red:#E8A090;--red-soft:#2A1815;--amber:#E8C070;--amber-soft:#2A2015;
+  --blue:#4A9EE8;--blue-soft:#1E3550;
+  --green:#2FBF8F;--green-dark:#248F6B;--green-soft:#183328;
+  --bg:#0D141B;--card:#161F29;--line:#2E3B4A;--line-soft:#232D39;
+  --txt:#E5EAF0;--txt2:#B0BCC9;--txt3:#7C8B9B;
+  --red:#F0A090;--red-soft:#3D1F1A;--amber:#F0C878;--amber-soft:#3D2E15;
   --shadow:0 1px 2px rgba(0,0,0,.35),0 4px 16px rgba(0,0,0,.4);
   --shadow-sm:0 1px 2px rgba(0,0,0,.25);
 }
@@ -38,6 +38,47 @@ html[data-theme="dark"] .login-box{background:#161F29;color:var(--txt)}
 html[data-theme="dark"] input,html[data-theme="dark"] select,html[data-theme="dark"] textarea{background:var(--card)!important;color:var(--txt)!important;border-color:var(--line)!important}
 html[data-theme="dark"] input::placeholder{color:var(--txt3)}
 html[data-theme="dark"] ::selection{background:rgba(74,158,232,.35)}
+/* Linhas de tabela com fundo colorido (pendências etc): força texto legível */
+html[data-theme="dark"] tr[style*="background"] td,
+html[data-theme="dark"] tr[style*="background"] td *,
+html[data-theme="dark"] tr[style*="rgb"] td,
+html[data-theme="dark"] tr[style*="rgb"] td *{color:var(--txt)!important}
+/* Elementos com fundo branco/claro forçado inline */
+html[data-theme="dark"] [style*="background:#fff"],
+html[data-theme="dark"] [style*="background:#FFF"],
+html[data-theme="dark"] [style*="background-color:#fff"],
+html[data-theme="dark"] [style*="background-color:#FFF"]{background:var(--card)!important;color:var(--txt)!important}
+/* Barras de progresso (widgets tipo Cortesias, NF Fora): fundo do trilho */
+html[data-theme="dark"] [style*="background:#EEF"],
+html[data-theme="dark"] [style*="background:#eef"],
+html[data-theme="dark"] [style*="background:#E3E8F0"],
+html[data-theme="dark"] [style*="background:#F2F4F8"],
+html[data-theme="dark"] [style*="background:#eee"],
+html[data-theme="dark"] [style*="background:#EEE"],
+html[data-theme="dark"] [style*="background:#f0f0f0"],
+html[data-theme="dark"] [style*="background:#F0F0F0"]{background:var(--line-soft)!important}
+/* Textos cinzas hardcoded (labels de barras, "Nenhum dado", etc) */
+html[data-theme="dark"] [style*="color:#666"],
+html[data-theme="dark"] [style*="color:#888"],
+html[data-theme="dark"] [style*="color:#999"],
+html[data-theme="dark"] [style*="color:#aaa"],
+html[data-theme="dark"] [style*="color:#AAA"]{color:var(--txt2)!important}
+/* Bordas cinzas hardcoded */
+html[data-theme="dark"] [style*="border-top:1px solid #f0f0f0"],
+html[data-theme="dark"] [style*="border:1px solid #E3E8F0"]{border-color:var(--line)!important}
+/* Chips/pills de loja e vendedor no cadastro */
+html[data-theme="dark"] .lojas-check label{background:var(--card);color:var(--txt);border-color:var(--line)}
+html[data-theme="dark"] .chip,html[data-theme="dark"] .tag{color:var(--txt)}
+/* Chips das listas de Lojas/Vendedores (têm background:#F2F4F8 inline) */
+html[data-theme="dark"] #lista-lojas li,
+html[data-theme="dark"] #lista-vendedores li{background:var(--line-soft)!important;color:var(--txt)}
+html[data-theme="dark"] #lista-lojas li button,
+html[data-theme="dark"] #lista-vendedores li button{color:var(--txt3)!important}
+/* Cards com fundo colorido soft: garante texto contrastante */
+html[data-theme="dark"] [style*="background:var(--red-soft)"],
+html[data-theme="dark"] [style*="background:var(--amber-soft)"],
+html[data-theme="dark"] [style*="background:var(--green-soft)"],
+html[data-theme="dark"] [style*="background:var(--blue-soft)"]{color:var(--txt)!important}
 /* Botão do toggle de tema (na topbar escura) */
 .btn-theme{width:29px;height:29px;padding:0;border-radius:8px;border:1px solid rgba(255,255,255,.18);background:transparent;cursor:pointer;font-size:14px;font-family:inherit;color:#C4D3E2;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;line-height:1}
 .btn-theme:hover{background:rgba(232,192,112,.15);color:#E8C070;border-color:rgba(232,192,112,.4)}
@@ -128,7 +169,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}
 table th{font-weight:600;font-size:10.5px;color:var(--txt2);text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);text-transform:uppercase;letter-spacing:.5px;background:#FAFBFD;white-space:nowrap}
 table td{padding:10px;border-bottom:1px solid var(--line-soft);vertical-align:middle;font-variant-numeric:tabular-nums}
 table tr:last-child td{border-bottom:none}
-table tr:hover td{background:#F7FAFD}
+table tr:hover td{background:var(--line-soft)}
 
 /* ── BADGES ── */
 .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.1px}
