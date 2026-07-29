@@ -1019,7 +1019,7 @@ async function fazerLogin(){
   catch(e){err.style.display='block';err.textContent='Erro de conexão: '+e.message;btn.textContent='Entrar';btn.disabled=false;}
 }
 
-function entrarNoApp(){
+async function entrarNoApp(){
   document.getElementById('login-wrap').style.display='none';
   document.getElementById('app').style.display='block';
   document.getElementById('user-nome').textContent=usuarioLogado.nome;
@@ -1040,8 +1040,11 @@ function entrarNoApp(){
       el.style.display=gerencia?'none':'block';
     });
   }, 100);
+  // Preenche com o que tem no localStorage pra tela não ficar vazia enquanto carrega
   atualizarSelects();
-  carregarDados();
+  // Aguarda o servidor devolver LOJAS/VENDEDORES atualizados e refaz os selects
+  await carregarDados();
+  atualizarSelects();
 }
 
 function sair(){
@@ -1083,6 +1086,8 @@ async function atualizarDados(){
   btn.classList.add('spinning');
   try{
     await carregarDados();
+    // Atualiza dropdowns de loja/vendedor (podem ter novas do servidor)
+    atualizarSelects();
     // Descobre qual seção está aberta e chama o render dela
     var ativa=document.querySelector('.section.active');
     if(ativa){
@@ -1108,12 +1113,21 @@ async function carregarDados(){
     var ac=[],an=[],af=[];
     var multiOk=false;
     // NOVO: uma única chamada traz as 3 abas de uma vez (3x mais rápido no carregamento)
+    // Também traz LOJAS e VENDEDORES pra evitar dessincronia entre aparelhos
+    // (antes ficava só no localStorage de cada navegador, então quem cadastrava
+    // uma loja num aparelho, os outros nunca ficavam sabendo)
     try{
-      var multi=await api({action:'getAllMulti',sheets:['CREDITOS','NFS','FICHOES']});
+      var multi=await api({action:'getAllMulti',sheets:['CREDITOS','NFS','FICHOES','LOJAS','VENDEDORES']});
       if(multi&&multi.data&&!multi.error){
         ac=multi.data.CREDITOS||[];
         an=multi.data.NFS||[];
         af=multi.data.FICHOES||[];
+        // Se veio LOJAS/VENDEDORES do servidor, usa como fonte da verdade
+        var srvLojas=(multi.data.LOJAS||[]).map(function(x){return x.nome;}).filter(Boolean);
+        var srvVend=(multi.data.VENDEDORES||[]).map(function(x){return x.nome;}).filter(Boolean);
+        if(srvLojas.length){lojas=srvLojas;}
+        if(srvVend.length){vendedores=srvVend;}
+        salvarLocal();
         multiOk=true;
       }
     }catch(eMulti){multiOk=false;}
