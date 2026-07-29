@@ -619,6 +619,17 @@ table tr:hover td{background:#F7FAFD}
 
     <!-- CONFIG -->
     <div id="sec-config" class="section">
+      <div class="card" id="cfg-senha-card">
+        <div class="section-title">🔒 Minha senha</div>
+        <div style="font-size:12.5px;color:#888;margin-bottom:.85rem;line-height:1.5">Troque sua senha de acesso. A nova senha precisa ter pelo menos 4 caracteres.</div>
+        <div class="form-grid">
+          <div class="fg"><label>Senha atual</label><input type="password" id="cfg-senha-atual" autocomplete="current-password"></div>
+          <div class="fg"><label>Nova senha</label><input type="password" id="cfg-senha-nova" autocomplete="new-password"></div>
+          <div class="fg"><label>Confirmar nova senha</label><input type="password" id="cfg-senha-conf" autocomplete="new-password"></div>
+        </div>
+        <button class="btn primary" onclick="alterarMinhaSenha()">🔑 Alterar minha senha</button>
+        <div id="status-senha" style="margin-top:.75rem"></div>
+      </div>
       <div class="card" id="cfg-conexao-card">
         <div class="section-title">🔗 Conexão com Google Sheets</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
@@ -2947,11 +2958,11 @@ function gerarPDFComissao(tipo){
 }
 
 function renderTblUsuarios(){document.getElementById('tbl-usuarios').innerHTML=usuarios.length?usuarios.map(function(u){var ll=u.lojas?String(u.lojas).split(',').filter(Boolean).map(function(x){return esc(x.trim());}).join(', '):'Todas';return'<tr><td style="font-weight:600">'+esc(u.nome)+'</td><td style="color:#888">'+esc(u.usuario)+'</td><td><span class="badge '+(u.perfil==='adm'?'adm':'usuario')+'">'+esc(u.perfil)+'</span></td><td style="font-size:12px;color:#666">'+ll+'</td><td class="tbl-actions"><button data-id="'+esc(String(u.id))+'" onclick="editarUsuario(this.dataset.id)">✏️</button><button data-id="'+esc(String(u.id))+'" onclick="removerUsuario(this.dataset.id)">🗑</button></td></tr>';}).join(''):'<tr><td colspan="5" class="empty-state">Nenhum usuário</td></tr>';}
-function abrirModalUsuario(){document.getElementById('modal-titulo').textContent='Novo usuário';['m-id','m-nome','m-usuario','m-senha'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('m-perfil').value='usuario';renderLojasCheck([]);document.getElementById('modal-usuario').classList.add('open');}
-function editarUsuario(id){var u=usuarios.find(function(x){return String(x.id)===String(id);});if(!u)return;document.getElementById('modal-titulo').textContent='Editar usuário';document.getElementById('m-id').value=u.id;document.getElementById('m-nome').value=u.nome||'';document.getElementById('m-usuario').value=u.usuario||'';document.getElementById('m-senha').value=u.senha||'';document.getElementById('m-perfil').value=u.perfil||'usuario';renderLojasCheck(u.lojas?String(u.lojas).split(',').map(function(l){return l.trim();}).filter(Boolean):[]);document.getElementById('modal-usuario').classList.add('open');}
+function abrirModalUsuario(){document.getElementById('modal-titulo').textContent='Novo usuário';['m-id','m-nome','m-usuario','m-senha'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('m-senha').placeholder='Senha de acesso';document.getElementById('m-perfil').value='usuario';renderLojasCheck([]);document.getElementById('modal-usuario').classList.add('open');}
+function editarUsuario(id){var u=usuarios.find(function(x){return String(x.id)===String(id);});if(!u)return;document.getElementById('modal-titulo').textContent='Editar usuário';document.getElementById('m-id').value=u.id;document.getElementById('m-nome').value=u.nome||'';document.getElementById('m-usuario').value=u.usuario||'';document.getElementById('m-senha').value='';document.getElementById('m-senha').placeholder='Deixe em branco para manter a atual';document.getElementById('m-perfil').value=u.perfil||'usuario';renderLojasCheck(u.lojas?String(u.lojas).split(',').map(function(l){return l.trim();}).filter(Boolean):[]);document.getElementById('modal-usuario').classList.add('open');}
 function renderLojasCheck(sel){document.getElementById('m-lojas-check').innerHTML=lojas.map(function(l){return'<label><input type="checkbox" value="'+esc(l)+'" '+(sel.indexOf(l)>=0?'checked':'')+'>'+esc(l)+'</label>';}).join('');}
 function fecharModal(){document.getElementById('modal-usuario').classList.remove('open');}
-async function salvarUsuario(){var nome=document.getElementById('m-nome').value.trim();var usuario=document.getElementById('m-usuario').value.trim();var senha=document.getElementById('m-senha').value;var perfil=document.getElementById('m-perfil').value;if(!nome||!usuario||!senha){alert('Preencha nome, usuário e senha.');return;}var checks=document.querySelectorAll('#m-lojas-check input:checked');var lojasU=Array.from(checks).map(function(c){return c.value;});var data={nome:nome,usuario:usuario,senha:senha,perfil:perfil,lojas:lojasU.join(',')};var idVal=document.getElementById('m-id').value;if(idVal)data.id=idVal;try{var r=await api({action:'saveUsuario',data:data});if(r.error)throw new Error(r.error);fecharModal();await carregarUsuarios();alert('✓ Usuário salvo!');}catch(e){alert('Erro: '+e.message);}}
+async function salvarUsuario(){var nome=document.getElementById('m-nome').value.trim();var usuario=document.getElementById('m-usuario').value.trim();var senha=document.getElementById('m-senha').value;var perfil=document.getElementById('m-perfil').value;var idVal=document.getElementById('m-id').value;var ehNovo=!idVal;if(!nome||!usuario){alert('Preencha nome e usuário.');return;}if(ehNovo&&!senha){alert('Novo usuário precisa de senha.');return;}var checks=document.querySelectorAll('#m-lojas-check input:checked');var lojasU=Array.from(checks).map(function(c){return c.value;});var data={nome:nome,usuario:usuario,senha:senha,perfil:perfil,lojas:lojasU.join(',')};if(idVal)data.id=idVal;try{var r=await api({action:'saveUsuario',data:data});if(r.error)throw new Error(r.error);fecharModal();await carregarUsuarios();alert('✓ Usuário salvo!');}catch(e){alert('Erro: '+e.message);}}
 async function removerUsuario(id){if(!confirm('Remover usuário?'))return;try{var r=await api({action:'deleteUsuario',id:id});if(r.error)throw new Error(r.error);await carregarUsuarios();}catch(e){alert('Erro: '+e.message);}}
 
 function renderConfig(){
@@ -2963,6 +2974,31 @@ function renderConfig(){
   document.getElementById('lista-vendedores').innerHTML=vendedores.map(function(v){return'<li style="display:flex;align-items:center;gap:4px;background:#F2F4F8;padding:4px 12px;border-radius:20px;font-size:13px">'+esc(v)+'<button data-v="'+esc(v)+'" onclick="removeVendedor(this.dataset.v)" style="border:none;background:none;cursor:pointer;color:#aaa;font-size:14px;line-height:1">×</button></li>';}).join('');
 }
 async function reconectar(){var url=document.getElementById('cfg-url').value.trim();if(!url){alert('Cole a URL.');return;}SURL=url;salvarLocal();var st=document.getElementById('status-sheets');setAlert(st,'info','Conectando...',true);try{var r=await api({action:'init'});if(r.error)throw new Error(r.error);setAlert(st,'ok','✓ Conectado!');setCon(true);await syncLV();await carregarDados();}catch(e){setAlert(st,'err','Erro: '+e.message);}}
+// Alterar a própria senha. Exige senha atual (protege contra troca alheia)
+// e confirmação para evitar erro de digitação. O backend faz o hash.
+async function alterarMinhaSenha(){
+  if(!usuarioLogado){alert('Faça login primeiro.');return;}
+  var st=document.getElementById('status-senha');
+  var atualEl=document.getElementById('cfg-senha-atual');
+  var novaEl=document.getElementById('cfg-senha-nova');
+  var confEl=document.getElementById('cfg-senha-conf');
+  var atual=atualEl.value;
+  var nova=novaEl.value;
+  var conf=confEl.value;
+  if(!atual){setAlert(st,'err','Informe sua senha atual.');return;}
+  if(!nova||nova.length<4){setAlert(st,'err','A nova senha precisa ter pelo menos 4 caracteres.');return;}
+  if(nova!==conf){setAlert(st,'err','A confirmação não bate com a nova senha.');return;}
+  if(nova===atual){setAlert(st,'err','A nova senha é igual à atual. Escolha uma diferente.');return;}
+  setAlert(st,'info','Alterando...',true);
+  try{
+    var r=await api({action:'alterarSenha',usuario:usuarioLogado.usuario,senhaAtual:atual,senhaNova:nova});
+    if(r.error)throw new Error(r.error);
+    setAlert(st,'ok','✓ Senha alterada com sucesso!');
+    atualEl.value='';novaEl.value='';confEl.value='';
+  }catch(e){
+    setAlert(st,'err','Erro: '+e.message);
+  }
+}
 function addLoja(){var v=document.getElementById('nova-loja').value.trim();if(!v||lojas.indexOf(v)>=0)return;lojas.push(v);salvarLocal();syncLV();document.getElementById('nova-loja').value='';renderConfig();atualizarSelects();}
 function removeLoja(l){lojas=lojas.filter(function(x){return x!==l;});salvarLocal();syncLV();renderConfig();atualizarSelects();}
 function addVendedor(){var v=document.getElementById('novo-vendedor').value.trim();if(!v||vendedores.indexOf(v)>=0)return;vendedores.push(v);salvarLocal();syncLV();document.getElementById('novo-vendedor').value='';renderConfig();atualizarSelects();}
