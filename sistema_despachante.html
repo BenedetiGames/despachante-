@@ -429,7 +429,7 @@ table tr:hover td{background:var(--line-soft)}
             <div class="fg"><label>Nome do cliente</label><input type="text" id="c-cliente" placeholder="Nome do cliente"></div>
             <div class="fg"><label>Placa</label><input type="text" id="c-placa" placeholder="ABC1D23" style="text-transform:uppercase"></div>
             <div class="fg"><label>Nº da OC</label><input type="text" id="c-oc" placeholder="Número do sistema"></div>
-            <div class="fg"><label>Loja</label><select id="c-loja"><option>-- selecione --</option></select></div>
+            <div class="fg"><label>Loja</label><select id="c-loja" onchange="filtrarVendedoresPorLoja('c-loja','c-vendedor')"><option>-- selecione --</option></select></div>
             <div class="fg"><label>Vendedor</label><select id="c-vendedor"><option>-- selecione --</option></select></div>
             <div class="fg"><label>Tipo de veículo</label><select id="c-tipo" onchange="calcRef()"><option value="0km">0 km</option><option value="semi">Semi-novo</option></select></div>
             <div class="fg"><label>Data da venda</label><input type="date" id="c-dtvenda"></div>
@@ -497,7 +497,7 @@ table tr:hover td{background:var(--line-soft)}
             </div>
             <div class="fg"><label>Nome do cliente</label><input type="text" id="n-cliente" placeholder="Nome do cliente (preenche automático se achar o CPF/CNPJ)"></div>
             <div class="fg"><label>Chassi</label><input type="text" id="n-chassi" placeholder="9BF12345..."></div>
-            <div class="fg"><label>Loja</label><select id="n-loja"><option>-- selecione --</option></select></div>
+            <div class="fg"><label>Loja</label><select id="n-loja" onchange="filtrarVendedoresPorLoja('n-loja','n-vendedor')"><option>-- selecione --</option></select></div>
             <div class="fg"><label>Vendedor</label><select id="n-vendedor"><option>-- selecione --</option></select></div>
             <div class="fg"><label>Data faturamento NF</label><input type="date" id="n-dtfat"></div>
             <div class="fg"><label>Data recebimento NF</label><input type="date" id="n-dtreceb"></div>
@@ -541,7 +541,7 @@ table tr:hover td{background:var(--line-soft)}
             </div>
             <div class="fg"><label>Nome do cliente</label><input type="text" id="f-cliente" placeholder="Nome do cliente (preenche automático se achar o CPF/CNPJ)"></div>
             <div class="fg"><label>Placa</label><input type="text" id="f-placa" placeholder="ABC1D23"></div>
-            <div class="fg"><label>Loja de origem</label><select id="f-loja-origem"><option>-- selecione --</option></select></div>
+            <div class="fg"><label>Loja de origem</label><select id="f-loja-origem" onchange="filtrarVendedoresPorLoja('f-loja-origem','f-vendedor')"><option>-- selecione --</option></select></div>
             <div class="fg"><label>Loja destino (protocolo)</label><input type="text" id="f-loja-destino" value="Fiat Forte" readonly style="background:#F2F4F8;color:#666"></div>
             <div class="fg"><label>Vendedor</label><select id="f-vendedor"><option>-- selecione --</option></select></div>
           </div>
@@ -711,8 +711,13 @@ table tr:hover td{background:var(--line-soft)}
       </div>
       <div class="card" id="cfg-vendedores-card">
         <div class="section-title">Vendedores</div>
-        <div style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap"><input type="text" id="novo-vendedor" placeholder="Nome do vendedor" style="border-radius:9px;border:1px solid #E3E8F0;padding:8px 11px;font-size:13px"><button class="btn primary" onclick="addVendedor()">+ Adicionar</button></div>
-        <ul id="lista-vendedores" style="list-style:none;display:flex;flex-wrap:wrap;gap:6px"></ul>
+        <div style="font-size:12.5px;color:#888;margin-bottom:.85rem;line-height:1.5">Cada vendedor pertence a uma loja. Você só pode editar/remover os vendedores que você cadastrou (o adm pode todos).</div>
+        <div style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap;align-items:center">
+          <select id="novo-vendedor-loja" style="border-radius:9px;border:1px solid #E3E8F0;padding:8px 11px;font-size:13px;background:#fff"><option value="">-- selecione a loja --</option></select>
+          <input type="text" id="novo-vendedor" placeholder="Nome do vendedor" style="border-radius:9px;border:1px solid #E3E8F0;padding:8px 11px;font-size:13px">
+          <button class="btn primary" onclick="addVendedor()">+ Adicionar</button>
+        </div>
+        <div id="lista-vendedores"></div>
       </div>
     </div>
   </div>
@@ -730,7 +735,7 @@ table tr:hover td{background:var(--line-soft)}
       <div class="fg"><label>Nome do cliente</label><input type="text" id="e-cliente"></div>
       <div class="fg"><label>Placa</label><input type="text" id="e-placa" style="text-transform:uppercase"></div>
       <div class="fg"><label>Nº da OC</label><input type="text" id="e-oc"></div>
-      <div class="fg"><label>Loja</label><select id="e-loja"><option>-- selecione --</option></select></div>
+      <div class="fg"><label>Loja</label><select id="e-loja" onchange="filtrarVendedoresPorLoja('e-loja','e-vendedor')"><option>-- selecione --</option></select></div>
       <div class="fg"><label>Vendedor</label><select id="e-vendedor"><option>-- selecione --</option></select></div>
       <div class="fg"><label>Tipo</label><select id="e-tipo"><option value="0km">0 km</option><option value="semi">Semi-novo</option></select></div>
       <div class="fg"><label>Data da venda</label><input type="date" id="e-dtvenda"></div>
@@ -775,7 +780,7 @@ table tr:hover td{background:var(--line-soft)}
       <div class="fg"><label>CPF ou CNPJ</label><input type="text" id="en-doc" oninput="fmtDoc('en-doc')" maxlength="18"></div>
       <div class="fg"><label>Nome do cliente</label><input type="text" id="en-cliente"></div>
       <div class="fg"><label>Chassi</label><input type="text" id="en-chassi"></div>
-      <div class="fg"><label>Loja</label><select id="en-loja" onchange="checarOcVinculada()"><option>-- selecione --</option></select></div>
+      <div class="fg"><label>Loja</label><select id="en-loja" onchange="checarOcVinculada();filtrarVendedoresPorLoja('en-loja','en-vendedor')"><option>-- selecione --</option></select></div>
       <div class="fg"><label>Vendedor</label><select id="en-vendedor"><option>-- selecione --</option></select></div>
       <div class="fg"><label>Data faturamento NF</label><input type="date" id="en-dtfat"></div>
       <div class="fg"><label>Data recebimento NF</label><input type="date" id="en-dtreceb"></div>
@@ -865,7 +870,7 @@ table tr:hover td{background:var(--line-soft)}
       <div class="fg"><label>CPF ou CNPJ</label><input type="text" id="ef-doc" oninput="fmtDoc('ef-doc')" maxlength="18"></div>
       <div class="fg"><label>Nome do cliente</label><input type="text" id="ef-cliente"></div>
       <div class="fg"><label>Placa</label><input type="text" id="ef-placa"></div>
-      <div class="fg"><label>Loja de origem</label><select id="ef-loja-origem"><option>-- selecione --</option></select></div>
+      <div class="fg"><label>Loja de origem</label><select id="ef-loja-origem" onchange="filtrarVendedoresPorLoja('ef-loja-origem','ef-vendedor')"><option>-- selecione --</option></select></div>
       <div class="fg"><label>Loja destino</label><input type="text" id="ef-loja-destino" value="Fiat Forte" readonly style="background:#F2F4F8;color:#666"></div>
       <div class="fg"><label>Vendedor</label><select id="ef-vendedor"><option>-- selecione --</option></select></div>
     </div>
@@ -933,7 +938,18 @@ var vendedores=[
 ];
 
 function salvarLocal(){try{localStorage.setItem('d_lojas',JSON.stringify(lojas));localStorage.setItem('d_vend',JSON.stringify(vendedores));}catch(e){}}
-function carregarLocal(){try{var ls=localStorage.getItem('d_lojas');if(ls)lojas=JSON.parse(ls);var lv=localStorage.getItem('d_vend');if(lv)vendedores=JSON.parse(lv);}catch(e){}}
+function carregarLocal(){try{
+  var ls=localStorage.getItem('d_lojas');if(ls)lojas=JSON.parse(ls);
+  var lv=localStorage.getItem('d_vend');
+  if(lv){
+    var arr=JSON.parse(lv);
+    // Compat: cache antigo do localStorage tinha só strings. Converte.
+    vendedores=arr.map(function(x){
+      if(typeof x==='string')return{nome:x,loja:'',criadoPor:''};
+      return{nome:String((x&&x.nome)||''),loja:String((x&&x.loja)||''),criadoPor:String((x&&x.criadoPor)||'')};
+    }).filter(function(v){return v.nome;});
+  }
+}catch(e){}}
 
 // ---- SEGURANÇA / DATAS ----
 // Escapa texto vindo do usuário antes de inserir em HTML - evita que um nome com <, >, & ou aspas
@@ -1018,6 +1034,36 @@ function lojasDoUsuario(){
     var match=lojas.find(function(l){return norm(l)===norm(lu);});
     return match||lu;
   }).filter(function(l){return lojas.indexOf(l)>=0;});
+}
+
+// ── HELPERS DE VENDEDORES ────────────────────────────────────────
+// Todo vendedor é {nome, loja, criadoPor}. Migração garantiu isso.
+// Retorna só nomes de vendedores (para dropdowns), filtrando pela loja se fornecida.
+function nomesVendedores(lojaFiltro){
+  if(!lojaFiltro)return vendedores.map(function(v){return v.nome;});
+  var n=norm(lojaFiltro);
+  return vendedores.filter(function(v){return norm(v.loja)===n;}).map(function(v){return v.nome;});
+}
+// Retorna vendedores que o usuário logado pode gerenciar (adicionar/remover).
+// - ADM: pode mexer em todos.
+// - Gerência: só nos que ela cadastrou (criadoPor === usuario dela).
+// - Outros perfis: não deveriam ver a tela, retorna array vazio.
+function vendedoresGerenciaveis(){
+  if(isAdm())return vendedores.slice();
+  if(isGerencia()){
+    var meu=String(usuarioLogado.usuario||'').toLowerCase();
+    return vendedores.filter(function(v){return String(v.criadoPor||'').toLowerCase()===meu;});
+  }
+  return[];
+}
+function podeEditarVendedor(v){
+  if(!v)return false;
+  if(isAdm())return true;
+  if(isGerencia()){
+    var meu=String(usuarioLogado.usuario||'').toLowerCase();
+    return String(v.criadoPor||'').toLowerCase()===meu;
+  }
+  return false;
 }
 
 // Faz UMA tentativa de chamada (interna - não usar direto)
@@ -1267,7 +1313,14 @@ async function carregarDados(){
         af=multi.data.FICHOES||[];
         // Se veio LOJAS/VENDEDORES do servidor, usa como fonte da verdade
         var srvLojas=(multi.data.LOJAS||[]).map(function(x){return x.nome;}).filter(Boolean);
-        var srvVend=(multi.data.VENDEDORES||[]).map(function(x){return x.nome;}).filter(Boolean);
+        // Vendedores agora são objetos com {nome, loja, criadoPor} desde a migração v3.4.
+        // Guardamos assim pra permitir filtrar por loja e checar dono.
+        // Compat: se algum registro antigo veio só como string, converte.
+        var srvVend=(multi.data.VENDEDORES||[]).map(function(x){
+          if(typeof x==='string')return{nome:x,loja:'',criadoPor:''};
+          if(!x||!x.nome)return null;
+          return{nome:String(x.nome).trim(),loja:String(x.loja||'').trim(),criadoPor:String(x.criadoPor||'').trim()};
+        }).filter(Boolean);
         if(srvLojas.length){lojas=srvLojas;}
         if(srvVend.length){vendedores=srvVend;}
         salvarLocal();
@@ -1304,9 +1357,19 @@ async function carregarDados(){
 async function carregarUsuarios(){try{var r=await api({action:'getAll',sheet:'USUARIOS'});usuarios=r.data||[];renderTblUsuarios();}catch(e){}}
 async function syncLV(){
   if(!SURL)return;
+  // PROTEÇÃO CRÍTICA: não sincronizar se arrays locais estão vazios.
+  // Isso evita apagar toda a base se o app abriu sem conexão e o usuário
+  // adicionou um item por engano (a "Emanu bug" de 03/08/2026).
+  if(!lojas.length||!vendedores.length){
+    console.warn('syncLV cancelado - lojas ou vendedores vazio, protegendo contra apagar tudo');
+    return;
+  }
   try{
     await api({action:'replaceAll',sheet:'LOJAS',data:lojas.map(function(n){return{nome:n};})});
-    await api({action:'replaceAll',sheet:'VENDEDORES',data:vendedores.map(function(n){return{nome:n};})});
+    // Vendedor agora tem nome + loja + criadoPor. Mantém dados completos.
+    await api({action:'replaceAll',sheet:'VENDEDORES',data:vendedores.map(function(v){
+      return{nome:v.nome,loja:v.loja||'',criadoPor:v.criadoPor||''};
+    })});
   }catch(e){
     console.warn(e);
     alert('⚠️ Não consegui sincronizar lojas/vendedores agora. Tente novamente em alguns segundos.\n\nDetalhe: '+e.message);
@@ -1804,7 +1867,7 @@ function popularSelectRank(){
   var sel=document.getElementById('rank-vend-sel');
   if(!sel)return;
   var atual=sel.value;
-  sel.innerHTML='<option value="">Todos os vendedores</option>'+vendedores.map(function(v){return'<option'+(v===atual?' selected':'')+'>'+esc(v)+'</option>';}).join('');
+  sel.innerHTML='<option value="">Todos os vendedores</option>'+vendedores.map(function(v){return'<option'+(v.nome===atual?' selected':'')+'>'+esc(v.nome)+'</option>';}).join('');
 }
 function rankPeriodo(tipo){
   var hoje=new Date();
@@ -2274,8 +2337,11 @@ function editarFichao(id){
   document.getElementById('ef-placa').value=f.placa||'';
   var efloja=document.getElementById('ef-loja-origem');
   efloja.innerHTML='<option>-- selecione --</option>'+lojasDoUsuario().map(function(l){return'<option'+(f.lojaOrigem===l?' selected':'')+'>'+esc(l)+'</option>';}).join('');
+  // Filtra vendedores pela loja selecionada (com fallback: se vendedor atual não está na lista, mostra tudo)
+  var vendListaF=nomesVendedores(f.lojaOrigem);
+  if(f.vendedor&&vendListaF.indexOf(f.vendedor)<0)vendListaF=vendedores.map(function(x){return x.nome;});
   var efvend=document.getElementById('ef-vendedor');
-  efvend.innerHTML='<option>-- selecione --</option>'+vendedores.map(function(v){return'<option'+(f.vendedor===v?' selected':'')+'>'+esc(v)+'</option>';}).join('');
+  efvend.innerHTML='<option>-- selecione --</option>'+vendListaF.map(function(v){return'<option'+(f.vendedor===v?' selected':'')+'>'+esc(v)+'</option>';}).join('');
   document.getElementById('modal-editar-fichao').classList.add('open');
 }
 function fecharModalEditarFichao(){document.getElementById('modal-editar-fichao').classList.remove('open');}
@@ -2363,8 +2429,11 @@ function editarCredito(id){
   calcEditCom();
   var eloja=document.getElementById('e-loja');
   eloja.innerHTML='<option>-- selecione --</option>'+lojas.map(function(l){return'<option'+(c.loja===l?' selected':'')+'>'+esc(l)+'</option>';}).join('');
+  // Filtra vendedores pela loja do crédito (com fallback pra não perder o valor original)
+  var vendListaC=nomesVendedores(c.loja);
+  if(c.vendedor&&vendListaC.indexOf(c.vendedor)<0)vendListaC=vendedores.map(function(x){return x.nome;});
   var evend=document.getElementById('e-vendedor');
-  evend.innerHTML='<option>-- selecione --</option>'+vendedores.map(function(v){return'<option'+(c.vendedor===v?' selected':'')+'>'+esc(v)+'</option>';}).join('');
+  evend.innerHTML='<option>-- selecione --</option>'+vendListaC.map(function(v){return'<option'+(c.vendedor===v?' selected':'')+'>'+esc(v)+'</option>';}).join('');
   document.getElementById('modal-editar').classList.add('open');
 }
 function fecharModalEditar(){document.getElementById('modal-editar').classList.remove('open');}
@@ -2432,8 +2501,11 @@ function editarNF(id){
   checarOcVinculada();
   var enloja=document.getElementById('en-loja');
   enloja.innerHTML='<option>-- selecione --</option>'+lojas.map(function(l){return'<option'+(n.loja===l?' selected':'')+'>'+esc(l)+'</option>';}).join('');
+  // Filtra vendedores pela loja da NF (com fallback)
+  var vendListaN=nomesVendedores(n.loja);
+  if(n.vendedor&&vendListaN.indexOf(n.vendedor)<0)vendListaN=vendedores.map(function(x){return x.nome;});
   var envend=document.getElementById('en-vendedor');
-  envend.innerHTML='<option>-- selecione --</option>'+vendedores.map(function(v){return'<option'+(n.vendedor===v?' selected':'')+'>'+esc(v)+'</option>';}).join('');
+  envend.innerHTML='<option>-- selecione --</option>'+vendListaN.map(function(v){return'<option'+(n.vendedor===v?' selected':'')+'>'+esc(v)+'</option>';}).join('');
   document.getElementById('modal-editar-nf').classList.add('open');
 }
 function fecharModalEditarNF(){document.getElementById('modal-editar-nf').classList.remove('open');}
@@ -2561,7 +2633,7 @@ async function salvarEdicaoNF(){
 }
 async function excNF(id){if(!confirm('Remover NF?'))return;try{await api({action:'delete',sheet:'NFS',id:id});}catch(e){alert('Erro: '+e.message);return;}nfs=nfs.filter(function(n){return n.id!=id;});renderRegNFs();renderPainel();}
 
-function renderRelFiltros(){document.getElementById('rel-loja').innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+esc(l)+'</option>';}).join('');document.getElementById('rel-vendedor').innerHTML='<option value="">Todos os vendedores</option>'+vendedores.map(function(v){return'<option>'+esc(v)+'</option>';}).join('');}
+function renderRelFiltros(){document.getElementById('rel-loja').innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+esc(l)+'</option>';}).join('');document.getElementById('rel-vendedor').innerHTML='<option value="">Todos os vendedores</option>'+vendedores.map(function(v){return'<option>'+esc(v.nome)+'</option>';}).join('');}
 var ultimoRelatorioList=[];
 var ultimoRelatorioNome='relatorio';
 var modoRelatorio='nf';
@@ -3112,11 +3184,49 @@ function renderConfig(){
   var podeLV=podeMexerLojasVendedores();
   var clo=document.getElementById('cfg-lojas-card');if(clo)clo.style.display=podeLV?'block':'none';
   var cve=document.getElementById('cfg-vendedores-card');if(cve)cve.style.display=podeLV?'block':'none';
-  // Só renderiza as listas se ela for exibida (economiza processamento e evita mostrar dado sensível)
-  if(podeLV){
-    document.getElementById('lista-lojas').innerHTML=lojas.map(function(l){return'<li style="display:flex;align-items:center;gap:4px;background:#F2F4F8;padding:4px 12px;border-radius:20px;font-size:13px">'+esc(l)+'<button data-v="'+esc(l)+'" onclick="removeLoja(this.dataset.v)" style="border:none;background:none;cursor:pointer;color:#aaa;font-size:14px;line-height:1">×</button></li>';}).join('');
-    document.getElementById('lista-vendedores').innerHTML=vendedores.map(function(v){return'<li style="display:flex;align-items:center;gap:4px;background:#F2F4F8;padding:4px 12px;border-radius:20px;font-size:13px">'+esc(v)+'<button data-v="'+esc(v)+'" onclick="removeVendedor(this.dataset.v)" style="border:none;background:none;cursor:pointer;color:#aaa;font-size:14px;line-height:1">×</button></li>';}).join('');
+  if(!podeLV)return;
+  // ── LOJAS ──
+  document.getElementById('lista-lojas').innerHTML=lojas.map(function(l){return'<li style="display:flex;align-items:center;gap:4px;background:#F2F4F8;padding:4px 12px;border-radius:20px;font-size:13px">'+esc(l)+'<button data-v="'+esc(l)+'" onclick="removeLoja(this.dataset.v)" style="border:none;background:none;cursor:pointer;color:#aaa;font-size:14px;line-height:1">×</button></li>';}).join('');
+  // ── VENDEDORES ──
+  // Popular dropdown de loja no form de novo vendedor (só as que o usuário pode acessar)
+  var lojasDisp=lojasDoUsuario();
+  var selNovoLoja=document.getElementById('novo-vendedor-loja');
+  if(selNovoLoja){
+    var atual=selNovoLoja.value;
+    selNovoLoja.innerHTML='<option value="">-- selecione a loja --</option>'+lojasDisp.map(function(l){return'<option'+(l===atual?' selected':'')+'>'+esc(l)+'</option>';}).join('');
   }
+  // Lista de vendedores agrupada por loja. Cada vendedor mostra o "criadoPor" e só tem X se editável.
+  var elLista=document.getElementById('lista-vendedores');
+  if(!vendedores.length){elLista.innerHTML='<div style="color:var(--txt3);font-size:13px;padding:8px 0">Nenhum vendedor cadastrado.</div>';return;}
+  // Agrupa por loja (respeitando escopo do usuário: gerência só vê suas lojas)
+  var lojasVisiveis=veTudoSemFiltro()?lojas.slice():lojasDoUsuario();
+  var html='';
+  lojasVisiveis.forEach(function(l){
+    var doLoja=vendedores.filter(function(v){return norm(v.loja)===norm(l);});
+    if(!doLoja.length)return;
+    html+='<div style="margin-bottom:12px"><div style="font-size:12px;color:var(--txt2);text-transform:uppercase;letter-spacing:.3px;font-weight:600;margin-bottom:6px">'+esc(l)+' <span style="color:var(--txt3);font-weight:400;text-transform:none;letter-spacing:0">('+doLoja.length+')</span></div>';
+    html+='<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    html+=doLoja.map(function(v){
+      var editavel=podeEditarVendedor(v);
+      var badge=v.criadoPor?'<span style="font-size:10px;color:var(--txt3);margin-left:4px">('+esc(v.criadoPor)+')</span>':'';
+      var btn=editavel?'<button data-nome="'+esc(v.nome)+'" data-loja="'+esc(v.loja)+'" onclick="removeVendedor(this.dataset.nome,this.dataset.loja)" style="border:none;background:none;cursor:pointer;color:var(--txt3);font-size:14px;line-height:1;margin-left:2px" title="Remover">×</button>':'';
+      return'<span style="display:inline-flex;align-items:center;gap:2px;background:#F2F4F8;padding:4px 12px;border-radius:20px;font-size:13px">'+esc(v.nome)+badge+btn+'</span>';
+    }).join('');
+    html+='</div></div>';
+  });
+  // Vendedores sem loja (edge case)
+  var semLoja=vendedores.filter(function(v){return !v.loja;});
+  if(semLoja.length){
+    html+='<div style="margin-bottom:12px"><div style="font-size:12px;color:var(--red);text-transform:uppercase;letter-spacing:.3px;font-weight:600;margin-bottom:6px">⚠️ Sem loja atribuída ('+semLoja.length+')</div>';
+    html+='<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    html+=semLoja.map(function(v){
+      var editavel=podeEditarVendedor(v);
+      var btn=editavel?'<button data-nome="'+esc(v.nome)+'" data-loja="" onclick="removeVendedor(this.dataset.nome,this.dataset.loja)" style="border:none;background:none;cursor:pointer;color:var(--txt3);font-size:14px;line-height:1;margin-left:2px">×</button>':'';
+      return'<span style="display:inline-flex;align-items:center;gap:2px;background:var(--red-soft);padding:4px 12px;border-radius:20px;font-size:13px">'+esc(v.nome)+btn+'</span>';
+    }).join('');
+    html+='</div></div>';
+  }
+  elLista.innerHTML=html||'<div style="color:var(--txt3);font-size:13px;padding:8px 0">Nenhum vendedor nas suas lojas.</div>';
 }
 async function reconectar(){var url=document.getElementById('cfg-url').value.trim();if(!url){alert('Cole a URL.');return;}SURL=url;salvarLocal();var st=document.getElementById('status-sheets');setAlert(st,'info','Conectando...',true);try{var r=await api({action:'init'});if(r.error)throw new Error(r.error);setAlert(st,'ok','✓ Conectado!');setCon(true);await syncLV();await carregarDados();}catch(e){setAlert(st,'err','Erro: '+e.message);}}
 // Alterar a própria senha. Exige senha atual (protege contra troca alheia)
@@ -3146,9 +3256,61 @@ async function alterarMinhaSenha(){
 }
 function addLoja(){if(!podeMexerLojasVendedores()){alert('Sem permissão.');return;}var v=document.getElementById('nova-loja').value.trim();if(!v||lojas.indexOf(v)>=0)return;lojas.push(v);salvarLocal();syncLV();document.getElementById('nova-loja').value='';renderConfig();atualizarSelects();}
 function removeLoja(l){if(!podeMexerLojasVendedores()){alert('Sem permissão.');return;}lojas=lojas.filter(function(x){return x!==l;});salvarLocal();syncLV();renderConfig();atualizarSelects();}
-function addVendedor(){if(!podeMexerLojasVendedores()){alert('Sem permissão.');return;}var v=document.getElementById('novo-vendedor').value.trim();if(!v||vendedores.indexOf(v)>=0)return;vendedores.push(v);salvarLocal();syncLV();document.getElementById('novo-vendedor').value='';renderConfig();atualizarSelects();}
-function removeVendedor(v){if(!podeMexerLojasVendedores()){alert('Sem permissão.');return;}vendedores=vendedores.filter(function(x){return x!==v;});salvarLocal();syncLV();renderConfig();atualizarSelects();}
-function atualizarSelects(){var minhas=lojasDoUsuario();['c-loja','n-loja','f-loja-origem'].forEach(function(id){var e=document.getElementById(id);if(e)e.innerHTML='<option>-- selecione --</option>'+minhas.map(function(l){return'<option>'+esc(l)+'</option>';}).join('');});['c-vendedor','n-vendedor','f-vendedor'].forEach(function(id){var e=document.getElementById(id);if(e)e.innerHTML='<option>-- selecione --</option>'+vendedores.map(function(v){return'<option>'+esc(v)+'</option>';}).join('');});}
+// Adicionar vendedor: agora exige LOJA. Marca criadoPor = usuário logado.
+// Duplicata é permitida em lojas diferentes (mesmo nome em Fiat e Jeep = 2 vendedores separados).
+function addVendedor(){
+  if(!podeMexerLojasVendedores()){alert('Sem permissão.');return;}
+  var nomeEl=document.getElementById('novo-vendedor');
+  var lojaEl=document.getElementById('novo-vendedor-loja');
+  var nome=(nomeEl.value||'').trim();
+  var loja=(lojaEl.value||'').trim();
+  if(!nome){alert('Digite o nome do vendedor.');nomeEl.focus();return;}
+  if(!loja){alert('Escolha a loja do vendedor.');lojaEl.focus();return;}
+  // Duplicata: mesmo nome + mesma loja
+  var jaExiste=vendedores.some(function(v){return norm(v.nome)===norm(nome)&&norm(v.loja)===norm(loja);});
+  if(jaExiste){alert('Esse vendedor já existe nessa loja.');return;}
+  vendedores.push({nome:nome,loja:loja,criadoPor:String(usuarioLogado&&usuarioLogado.usuario||'')});
+  salvarLocal();syncLV();
+  nomeEl.value='';
+  renderConfig();
+  atualizarSelects();
+}
+// Remover: precisa nome+loja (chave composta) e permissão pra editar aquele vendedor.
+function removeVendedor(nome,loja){
+  if(!podeMexerLojasVendedores()){alert('Sem permissão.');return;}
+  var alvo=vendedores.find(function(v){return norm(v.nome)===norm(nome)&&norm(v.loja)===norm(loja);});
+  if(!alvo){alert('Vendedor não encontrado.');return;}
+  if(!podeEditarVendedor(alvo)){alert('Você só pode remover vendedores que você cadastrou. Este foi cadastrado por: '+(alvo.criadoPor||'desconhecido'));return;}
+  if(!confirm('Remover vendedor "'+nome+'" da loja '+loja+'?'))return;
+  vendedores=vendedores.filter(function(v){return !(norm(v.nome)===norm(nome)&&norm(v.loja)===norm(loja));});
+  salvarLocal();syncLV();renderConfig();atualizarSelects();
+}
+// Popula dropdown de vendedor filtrado pela loja escolhida no dropdown de loja associado.
+// Chamado no onchange do select de loja. Se nada estiver selecionado, o dropdown fica só com "-- selecione --"
+// pra forçar o usuário a escolher a loja primeiro (evita cadastrar vendedor errado).
+function filtrarVendedoresPorLoja(idLoja,idVendedor){
+  var elLoja=document.getElementById(idLoja);
+  var elVend=document.getElementById(idVendedor);
+  if(!elLoja||!elVend)return;
+  var lojaSel=elLoja.value;
+  var atual=elVend.value;
+  var nomes=(lojaSel&&lojaSel!=='-- selecione --')?nomesVendedores(lojaSel):[];
+  elVend.innerHTML='<option>-- selecione --</option>'+nomes.map(function(v){return'<option'+(v===atual?' selected':'')+'>'+esc(v)+'</option>';}).join('');
+}
+function atualizarSelects(){
+  var minhas=lojasDoUsuario();
+  ['c-loja','n-loja','f-loja-origem'].forEach(function(id){
+    var e=document.getElementById(id);
+    if(e){
+      var v=e.value;
+      e.innerHTML='<option>-- selecione --</option>'+minhas.map(function(l){return'<option'+(l===v?' selected':'')+'>'+esc(l)+'</option>';}).join('');
+    }
+  });
+  // Refresca cada dropdown de vendedor conforme a loja atualmente selecionada
+  filtrarVendedoresPorLoja('c-loja','c-vendedor');
+  filtrarVendedoresPorLoja('n-loja','n-vendedor');
+  filtrarVendedoresPorLoja('f-loja-origem','f-vendedor');
+}
 
 carregarLocal();
 // SURL já vem fixa no código acima
