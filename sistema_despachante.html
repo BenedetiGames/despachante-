@@ -127,7 +127,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
 .nav button{padding:8px 15px;border-radius:8px;border:none;background:transparent;cursor:pointer;font-size:13px;font-family:inherit;font-weight:500;color:var(--txt2);transition:all .15s}
 .nav button:hover{background:var(--bg);color:var(--txt)}
 .nav button.active{background:var(--navy);color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(18,40,63,.25)}
-.nav button.adm-only{display:none}
 .section{display:none}.section.active{display:block}
 
 /* ── CARDS & MÉTRICAS ── */
@@ -304,12 +303,12 @@ table tr:hover td{background:var(--line-soft)}
   <div class="wrapper">
     <div class="nav">
       <button class="active" onclick="showTab('painel',this)">📊 Painel</button>
-      <button class="gerencia-hide" onclick="showTab('lancamento',this)">➕ Lançamento</button>
-      <button class="gerencia-hide" onclick="showTab('vinculo',this)">🔗 Vínculo</button>
-      <button class="gerencia-hide" onclick="showTab('notas',this)">📁 Registros</button>
-      <button onclick="showTab('relatorios',this)">📈 Relatórios</button>
-      <button class="adm-only" onclick="showTab('usuarios',this)">👥 Usuários</button>
-      <button class="gerencia-hide" onclick="showTab('config',this)">⚙️ Config.</button>
+      <button class="role-lancar" onclick="showTab('lancamento',this)">➕ Lançamento</button>
+      <button class="role-lancar" onclick="showTab('vinculo',this)">🔗 Vínculo</button>
+      <button class="role-lancar" onclick="showTab('notas',this)">📁 Registros</button>
+      <button class="role-relatorios" onclick="showTab('relatorios',this)">📈 Relatórios</button>
+      <button class="role-usuarios" onclick="showTab('usuarios',this)">👥 Usuários</button>
+      <button onclick="showTab('config',this)">⚙️ Config.</button>
     </div>
 
     <!-- PAINEL -->
@@ -348,7 +347,7 @@ table tr:hover td{background:var(--line-soft)}
         </div>
       </div>
 
-      <div class="card gerencia-hide-block">
+      <div class="card role-lancar-block">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
           <div class="section-title" style="margin:0">Aguardando protocolo Forte</div>
           <select id="prot-forte-loja" onchange="renderAguardandoProtocoloForte()" style="border-radius:8px;border:1px solid #E3E8F0;padding:5px 8px;font-size:12px;color:#333;font-family:inherit">
@@ -705,12 +704,12 @@ table tr:hover td{background:var(--line-soft)}
         <button class="btn primary" onclick="executarLimpeza()">🧹 Limpar duplicatas e linhas em branco</button>
         <div id="status-limpeza" style="margin-top:.75rem"></div>
       </div>
-      <div class="card">
+      <div class="card" id="cfg-lojas-card">
         <div class="section-title">Lojas</div>
         <div style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap"><input type="text" id="nova-loja" placeholder="Nome da loja" style="border-radius:9px;border:1px solid #E3E8F0;padding:8px 11px;font-size:13px"><button class="btn primary" onclick="addLoja()">+ Adicionar</button></div>
         <ul id="lista-lojas" style="list-style:none;display:flex;flex-wrap:wrap;gap:6px"></ul>
       </div>
-      <div class="card">
+      <div class="card" id="cfg-vendedores-card">
         <div class="section-title">Vendedores</div>
         <div style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap"><input type="text" id="novo-vendedor" placeholder="Nome do vendedor" style="border-radius:9px;border:1px solid #E3E8F0;padding:8px 11px;font-size:13px"><button class="btn primary" onclick="addVendedor()">+ Adicionar</button></div>
         <ul id="lista-vendedores" style="list-style:none;display:flex;flex-wrap:wrap;gap:6px"></ul>
@@ -886,7 +885,7 @@ table tr:hover td{background:var(--line-soft)}
       <div class="fg"><label>Nome completo</label><input type="text" id="m-nome" placeholder="Ex: Everton Silva"></div>
       <div class="fg"><label>Usuário (login)</label><input type="text" id="m-usuario" placeholder="Ex: everton"></div>
       <div class="fg"><label>Senha</label><input type="password" id="m-senha" placeholder="Senha de acesso"></div>
-      <div class="fg"><label>Perfil</label><select id="m-perfil"><option value="usuario">Usuário comum</option><option value="gerencia">Gerência (só Painel e Relatórios)</option><option value="adm">Administrador</option></select></div>
+      <div class="fg"><label>Perfil</label><select id="m-perfil"><option value="usuario">Vendedor (lança créditos/NFs nas lojas atribuídas)</option><option value="gerencia">Gerência (lança + cadastra lojas/vendedores + relatórios)</option><option value="supervisora">Supervisora (vê tudo, não lança)</option><option value="adm">Administrador (poder total)</option></select></div>
     </div>
     <div class="fg" style="margin-bottom:1rem">
       <label>Lojas que este usuário pode acessar</label>
@@ -995,10 +994,23 @@ function somenteComissaoBadge(c){return(c&&isSomenteComissao(c))?'<span class="b
 function nfForaBadge(n){if(!n||!(n.nfFora===true||n.nfFora==='TRUE'))return'';var m=motivoNfForaLabel(n.motivoNfFora);return'<span class="badge perdida">NF Fora'+(m?': '+esc(m):'')+'</span>';}
 function dotH(st){if(st==='casado')return'<span class="dot green"></span>';if(st==='semi')return'<span class="dot" style="background:#aaa" title="Semi-novo"></span>';if(st==='comissao')return'<span class="dot" style="background:#185FA5" title="Somente comissão"></span>';if(st==='sem-nf')return'<span class="dot red"></span>';return'<span class="dot amber"></span>';}
 function ipvaB(v){return(v===true||v==='TRUE')?'<span class="badge ipva">✓ IPVA</span>':'<span style="color:#ccc;font-size:12px">—</span>';}
+// ── PERFIS ─────────────────────────────────────────────────────────
+// adm         : FlavioB, poder total, único que mexe em URL do Apps Script
+// gerencia    : Emanu/Flavinho/Evelin - vê só suas lojas + cadastra loja/vendedor + relatórios
+// supervisora : Alessandra - vê tudo mas não lança (aguarda uso futuro)
+// usuario     : vendedores - lançam nas lojas atribuídas, sem relatórios, config só troca senha
 function isAdm(){return usuarioLogado&&String(usuarioLogado.perfil||'').trim().toLowerCase()==='adm';}
 function isGerencia(){return usuarioLogado&&String(usuarioLogado.perfil||'').trim().toLowerCase()==='gerencia';}
+function isSupervisora(){return usuarioLogado&&String(usuarioLogado.perfil||'').trim().toLowerCase()==='supervisora';}
+function isUsuario(){return usuarioLogado&&String(usuarioLogado.perfil||'').trim().toLowerCase()==='usuario';}
+// Pode cadastrar/remover lojas globais e vendedores
+function podeMexerLojasVendedores(){return isAdm()||isGerencia();}
+// Vê a aba Relatórios
+function podeVerRelatorios(){return isAdm()||isGerencia()||isSupervisora();}
+// Vê tudo do sistema (não é filtrado por loja)
+function veTudoSemFiltro(){return isAdm()||isSupervisora();}
 function lojasDoUsuario(){
-  if(isAdm()||isGerencia())return lojas;
+  if(veTudoSemFiltro())return lojas;
   if(!usuarioLogado||!usuarioLogado.lojas||!usuarioLogado.lojas.length)return[];
   // Compara de forma tolerante a maiúsculas/minúsculas - evita quebrar se a capitalização salva no usuário
   // for diferente da lista atual de lojas (ex: "FIAT OROZIMBO" vs "Fiat Orozimbo")
@@ -1122,19 +1134,27 @@ async function entrarNoApp(){
   document.getElementById('user-nome').textContent=usuarioLogado.nome;
   document.getElementById('user-avatar').textContent=usuarioLogado.nome.charAt(0).toUpperCase();
   setCon(true);
-  // Força exibição das abas adm/gerência com pequeno delay para garantir que DOM está pronto
+  // Aplica visibilidade das abas conforme o perfil.
+  // Regras (ver comentários em isAdm/isGerencia/etc):
+  //   role-lancar        : botões/blocos de lançamento (adm, gerencia, usuario) - supervisora NÃO vê
+  //   role-lancar-block  : mesma regra, mas display:block em vez de inline-flex
+  //   role-relatorios    : aba Relatórios (adm, gerencia, supervisora) - usuario NÃO vê
+  //   role-usuarios      : aba Usuários (só adm)
   setTimeout(function(){
-    var perfil=String(usuarioLogado.perfil||'').trim().toLowerCase();
-    var adm=perfil==='adm';
-    var gerencia=perfil==='gerencia';
-    document.querySelectorAll('.adm-only').forEach(function(el){
+    var lanca=isAdm()||isGerencia()||isUsuario();  // supervisora NÃO lança
+    var rel=podeVerRelatorios();
+    var adm=isAdm();
+    document.querySelectorAll('.role-lancar').forEach(function(el){
+      el.style.display=lanca?'inline-flex':'none';
+    });
+    document.querySelectorAll('.role-lancar-block').forEach(function(el){
+      el.style.display=lanca?'block':'none';
+    });
+    document.querySelectorAll('.role-relatorios').forEach(function(el){
+      el.style.display=rel?'inline-flex':'none';
+    });
+    document.querySelectorAll('.role-usuarios').forEach(function(el){
       el.style.display=adm?'inline-flex':'none';
-    });
-    document.querySelectorAll('.gerencia-hide').forEach(function(el){
-      el.style.display=gerencia?'none':'inline-flex';
-    });
-    document.querySelectorAll('.gerencia-hide-block').forEach(function(el){
-      el.style.display=gerencia?'none':'block';
     });
   }, 100);
   // Preenche com o que tem no localStorage pra tela não ficar vazia enquanto carrega
@@ -1264,7 +1284,7 @@ async function carregarDados(){
     }
     ac=limparLista(ac);an=limparLista(an);af=limparLista(af);
     var ml=lojasDoUsuario().map(function(l){return norm(l);});
-    if(isAdm()||isGerencia()){creditos=ac;nfs=an;fichoes=af;}
+    if(veTudoSemFiltro()){creditos=ac;nfs=an;fichoes=af;}
     else{
       creditos=ac.filter(function(c){return ml.indexOf(norm(c.loja))>=0;});
       nfs=an.filter(function(n){return ml.indexOf(norm(n.loja))>=0;});
@@ -1977,7 +1997,7 @@ function renderPendDocumentacao(){
   var tbl=document.getElementById('tbl-painel-pend-doc');
   if(!tbl)return;
   var descEl=document.getElementById('pend-doc-desc');
-  if(descEl)descEl.textContent=isGerencia()?'NFs enviadas para documentação que ainda não voltaram':'NFs e fichões enviados para documentação que ainda não voltaram';
+  if(descEl)descEl.textContent=isSupervisora()?'NFs enviadas para documentação que ainda não voltaram':'NFs e fichões enviados para documentação que ainda não voltaram';
   var selLoja=document.getElementById('pend-doc-loja');
   var valorAtual=selLoja.value;
   selLoja.innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+esc(l)+'</option>';}).join('');
@@ -1992,7 +2012,7 @@ function renderPendDocumentacao(){
     if(lojaFiltro&&norm(n.loja)!==norm(lojaFiltro))return false;
     return true;
   }).map(function(n){return{tipo:'nf',item:n,loja:n.loja,placa:placaDaNF(n)||'—'};});
-  var pendFichao=isGerencia()?[]:fichoes.filter(function(f){
+  var pendFichao=isSupervisora()?[]:fichoes.filter(function(f){
     var enviado=(f.enviadoDocumentacao===true||f.enviadoDocumentacao==='TRUE');
     var pronto=(f.documentoPronto===true||f.documentoPronto==='TRUE');
     if(!enviado||pronto)return false;
@@ -3081,11 +3101,22 @@ async function removerUsuario(id){if(!confirm('Remover usuário?'))return;try{va
 
 function renderConfig(){
   document.getElementById('cfg-url').value=SURL||'';
+  // Regras de visibilidade dos cards da Config:
+  // - Todos veem "Minha senha" (para trocar a própria senha)
+  // - Só adm vê "Conexão" (URL do Apps Script) e "Manutenção" (limpar duplicatas)
+  // - Adm e gerência veem "Lojas" e "Vendedores" (cadastro)
+  // - Vendedor (usuario) NÃO vê Lojas/Vendedores/Conexão/Manutenção - só vê troca de senha
+  // - Supervisora (Ale) NÃO vê nada além do card de senha
   var cc=document.getElementById('cfg-conexao-card');if(cc)cc.style.display=isAdm()?'block':'none';
-  // Card de manutenção (limpeza de duplicatas) também é só para o adm
   var cm=document.getElementById('cfg-manutencao-card');if(cm)cm.style.display=isAdm()?'block':'none';
-  document.getElementById('lista-lojas').innerHTML=lojas.map(function(l){return'<li style="display:flex;align-items:center;gap:4px;background:#F2F4F8;padding:4px 12px;border-radius:20px;font-size:13px">'+esc(l)+'<button data-v="'+esc(l)+'" onclick="removeLoja(this.dataset.v)" style="border:none;background:none;cursor:pointer;color:#aaa;font-size:14px;line-height:1">×</button></li>';}).join('');
-  document.getElementById('lista-vendedores').innerHTML=vendedores.map(function(v){return'<li style="display:flex;align-items:center;gap:4px;background:#F2F4F8;padding:4px 12px;border-radius:20px;font-size:13px">'+esc(v)+'<button data-v="'+esc(v)+'" onclick="removeVendedor(this.dataset.v)" style="border:none;background:none;cursor:pointer;color:#aaa;font-size:14px;line-height:1">×</button></li>';}).join('');
+  var podeLV=podeMexerLojasVendedores();
+  var clo=document.getElementById('cfg-lojas-card');if(clo)clo.style.display=podeLV?'block':'none';
+  var cve=document.getElementById('cfg-vendedores-card');if(cve)cve.style.display=podeLV?'block':'none';
+  // Só renderiza as listas se ela for exibida (economiza processamento e evita mostrar dado sensível)
+  if(podeLV){
+    document.getElementById('lista-lojas').innerHTML=lojas.map(function(l){return'<li style="display:flex;align-items:center;gap:4px;background:#F2F4F8;padding:4px 12px;border-radius:20px;font-size:13px">'+esc(l)+'<button data-v="'+esc(l)+'" onclick="removeLoja(this.dataset.v)" style="border:none;background:none;cursor:pointer;color:#aaa;font-size:14px;line-height:1">×</button></li>';}).join('');
+    document.getElementById('lista-vendedores').innerHTML=vendedores.map(function(v){return'<li style="display:flex;align-items:center;gap:4px;background:#F2F4F8;padding:4px 12px;border-radius:20px;font-size:13px">'+esc(v)+'<button data-v="'+esc(v)+'" onclick="removeVendedor(this.dataset.v)" style="border:none;background:none;cursor:pointer;color:#aaa;font-size:14px;line-height:1">×</button></li>';}).join('');
+  }
 }
 async function reconectar(){var url=document.getElementById('cfg-url').value.trim();if(!url){alert('Cole a URL.');return;}SURL=url;salvarLocal();var st=document.getElementById('status-sheets');setAlert(st,'info','Conectando...',true);try{var r=await api({action:'init'});if(r.error)throw new Error(r.error);setAlert(st,'ok','✓ Conectado!');setCon(true);await syncLV();await carregarDados();}catch(e){setAlert(st,'err','Erro: '+e.message);}}
 // Alterar a própria senha. Exige senha atual (protege contra troca alheia)
@@ -3113,10 +3144,10 @@ async function alterarMinhaSenha(){
     setAlert(st,'err','Erro: '+e.message);
   }
 }
-function addLoja(){var v=document.getElementById('nova-loja').value.trim();if(!v||lojas.indexOf(v)>=0)return;lojas.push(v);salvarLocal();syncLV();document.getElementById('nova-loja').value='';renderConfig();atualizarSelects();}
-function removeLoja(l){lojas=lojas.filter(function(x){return x!==l;});salvarLocal();syncLV();renderConfig();atualizarSelects();}
-function addVendedor(){var v=document.getElementById('novo-vendedor').value.trim();if(!v||vendedores.indexOf(v)>=0)return;vendedores.push(v);salvarLocal();syncLV();document.getElementById('novo-vendedor').value='';renderConfig();atualizarSelects();}
-function removeVendedor(v){vendedores=vendedores.filter(function(x){return x!==v;});salvarLocal();syncLV();renderConfig();atualizarSelects();}
+function addLoja(){if(!podeMexerLojasVendedores()){alert('Sem permissão.');return;}var v=document.getElementById('nova-loja').value.trim();if(!v||lojas.indexOf(v)>=0)return;lojas.push(v);salvarLocal();syncLV();document.getElementById('nova-loja').value='';renderConfig();atualizarSelects();}
+function removeLoja(l){if(!podeMexerLojasVendedores()){alert('Sem permissão.');return;}lojas=lojas.filter(function(x){return x!==l;});salvarLocal();syncLV();renderConfig();atualizarSelects();}
+function addVendedor(){if(!podeMexerLojasVendedores()){alert('Sem permissão.');return;}var v=document.getElementById('novo-vendedor').value.trim();if(!v||vendedores.indexOf(v)>=0)return;vendedores.push(v);salvarLocal();syncLV();document.getElementById('novo-vendedor').value='';renderConfig();atualizarSelects();}
+function removeVendedor(v){if(!podeMexerLojasVendedores()){alert('Sem permissão.');return;}vendedores=vendedores.filter(function(x){return x!==v;});salvarLocal();syncLV();renderConfig();atualizarSelects();}
 function atualizarSelects(){var minhas=lojasDoUsuario();['c-loja','n-loja','f-loja-origem'].forEach(function(id){var e=document.getElementById(id);if(e)e.innerHTML='<option>-- selecione --</option>'+minhas.map(function(l){return'<option>'+esc(l)+'</option>';}).join('');});['c-vendedor','n-vendedor','f-vendedor'].forEach(function(id){var e=document.getElementById(id);if(e)e.innerHTML='<option>-- selecione --</option>'+vendedores.map(function(v){return'<option>'+esc(v)+'</option>';}).join('');});}
 
 carregarLocal();
