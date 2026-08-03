@@ -1067,15 +1067,16 @@ function podeEditarVendedor(v){
 }
 
 // Faz UMA tentativa de chamada (interna - não usar direto)
-async function apiTentativa(p,timeoutMs){
+async function apiTentativa(p,timeoutMs,skipErrorThrow){
   var controller=new AbortController();
   var timeoutId=setTimeout(function(){controller.abort();},timeoutMs);
   try{
     var r=await fetch(SURL,{method:'POST',body:JSON.stringify(p),signal:controller.signal});
     clearTimeout(timeoutId);
     var texto=await r.text();
+    var parsed;
     try{
-      return JSON.parse(texto);
+      parsed=JSON.parse(texto);
     }catch(eParse){
       // Google Apps Script instável às vezes devolve HTML de erro em vez de JSON.
       // Marca como InvalidResponse pra que o retry saiba que vale tentar de novo.
@@ -1083,6 +1084,17 @@ async function apiTentativa(p,timeoutMs){
       err.isInvalidResponse=true;
       throw err;
     }
+    // Se a resposta é JSON válido MAS tem campo .error, isso é uma exceção do servidor.
+    // Antes retornávamos silenciosamente, deixando o chamador achar que tinha dado sucesso
+    // (bug do replaceAll ao apagar todas as linhas - 03/08/2026). Agora propagamos.
+    // Exceção: chamadas como login usam .error como fluxo normal (senha inválida),
+    // essas passam skipErrorThrow=true e recebem a resposta original.
+    if(parsed&&parsed.error&&!skipErrorThrow){
+      var appErr=new Error(String(parsed.error));
+      appErr.isAppError=true;
+      throw appErr;
+    }
+    return parsed;
   }catch(e){
     clearTimeout(timeoutId);
     if(e.name==='AbortError'){
@@ -1170,8 +1182,13 @@ async function fazerLogin(){
   if(!usuario||!senha){err.style.display='block';err.textContent='Preencha usuário e senha.';return;}
   if(!SURL){err.style.display='block';err.textContent='Configure a URL do Apps Script primeiro.';return;}
   btn.textContent='Entrando...';btn.disabled=true;err.style.display='none';
-  try{var r=await api({action:'login',usuario:usuario,senha:senha});if(r.error){err.style.display='block';err.textContent=r.error;btn.textContent='Entrar';btn.disabled=false;return;}usuarioLogado=r.user;entrarNoApp();}
-  catch(e){err.style.display='block';err.textContent='Erro de conexão: '+e.message;btn.textContent='Entrar';btn.disabled=false;}
+  try{
+    // Login trata r.error como fluxo normal (senha errada) - por isso passamos skipErrorThrow=true
+    // no apiTentativa. Assim mostramos "senha inválida" sem prefixar "Erro de conexão".
+    var r=await apiTentativa({action:'login',usuario:usuario,senha:senha},40000,true);
+    if(r&&r.error){err.style.display='block';err.textContent=r.error;btn.textContent='Entrar';btn.disabled=false;return;}
+    usuarioLogado=r.user;entrarNoApp();
+  }catch(e){err.style.display='block';err.textContent='Erro de conexão: '+e.message;btn.textContent='Entrar';btn.disabled=false;}
 }
 
 async function entrarNoApp(){
