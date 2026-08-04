@@ -1118,7 +1118,11 @@ async function api(p){
   // Ações idempotentes: até 3 tentativas com backoff (0s, 1.5s, 3s)
   // Ações não-idempotentes: 1 tentativa só, timeout maior
   var maxTentativas=idempotente?3:1;
-  var timeoutMs=40000;
+  // Leituras (getAll, getAllMulti) podem demorar mais quando há contenção do lock
+  // no handleUpdate (muitos users salvando ao mesmo tempo). 60s dá margem.
+  var acao=p&&p.action;
+  var ehLeitura=(acao==='getAll'||acao==='getAllMulti');
+  var timeoutMs=ehLeitura?60000:40000;
   var ultimoErro=null;
   for(var tentativa=0;tentativa<maxTentativas;tentativa++){
     if(tentativa>0){
@@ -1318,22 +1322,25 @@ async function carregarDados(){
   try{
     var ac=[],an=[],af=[];
     var multiOk=false;
-    // NOVO: uma única chamada traz as 3 abas de uma vez (3x mais rápido no carregamento)
-    // Também traz LOJAS e VENDEDORES pra evitar dessincronia entre aparelhos
-    // (antes ficava só no localStorage de cada navegador, então quem cadastrava
-    // uma loja num aparelho, os outros nunca ficavam sabendo)
+    // Dividido em 2 chamadas menores desde 04/08/2026: quando muitos usuários
+    // salvam ao mesmo tempo, o lock do handleUpdate v3.5 gera contenção e uma
+    // única chamada com 5 abas passava dos 40s de timeout. Duas chamadas
+    // paralelas são bem mais rápidas na prática.
     try{
-      var multi=await api({action:'getAllMulti',sheets:['CREDITOS','NFS','FICHOES','LOJAS','VENDEDORES']});
-      if(multi&&multi.data&&!multi.error){
-        ac=multi.data.CREDITOS||[];
-        an=multi.data.NFS||[];
-        af=multi.data.FICHOES||[];
-        // Se veio LOJAS/VENDEDORES do servidor, usa como fonte da verdade
-        var srvLojas=(multi.data.LOJAS||[]).map(function(x){return x.nome;}).filter(Boolean);
+      var multiRes=await Promise.all([
+        api({action:'getAllMulti',sheets:['CREDITOS','NFS','FICHOES']}),
+        api({action:'getAllMulti',sheets:['LOJAS','VENDEDORES']})
+      ]);
+      var multiA=multiRes[0], multiB=multiRes[1];
+      if(multiA&&multiA.data&&!multiA.error&&multiB&&multiB.data&&!multiB.error){
+        ac=multiA.data.CREDITOS||[];
+        an=multiA.data.NFS||[];
+        af=multiA.data.FICHOES||[];
+        var srvLojas=(multiB.data.LOJAS||[]).map(function(x){return x.nome;}).filter(Boolean);
         // Vendedores agora são objetos com {nome, loja, criadoPor} desde a migração v3.4.
         // Guardamos assim pra permitir filtrar por loja e checar dono.
         // Compat: se algum registro antigo veio só como string, converte.
-        var srvVend=(multi.data.VENDEDORES||[]).map(function(x){
+        var srvVend=(multiB.data.VENDEDORES||[]).map(function(x){
           if(typeof x==='string')return{nome:x,loja:'',criadoPor:''};
           if(!x||!x.nome)return null;
           return{nome:String(x.nome).trim(),loja:String(x.loja||'').trim(),criadoPor:String(x.criadoPor||'').trim()};
@@ -1345,8 +1352,9 @@ async function carregarDados(){
       }
     }catch(eMulti){multiOk=false;}
     if(!multiOk){
-      // Fallback: backend antigo (sem getAllMulti) - 3 chamadas sequenciais, uma de cada vez,
-      // para não estourar o limite de execuções concorrentes do Google Apps Script
+      // Fallback: se as chamadas multi falharem, cai pra chamadas granulares.
+      // Menos eficiente mas cada uma passa dentro do timeout mesmo em condição
+      // de alta contenção do lock.
       var rCred=await api({action:'getAll',sheet:'CREDITOS'});
       var rNf=await api({action:'getAll',sheet:'NFS'});
       var rFichao=await api({action:'getAll',sheet:'FICHOES'});
