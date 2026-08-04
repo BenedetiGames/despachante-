@@ -1317,7 +1317,18 @@ async function atualizarDados(){
   }
 }
 
+// Guard contra chamadas paralelas de carregarDados.
+// Se duas rolarem em paralelo (ex: usuário clica 🔄 duas vezes, ou clica logo após login),
+// a última que termina sobrescreve a primeira - mas às vezes com dados intermediários.
+// Melhor: se já tem uma rodando, retorna a mesma promise.
+var carregarDadosPromiseAtual=null;
 async function carregarDados(){
+  if(carregarDadosPromiseAtual)return carregarDadosPromiseAtual;
+  carregarDadosPromiseAtual=carregarDadosInterno();
+  try{return await carregarDadosPromiseAtual;}
+  finally{carregarDadosPromiseAtual=null;}
+}
+async function carregarDadosInterno(){
   if(!SURL)return;
   try{
     var ac=[],an=[],af=[];
@@ -1336,6 +1347,9 @@ async function carregarDados(){
         ac=multiA.data.CREDITOS||[];
         an=multiA.data.NFS||[];
         af=multiA.data.FICHOES||[];
+        // DEBUG TEMPORÁRIO: rastrear onde o dado da KETLEY se transforma
+        var _k=an.find(function(x){return x&&x.cliente&&x.cliente.indexOf('KETLEY')>=0;});
+        console.log('[carregarDados] getAllMulti RAW - KETLEY:', _k?{pronto:_k.documentoPronto,urgente:_k.docUrgente,id:_k.id}:'NAO ACHOU','total NFS:',an.length);
         var srvLojas=(multiB.data.LOJAS||[]).map(function(x){return x.nome;}).filter(Boolean);
         // Vendedores agora são objetos com {nome, loja, criadoPor} desde a migração v3.4.
         // Guardamos assim pra permitir filtrar por loja e checar dono.
@@ -1361,6 +1375,9 @@ async function carregarDados(){
       ac=rCred.data||[];an=rNf.data||[];af=rFichao.data||[];
     }
     ac=limparLista(ac);an=limparLista(an);af=limparLista(af);
+    // DEBUG TEMPORÁRIO
+    var _k2=an.find(function(x){return x&&x.cliente&&x.cliente.indexOf('KETLEY')>=0;});
+    console.log('[carregarDados] depois limparLista - KETLEY:', _k2?{pronto:_k2.documentoPronto,urgente:_k2.docUrgente,id:_k2.id}:'NAO ACHOU','total NFS apos dedupe:',an.length);
     var ml=lojasDoUsuario().map(function(l){return norm(l);});
     if(veTudoSemFiltro()){creditos=ac;nfs=an;fichoes=af;}
     else{
@@ -1369,6 +1386,9 @@ async function carregarDados(){
       // Fichão: usuário vê se a loja dele bater com a ORIGEM (ex: Flavio) ou o DESTINO (ex: Emanuela na Forte)
       fichoes=af.filter(function(f){return ml.indexOf(norm(f.lojaOrigem))>=0||ml.indexOf(norm(f.lojaDestino))>=0;});
     }
+    // DEBUG TEMPORÁRIO
+    var _k3=nfs.find(function(x){return x&&x.cliente&&x.cliente.indexOf('KETLEY')>=0;});
+    console.log('[carregarDados] variavel nfs FINAL - KETLEY:', _k3?{pronto:_k3.documentoPronto,urgente:_k3.docUrgente,id:_k3.id}:'NAO ACHOU','veTudoSemFiltro:',veTudoSemFiltro());
     setCon(true);
     renderPainel();
   }catch(e){
