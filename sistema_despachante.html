@@ -1271,16 +1271,34 @@ function sair(){
   setCon(false);
 }
 
-// Remove linhas em branco (sem id) e duplicatas (mantém a ÚLTIMA ocorrência = versão mais recente)
-// direto no carregamento. Mesmo que a planilha ainda tenha sujeira, a tela nunca mostra duplicado.
+// Remove linhas em branco (sem id) e duplicatas (mantém a MAIS COMPLETA = com mais campos preenchidos).
+// Antes mantinha a última em ordem física, mas a ordem no getAll não garante que a versão mais nova
+// venha por último - com insertRowAfter(1) as novas ficam no topo, e as duplicatas mais velhas
+// ficam embaixo. Resultado: "última" era na verdade a MAIS VELHA, com dados desatualizados.
+// Agora escolhemos a linha com menos campos vazios (a mais completa/atualizada).
 function limparLista(arr){
   var map={},ordem=[];
+  function contarPreenchidos(obj){
+    var n=0;
+    for(var k in obj){
+      var v=obj[k];
+      if(v!==''&&v!==null&&v!==undefined&&v!==false&&v!=='FALSE')n++;
+    }
+    return n;
+  }
   (arr||[]).forEach(function(r){
     if(!r)return;
     if(r.id===''||r.id===null||r.id===undefined)return;
     var k=String(r.id);
-    if(!(k in map))ordem.push(k);
-    map[k]=r;
+    if(!(k in map)){
+      ordem.push(k);
+      map[k]=r;
+    }else{
+      // Duplicata: fica com a versão mais completa
+      var atual=contarPreenchidos(map[k]);
+      var novo=contarPreenchidos(r);
+      if(novo>atual)map[k]=r;
+    }
   });
   return ordem.map(function(k){return map[k];});
 }
@@ -1347,9 +1365,6 @@ async function carregarDadosInterno(){
         ac=multiA.data.CREDITOS||[];
         an=multiA.data.NFS||[];
         af=multiA.data.FICHOES||[];
-        // DEBUG TEMPORÁRIO: rastrear onde o dado da KETLEY se transforma
-        var _k=an.find(function(x){return x&&x.cliente&&x.cliente.indexOf('KETLEY')>=0;});
-        console.log('[carregarDados] getAllMulti RAW - KETLEY:', _k?{pronto:_k.documentoPronto,urgente:_k.docUrgente,id:_k.id}:'NAO ACHOU','total NFS:',an.length);
         var srvLojas=(multiB.data.LOJAS||[]).map(function(x){return x.nome;}).filter(Boolean);
         // Vendedores agora são objetos com {nome, loja, criadoPor} desde a migração v3.4.
         // Guardamos assim pra permitir filtrar por loja e checar dono.
@@ -1375,9 +1390,6 @@ async function carregarDadosInterno(){
       ac=rCred.data||[];an=rNf.data||[];af=rFichao.data||[];
     }
     ac=limparLista(ac);an=limparLista(an);af=limparLista(af);
-    // DEBUG TEMPORÁRIO
-    var _k2=an.find(function(x){return x&&x.cliente&&x.cliente.indexOf('KETLEY')>=0;});
-    console.log('[carregarDados] depois limparLista - KETLEY:', _k2?{pronto:_k2.documentoPronto,urgente:_k2.docUrgente,id:_k2.id}:'NAO ACHOU','total NFS apos dedupe:',an.length);
     var ml=lojasDoUsuario().map(function(l){return norm(l);});
     if(veTudoSemFiltro()){creditos=ac;nfs=an;fichoes=af;}
     else{
@@ -1386,9 +1398,6 @@ async function carregarDadosInterno(){
       // Fichão: usuário vê se a loja dele bater com a ORIGEM (ex: Flavio) ou o DESTINO (ex: Emanuela na Forte)
       fichoes=af.filter(function(f){return ml.indexOf(norm(f.lojaOrigem))>=0||ml.indexOf(norm(f.lojaDestino))>=0;});
     }
-    // DEBUG TEMPORÁRIO
-    var _k3=nfs.find(function(x){return x&&x.cliente&&x.cliente.indexOf('KETLEY')>=0;});
-    console.log('[carregarDados] variavel nfs FINAL - KETLEY:', _k3?{pronto:_k3.documentoPronto,urgente:_k3.docUrgente,id:_k3.id}:'NAO ACHOU','veTudoSemFiltro:',veTudoSemFiltro());
     setCon(true);
     renderPainel();
   }catch(e){
