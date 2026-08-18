@@ -1179,6 +1179,8 @@ async function api(p) {
       case 'login':        return await apiLogin(p.usuario, p.senha);
       case 'init':         return { status: 'ok', message: 'Supabase conectado.' };
       case 'alterarSenha': return await apiAlterarSenha(p.usuario, p.senhaAtual, p.senhaNova);
+      case 'saveUsuario':  return await apiSaveUsuario(p.data);
+      case 'deleteUsuario':return await apiDeleteUsuario(p.id);
       default:
         throw new Error('Ação desconhecida: ' + p.action);
     }
@@ -1188,10 +1190,25 @@ async function api(p) {
   }
 }
 
+// Ordena por 'id' desc quando a tabela tem id numérico. IDs são timestamps
+// gerados por Date.now(), então maior = mais recente. Assim mantemos o
+// comportamento antigo do VeloDoc: novo no topo em Registros, Painel, etc.
+// Tabelas sem 'id' numérico (lojas/vendedores com bigserial) não têm essa lógica.
+var TABELAS_ORDEM_ID_DESC = { creditos:1, nfs:1, fichoes:1, usuarios:1 };
+
+function queryComOrdem(tabela) {
+  var q = supabase.from(tabela).select('*');
+  if (TABELAS_ORDEM_ID_DESC[tabela]) q = q.order('id', { ascending: false });
+  // No máximo o Supabase devolve 1000 por padrão. Como algumas tabelas passam
+  // desse número (ex: creditos ~840), aumentamos o limite explicitamente.
+  q = q.limit(10000);
+  return q;
+}
+
 async function apiGetAll(abaNome) {
   var tabela = TABELA_DE_ABA[abaNome];
   if (!tabela) throw new Error('Aba desconhecida: ' + abaNome);
-  var res = await supabase.from(tabela).select('*');
+  var res = await queryComOrdem(tabela);
   if (res.error) throw new Error(res.error.message);
   return { data: (res.data || []).map(snakeParaCamel) };
 }
@@ -1202,7 +1219,7 @@ async function apiGetAllMulti(abas) {
   var promises = abas.map(function(aba) {
     var tabela = TABELA_DE_ABA[aba];
     if (!tabela) return Promise.resolve({ aba: aba, data: [] });
-    return supabase.from(tabela).select('*').then(function(res) {
+    return queryComOrdem(tabela).then(function(res) {
       if (res.error) throw new Error('Erro em ' + aba + ': ' + res.error.message);
       return { aba: aba, data: (res.data || []).map(snakeParaCamel) };
     });
@@ -1283,6 +1300,45 @@ async function apiAlterarSenha(usuario, senhaAtual, senhaNova) {
   var upd = await supabase.from('usuarios').update({ senha: senhaNova }).eq('id', res.data.id);
   if (upd.error) throw new Error(upd.error.message);
   return { status: 'ok' };
+}
+
+// Cria ou atualiza usuário. Se tiver id → upsert (edita). Sem id → insere novo.
+// Chamado pelo modal "Novo/Editar usuário" da aba Usuários.
+async function apiSaveUsuario(data) {
+  if (!data) return { error: 'Dados faltando.' };
+  if (!data.nome || !data.usuario) return { error: 'Nome e usuário obrigatórios.' };
+  if (!data.perfil) return { error: 'Perfil obrigatório.' };
+  // Se está criando novo (sem id), gera um ID único (timestamp em ms + rand pra evitar colisão)
+  var doc = {
+    nome: String(data.nome).trim(),
+    usuario: String(data.usuario).trim(),
+    senha: String(data.senha || ''),
+    perfil: String(data.perfil).trim(),
+    lojas: String(data.lojas || '')
+  };
+  if (data.id) {
+    // Editando: usa o id existente. Se senha veio vazia no edit, preserva a antiga.
+    doc.id = Number(data.id);
+    if (!doc.senha) {
+      var atual = await supabase.from('usuarios').select('senha').eq('id', doc.id).maybeSingle();
+      if (atual.data && atual.data.senha) doc.senha = atual.data.senha;
+    }
+  } else {
+    // Novo: gera id
+    doc.id = Date.now() * 1000 + Math.floor(Math.random() * 1000);
+    if (!doc.senha) return { error: 'Novo usuário precisa de senha.' };
+  }
+  var res = await supabase.from('usuarios').upsert(doc, { onConflict: 'id' }).select();
+  if (res.error) throw new Error(res.error.message);
+  return { status: 'ok', data: res.data && res.data[0] };
+}
+
+// Remove usuário pelo id.
+async function apiDeleteUsuario(id) {
+  if (id === undefined || id === null || id === '') return { error: 'id ausente' };
+  var res = await supabase.from('usuarios').delete().eq('id', Number(id));
+  if (res.error) throw new Error(res.error.message);
+  return { status: 'ok', deleted: id };
 }
 
 // Compatibilidade: alguns lugares chamam apiUpdate(sheet, rec) diretamente
