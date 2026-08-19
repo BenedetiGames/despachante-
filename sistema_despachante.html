@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -370,6 +371,18 @@ table tr:hover td{background:var(--line-soft)}
         <div style="overflow-x:auto"><table><thead><tr><th id="pend-doc-th-tipo">Tipo</th><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Dt. envio</th><th>Dias em aberto</th><th></th></tr></thead><tbody id="tbl-painel-pend-doc"></tbody></table></div>
       </div>
 
+      <!-- WIDGET: Vale-Cheques em aberto -->
+      <div class="card" id="card-vale-cheques" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+          <div class="section-title" style="margin:0">💰 Vale-Cheques em aberto</div>
+          <select id="vc-loja" onchange="renderValesCheques()" style="border-radius:8px;border:1px solid #E3E8F0;padding:5px 8px;font-size:12px;color:#333;font-family:inherit">
+            <option value="">Todas as lojas</option>
+          </select>
+        </div>
+        <div style="font-size:12px;color:#888;margin-bottom:10px">Vales-cheque lançados que ainda não foram baixados. Clique em "Dar baixa" quando o cliente pagar.</div>
+        <div style="overflow-x:auto"><table><thead><tr><th>OC</th><th>Cliente</th><th>Loja</th><th>Vendedor</th><th style="text-align:right">Valor</th><th>Dt. lançamento</th><th>Dias em aberto</th><th></th></tr></thead><tbody id="tbl-vale-cheques"></tbody></table></div>
+      </div>
+
       <div class="bi-grid-3">
         <div class="card" id="card-ranking-vend" style="margin-bottom:0">
           <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:.75rem">
@@ -465,6 +478,16 @@ table tr:hover td{background:var(--line-soft)}
                 <span class="ipva-label" id="somenteComissao-label">Não é somente comissão</span>
               </div>
             </div>
+            <div>
+              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">Vale-cheque</div>
+              <div class="ipva-toggle" id="valeCheque-toggle" onclick="toggleValeCheque()" role="checkbox" aria-checked="false" tabindex="0" title="Marque se este lançamento é um vale-cheque (pagamento adiantado que aparece no Painel para dar baixa depois)">
+                <div class="ipva-icon" id="valeCheque-icon"></div>
+                <span class="ipva-label" id="valeCheque-label">Não é vale-cheque</span>
+              </div>
+            </div>
+          </div>
+          <div id="c-valecheque-valor-wrap" style="display:none;margin-bottom:1rem">
+            <div class="fg" style="max-width:280px"><label>Valor do vale-cheque (R$)</label><input type="number" id="c-valeChequeValor" placeholder="0,00" step="0.01"></div>
           </div>
           <hr class="sep">
           <div style="font-size:13px;font-weight:600;margin-bottom:.75rem">Valores financeiros</div>
@@ -645,8 +668,10 @@ table tr:hover td{background:var(--line-soft)}
       <div class="tabs-inner" style="margin-bottom:1rem">
         <button class="active" id="btn-relmodo-nf" onclick="setModoRelatorio('nf')">📄 Relatório de NFs</button>
         <button id="btn-relmodo-comissao" onclick="setModoRelatorio('comissao')">💰 Fechamento de Comissão</button>
+        <button id="btn-relmodo-nfrecebidas" onclick="setModoRelatorio('nfrecebidas')">📥 NFs Recebidas</button>
+        <button id="btn-relmodo-cortesia" onclick="setModoRelatorio('cortesia')">🎁 Relatório C.I.</button>
       </div>
-      <div class="card">
+      <div class="card" id="card-filtros-antigo">
         <div class="section-title">Filtros</div>
         <div style="font-size:12px;color:#888;margin-bottom:.75rem" id="rel-modo-explicacao">Baseado nas NFs recebidas — útil pra acompanhar documentação.</div>
         <div class="form-grid">
@@ -663,6 +688,32 @@ table tr:hover td{background:var(--line-soft)}
         <button class="btn success" onclick="exportarUltimoRelatorio()">⬇️ Exportar CSV</button>
         <button class="btn" style="background:#185FA5;color:#fff;border-color:#185FA5" onclick="gerarPDF('resumido')">📄 PDF resumido</button>
         <button class="btn" style="background:#0F6E56;color:#fff;border-color:#0F6E56" onclick="gerarPDF('completo')">📄 PDF completo</button>
+      </div>
+
+      <!-- CARD: Filtros do modo NF Recebidas -->
+      <div class="card" id="card-filtros-nfrecebidas" style="display:none">
+        <div class="section-title">Filtros — NFs Recebidas</div>
+        <div style="font-size:12px;color:#888;margin-bottom:.75rem">Todas as NFs recebidas no período (filtra pela data de recebimento). Exporta Excel com aba por loja, incluindo aba de "Nota Fora" separada.</div>
+        <div class="form-grid">
+          <div class="fg"><label>Loja</label><select id="rel2-loja"><option value="">Todas as lojas</option></select></div>
+          <div class="fg"><label>Data inicial de recebimento</label><input type="date" id="rel2-dt-ini"></div>
+          <div class="fg"><label>Data final de recebimento</label><input type="date" id="rel2-dt-fim"></div>
+        </div>
+        <button class="btn primary" onclick="gerarRelatorioNFRecebidas()">📊 Gerar relatório</button>
+        <button class="btn success" onclick="exportarNFRecebidasXLSX()">⬇️ Exportar Excel</button>
+      </div>
+
+      <!-- CARD: Filtros do modo Cortesia -->
+      <div class="card" id="card-filtros-cortesia" style="display:none">
+        <div class="section-title">Filtros — Relatório C.I. (Cortesias)</div>
+        <div style="font-size:12px;color:#888;margin-bottom:.75rem">Todos os créditos com cortesia marcada no período. Inclui 0km e semi-novos. Exporta Excel com aba por loja.</div>
+        <div class="form-grid">
+          <div class="fg"><label>Loja</label><select id="relci-loja"><option value="">Todas as lojas</option></select></div>
+          <div class="fg"><label>Data inicial (venda)</label><input type="date" id="relci-dt-ini"></div>
+          <div class="fg"><label>Data final (venda)</label><input type="date" id="relci-dt-fim"></div>
+        </div>
+        <button class="btn primary" onclick="gerarRelatorioCortesias()">📊 Gerar relatório</button>
+        <button class="btn success" onclick="exportarCortesiasXLSX()">⬇️ Exportar Excel</button>
       </div>
       <div id="rel-output"></div>
     </div>
@@ -755,6 +806,13 @@ table tr:hover td{background:var(--line-soft)}
       <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#F2F4F8;padding:7px 12px;border-radius:9px;border:1px solid #E3E8F0" title="Marque se este lançamento é só para fechar comissão, sem documentação real">
         <input type="checkbox" id="e-somenteComissao" style="accent-color:#1D9E75"> Somente comissão
       </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#F2F4F8;padding:7px 12px;border-radius:9px;border:1px solid #E3E8F0" title="Vale-cheque: pagamento adiantado que aparece no Painel para dar baixa depois">
+        <input type="checkbox" id="e-valeCheque" style="accent-color:#1D9E75" onchange="document.getElementById('e-valecheque-valor-wrap').style.display=this.checked?'block':'none';if(!this.checked){var v=document.getElementById('e-valeChequeValor');if(v)v.value='';}"> Vale-cheque
+      </label>
+    </div>
+    <div id="e-valecheque-valor-wrap" style="display:none;margin-bottom:1rem">
+      <div class="fg" style="max-width:280px"><label>Valor do vale-cheque (R$)</label><input type="number" id="e-valeChequeValor" step="0.01" placeholder="0,00"></div>
+      <div id="e-valecheque-baixado-info" style="display:none;font-size:12px;color:var(--green);margin-top:6px"></div>
     </div>
     <div style="font-size:13px;font-weight:600;margin-bottom:.75rem;margin-top:.5rem">Valores financeiros</div>
     <div class="form-grid">
@@ -908,7 +966,7 @@ table tr:hover td{background:var(--line-soft)}
 var COM_0KM=[[1750,75],[1850,125],[1950,175],[2150,225],[2202,250],[2402,300],[2502,350]];
 var COM_SEMI=[[1550,75],[1650,125],[1740,175],[1890,225],[2050,300]];
 var CORT_SALDO=178.68,NOSSA=0.10;
-var ipvaAtivo=false,cortesiaAtiva=false,nfForaAtiva=false,vendaDiretaAtiva=false,somenteComissaoAtiva=false;
+var ipvaAtivo=false,cortesiaAtiva=false,nfForaAtiva=false,vendaDiretaAtiva=false,somenteComissaoAtiva=false,valeChequeAtivo=false;
 // SURL foi a URL do Google Apps Script (backend anterior). Não é mais usada,
 // mas mantida como truthy pra evitar quebrar checagens "if (SURL)" espalhadas no código.
 // Todo backend agora passa pela nova função api() que usa Supabase (ver bloco BACKEND: SUPABASE).
@@ -1070,6 +1128,16 @@ function podeEditarVendedor(v){
   return false;
 }
 
+// Vale-cheque: só usuários autorizados veem o widget e podem dar baixa.
+// Lista inicial: FlavioB, Flavinho, Emanu (Emanuela), Evelin.
+// A comparação é feita pelo LOGIN (usuário do usuarioLogado), case-insensitive.
+var USUARIOS_VALE_CHEQUE = ['FlavioB','Flavinho','Emanu','Evelin'];
+function podeVerValeCheques(){
+  if(!usuarioLogado)return false;
+  var u=String(usuarioLogado.usuario||'').toLowerCase();
+  return USUARIOS_VALE_CHEQUE.some(function(x){return String(x).toLowerCase()===u;});
+}
+
 // (apiTentativa antiga do Apps Script foi REMOVIDA. Toda comunicação agora
 //  passa pela api() nova que usa Supabase direto - ver bloco BACKEND: SUPABASE)
 
@@ -1139,7 +1207,12 @@ var MAPA_CAMEL_PARA_SNAKE = {
   protocoladoForte: 'protocolado_forte',
   dtProtocoladoForte: 'dt_protocolado_forte',
   dutRecebido: 'dut_recebido',
-  dtDutRecebido: 'dt_dut_recebido'
+  dtDutRecebido: 'dt_dut_recebido',
+  valeCheque: 'vale_cheque',
+  valeChequeValor: 'vale_cheque_valor',
+  valeChequeBaixado: 'vale_cheque_baixado',
+  valeChequeBaixadoEm: 'vale_cheque_baixado_em',
+  valeChequeBaixadoPor: 'vale_cheque_baixado_por'
 };
 // Inverso, para converter resposta do Postgres → camelCase para o frontend
 var MAPA_SNAKE_PARA_CAMEL = {};
@@ -1803,6 +1876,17 @@ function toggleIPVA(){ipvaAtivo=!ipvaAtivo;document.getElementById('ipva-toggle'
 function toggleCortesia(){cortesiaAtiva=!cortesiaAtiva;document.getElementById('cortesia-toggle').classList.toggle('checked',cortesiaAtiva);document.getElementById('cortesia-toggle').setAttribute('aria-checked',cortesiaAtiva);document.getElementById('cortesia-icon').textContent=cortesiaAtiva?'✓':'';document.getElementById('cortesia-label').textContent=cortesiaAtiva?'É cortesia':'Não é cortesia';}
 function toggleVendaDireta(){vendaDiretaAtiva=!vendaDiretaAtiva;document.getElementById('vendaDireta-toggle').classList.toggle('checked',vendaDiretaAtiva);document.getElementById('vendaDireta-toggle').setAttribute('aria-checked',vendaDiretaAtiva);document.getElementById('vendaDireta-icon').textContent=vendaDiretaAtiva?'✓':'';document.getElementById('vendaDireta-label').textContent=vendaDiretaAtiva?'É venda direta':'Não é venda direta';}
 function toggleSomenteComissao(){somenteComissaoAtiva=!somenteComissaoAtiva;document.getElementById('somenteComissao-toggle').classList.toggle('checked',somenteComissaoAtiva);document.getElementById('somenteComissao-toggle').setAttribute('aria-checked',somenteComissaoAtiva);document.getElementById('somenteComissao-icon').textContent=somenteComissaoAtiva?'✓':'';document.getElementById('somenteComissao-label').textContent=somenteComissaoAtiva?'É somente comissão':'Não é somente comissão';}
+// Vale-cheque: além de marcar o toggle, mostra/esconde o campo de valor.
+// Quando o usuário desmarca, limpamos o valor pra não gravar sujeira.
+function toggleValeCheque(){
+  valeChequeAtivo=!valeChequeAtivo;
+  document.getElementById('valeCheque-toggle').classList.toggle('checked',valeChequeAtivo);
+  document.getElementById('valeCheque-toggle').setAttribute('aria-checked',valeChequeAtivo);
+  document.getElementById('valeCheque-icon').textContent=valeChequeAtivo?'✓':'';
+  document.getElementById('valeCheque-label').textContent=valeChequeAtivo?'É vale-cheque':'Não é vale-cheque';
+  document.getElementById('c-valecheque-valor-wrap').style.display=valeChequeAtivo?'block':'none';
+  if(!valeChequeAtivo){var v=document.getElementById('c-valeChequeValor');if(v)v.value='';}
+}
 function toggleNfFora(){nfForaAtiva=!nfForaAtiva;document.getElementById('nfFora-toggle').classList.toggle('checked',nfForaAtiva);document.getElementById('nfFora-toggle').setAttribute('aria-checked',nfForaAtiva);document.getElementById('nfFora-icon').textContent=nfForaAtiva?'✓':'';document.getElementById('nfFora-label').textContent=nfForaAtiva?'NF ficou fora':'NF não ficou fora';document.getElementById('n-motivo-g').style.display=nfForaAtiva?'block':'none';}
 function calcRef(){var ref=getRef(document.getElementById('c-tipo').value,parseFloat(document.getElementById('c-valor').value)||0);document.getElementById('c-ref-tabela').textContent=ref?'Tabela sugere: '+fmtM(ref):'';calcNossaCom();}
 function calcNossaCom(){var hon=parseFloat(document.getElementById('c-honorarios').value)||0;document.getElementById('box-hon').textContent=hon?fmtM(hon):'R$ —';document.getElementById('box-nossa-com').textContent=hon?fmtM(hon*NOSSA):'R$ —';}
@@ -1817,14 +1901,20 @@ async function salvarCredito(){
   if(doc.length<11){alert('CPF ou CNPJ inválido.');return;}
   if(!cliente||loja==='-- selecione --'||vendedor==='-- selecione --'){alert('Preencha nome, loja e vendedor.');return;}
   var hon=parseFloat(document.getElementById('c-honorarios').value)||0;var dt=document.getElementById('c-dtvenda').value;
-  var rec={id:gerarIdUnico(),doc:document.getElementById('c-doc').value,cliente:cliente,placa:document.getElementById('c-placa').value.trim().toUpperCase(),oc:document.getElementById('c-oc').value.trim(),ipva:ipvaAtivo,cortesia:cortesiaAtiva,vendaDireta:vendaDiretaAtiva,somenteComissao:somenteComissaoAtiva,loja:loja,vendedor:vendedor,tipo:document.getElementById('c-tipo').value,valor:parseFloat(document.getElementById('c-valor').value)||0,comissao:parseFloat(document.getElementById('c-comissao').value)||0,honorarios:hon,nossaCom:parseFloat((hon*NOSSA).toFixed(2)),status:'ok',motivo:'',obs:document.getElementById('c-obs').value,dtVenda:dt,semana:getSem(dt||hojeLocal()),criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:'',classificacaoPendencia:''};
+  // Vale-cheque: só grava valor se o toggle está ativo (evita valor "fantasma"
+  // se o usuário digitou e depois desmarcou)
+  var valeVal=valeChequeAtivo?(parseFloat(document.getElementById('c-valeChequeValor').value)||0):null;
+  if(valeChequeAtivo&&(!valeVal||valeVal<=0)){alert('Informe o valor do vale-cheque.');document.getElementById('c-valeChequeValor').focus();return;}
+  var rec={id:gerarIdUnico(),doc:document.getElementById('c-doc').value,cliente:cliente,placa:document.getElementById('c-placa').value.trim().toUpperCase(),oc:document.getElementById('c-oc').value.trim(),ipva:ipvaAtivo,cortesia:cortesiaAtiva,vendaDireta:vendaDiretaAtiva,somenteComissao:somenteComissaoAtiva,loja:loja,vendedor:vendedor,tipo:document.getElementById('c-tipo').value,valor:parseFloat(document.getElementById('c-valor').value)||0,comissao:parseFloat(document.getElementById('c-comissao').value)||0,honorarios:hon,nossaCom:parseFloat((hon*NOSSA).toFixed(2)),status:'ok',motivo:'',obs:document.getElementById('c-obs').value,dtVenda:dt,semana:getSem(dt||hojeLocal()),criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:'',classificacaoPendencia:'',
+    valeCheque:valeChequeAtivo,valeChequeValor:valeVal,valeChequeBaixado:false,valeChequeBaixadoEm:null,valeChequeBaixadoPor:null
+  };
   salvandoCredito=true;
   var btn=document.getElementById('btn-salvar-credito');
   var txtOriginal=btn?btn.textContent:'';
   if(btn){btn.disabled=true;btn.textContent='Salvando...';}
   try{var r=await api({action:'update',sheet:'CREDITOS',data:rec});if(r.error)throw new Error(r.error);creditos.unshift(rec);alert('✓ Crédito salvo!');limparCred();renderPainel();}catch(e){alert('Erro: '+e.message);}finally{salvandoCredito=false;if(btn){btn.disabled=false;btn.textContent=txtOriginal;}}
 }
-function limparCred(){['c-doc','c-cliente','c-placa','c-oc','c-valor','c-comissao','c-honorarios','c-obs','c-dtvenda'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('c-loja').value='-- selecione --';document.getElementById('c-vendedor').value='-- selecione --';document.getElementById('box-hon').textContent='R$ —';document.getElementById('box-nossa-com').textContent='R$ —';document.getElementById('c-ref-tabela').textContent='';document.getElementById('c-doc-match').className='doc-match';document.getElementById('c-doc-tipo').innerHTML='';if(ipvaAtivo)toggleIPVA();if(cortesiaAtiva)toggleCortesia();if(vendaDiretaAtiva)toggleVendaDireta();if(somenteComissaoAtiva)toggleSomenteComissao();}
+function limparCred(){['c-doc','c-cliente','c-placa','c-oc','c-valor','c-comissao','c-honorarios','c-obs','c-dtvenda','c-valeChequeValor'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('c-loja').value='-- selecione --';document.getElementById('c-vendedor').value='-- selecione --';document.getElementById('box-hon').textContent='R$ —';document.getElementById('box-nossa-com').textContent='R$ —';document.getElementById('c-ref-tabela').textContent='';document.getElementById('c-doc-match').className='doc-match';document.getElementById('c-doc-tipo').innerHTML='';if(ipvaAtivo)toggleIPVA();if(cortesiaAtiva)toggleCortesia();if(vendaDiretaAtiva)toggleVendaDireta();if(somenteComissaoAtiva)toggleSomenteComissao();if(valeChequeAtivo)toggleValeCheque();}
 
 var salvandoNF=false;
 async function salvarNF(){
@@ -2102,6 +2192,87 @@ function renderPainel(){
   renderCortesiasEspeciais();
   renderAguardandoProtocoloForte();
   renderPendDocumentacao();
+  renderValesCheques();
+}
+
+// ── VALE-CHEQUES ──────────────────────────────────────────────────
+// Widget do Painel que lista vales-cheque ainda não baixados.
+// Só usuários em USUARIOS_VALE_CHEQUE veem a lista e podem dar baixa.
+// Ordem: mais antigo primeiro (mais dias em aberto no topo, pra chamar atenção).
+function renderValesCheques(){
+  var card=document.getElementById('card-vale-cheques');
+  if(!card)return;
+  // Esconde inteiro se o usuário não pode ver
+  if(!podeVerValeCheques()){card.style.display='none';return;}
+  card.style.display='block';
+  // Popula dropdown de loja se ainda não estiver populado (ou se as lojas mudaram)
+  var selLoja=document.getElementById('vc-loja');
+  var valorAtual=selLoja.value;
+  selLoja.innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+esc(l)+'</option>';}).join('');
+  selLoja.value=valorAtual;
+  var lojaFiltro=selLoja.value;
+  var minhas=lojasDoUsuario().map(function(l){return norm(l);});
+  var lista=creditos.filter(function(c){
+    var eh=(c.valeCheque===true||c.valeCheque==='TRUE');
+    var baixado=(c.valeChequeBaixado===true||c.valeChequeBaixado==='TRUE');
+    if(!eh||baixado)return false;
+    if(minhas.indexOf(norm(c.loja))<0)return false;
+    if(lojaFiltro&&norm(c.loja)!==norm(lojaFiltro))return false;
+    return true;
+  });
+  // Ordena por data de lançamento asc (mais antigo primeiro)
+  lista.sort(function(a,b){
+    var da=a.dtVenda||'';
+    var db=b.dtVenda||'';
+    return da.localeCompare(db);
+  });
+  var tbody=document.getElementById('tbl-vale-cheques');
+  if(!lista.length){
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--txt3);padding:1.5rem">Nenhum vale-cheque em aberto.</td></tr>';
+    return;
+  }
+  var hoje=hojeLocal();
+  tbody.innerHTML=lista.map(function(c){
+    var dias=diasEntre(c.dtVenda,hoje);
+    var corDias=dias>=15?'style="color:var(--red);font-weight:600"':(dias>=7?'style="color:var(--amber);font-weight:600"':'');
+    return '<tr>'+
+      '<td>'+esc(c.oc||'—')+'</td>'+
+      '<td>'+esc(c.cliente||'')+'</td>'+
+      '<td>'+esc(c.loja||'')+'</td>'+
+      '<td>'+esc(c.vendedor||'')+'</td>'+
+      '<td style="text-align:right;font-variant-numeric:tabular-nums">'+fmtM(c.valeChequeValor||0)+'</td>'+
+      '<td>'+fmtDBR(c.dtVenda)+'</td>'+
+      '<td '+corDias+'>'+dias+' dia'+(dias===1?'':'s')+'</td>'+
+      '<td><button class="btn success" style="padding:5px 12px;font-size:12px" onclick="darBaixaValeCheque('+c.id+')">✓ Dar baixa</button></td>'+
+      '</tr>';
+  }).join('');
+}
+
+// Marca o vale como baixado (grava quem baixou e quando).
+// Depois recarrega dados pra outros dispositivos também verem a atualização.
+async function darBaixaValeCheque(id){
+  if(!podeVerValeCheques()){alert('Sem permissão.');return;}
+  var c=creditos.find(function(x){return String(x.id)===String(id);});
+  if(!c){alert('Vale-cheque não encontrado.');return;}
+  if(!confirm('Confirmar baixa do vale-cheque de "'+c.cliente+'" ('+fmtM(c.valeChequeValor||0)+')?'))return;
+  // Copia o registro e atualiza os campos de baixa
+  var atualizado=Object.assign({}, c, {
+    valeChequeBaixado:true,
+    valeChequeBaixadoEm:hojeLocal(),
+    valeChequeBaixadoPor:usuarioLogado?usuarioLogado.nome:'',
+    editadoPor:usuarioLogado?usuarioLogado.nome:''
+  });
+  try{
+    var r=await api({action:'update',sheet:'CREDITOS',data:atualizado});
+    if(r&&r.error)throw new Error(r.error);
+    // Atualiza local também
+    var idx=creditos.findIndex(function(x){return String(x.id)===String(id);});
+    if(idx>=0)creditos[idx]=atualizado;
+    renderValesCheques();
+    renderPainel();
+  }catch(e){
+    alert('Erro ao dar baixa: '+e.message);
+  }
 }
 
 // ── RANKING DE VENDEDORES ──────────────────────────────────────────
@@ -2668,6 +2839,19 @@ function editarCredito(id){
   document.getElementById('e-cortesia').checked=isCortesia(c);
   document.getElementById('e-vendaDireta').checked=(c.vendaDireta===true||c.vendaDireta==='TRUE');
   document.getElementById('e-somenteComissao').checked=isSomenteComissao(c);
+  // Vale-cheque: preenche checkbox, valor, mostra/esconde bloco e mostra info se já baixado
+  var eVale=(c.valeCheque===true||c.valeCheque==='TRUE');
+  var eVBaixado=(c.valeChequeBaixado===true||c.valeChequeBaixado==='TRUE');
+  document.getElementById('e-valeCheque').checked=eVale;
+  document.getElementById('e-valeChequeValor').value=(c.valeChequeValor||'')===0?'0':(c.valeChequeValor||'');
+  document.getElementById('e-valecheque-valor-wrap').style.display=eVale?'block':'none';
+  var infoEl=document.getElementById('e-valecheque-baixado-info');
+  if(eVale&&eVBaixado){
+    infoEl.style.display='block';
+    infoEl.innerHTML='✓ Baixado em '+fmtDBR(c.valeChequeBaixadoEm)+' por '+esc(c.valeChequeBaixadoPor||'—');
+  }else{
+    infoEl.style.display='none';
+  }
   calcEditCom();
   var eloja=document.getElementById('e-loja');
   eloja.innerHTML='<option>-- selecione --</option>'+lojas.map(function(l){return'<option'+(c.loja===l?' selected':'')+'>'+esc(l)+'</option>';}).join('');
@@ -2710,6 +2894,18 @@ async function salvarEdicao(){
   c.cortesia=document.getElementById('e-cortesia').checked;
   c.vendaDireta=document.getElementById('e-vendaDireta').checked;
   c.somenteComissao=document.getElementById('e-somenteComissao').checked;
+  // Vale-cheque: só grava valor se checkbox marcado. Se desmarcado agora,
+  // limpa o valor. Não mexemos em baixado/baixadoEm/baixadoPor aqui - essas
+  // informações são gerenciadas pelo botão "Dar baixa" do widget do Painel.
+  var eVale=document.getElementById('e-valeCheque').checked;
+  c.valeCheque=eVale;
+  c.valeChequeValor=eVale?(parseFloat(document.getElementById('e-valeChequeValor').value)||0):null;
+  if(!eVale){
+    // Se desmarcou vale-cheque, também limpa dados de baixa (não faz sentido manter)
+    c.valeChequeBaixado=false;
+    c.valeChequeBaixadoEm=null;
+    c.valeChequeBaixadoPor=null;
+  }
   c.editadoPor=usuarioLogado?usuarioLogado.nome:'';
   if(SURL){
     try{
@@ -2875,19 +3071,307 @@ async function salvarEdicaoNF(){
 }
 async function excNF(id){if(!confirm('Remover NF?'))return;try{await api({action:'delete',sheet:'NFS',id:id});}catch(e){alert('Erro: '+e.message);return;}nfs=nfs.filter(function(n){return n.id!=id;});renderRegNFs();renderPainel();}
 
-function renderRelFiltros(){document.getElementById('rel-loja').innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+esc(l)+'</option>';}).join('');document.getElementById('rel-vendedor').innerHTML='<option value="">Todos os vendedores</option>'+vendedores.map(function(v){return'<option>'+esc(v.nome)+'</option>';}).join('');}
+function renderRelFiltros(){
+  // Filtros do modo antigo
+  document.getElementById('rel-loja').innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+esc(l)+'</option>';}).join('');
+  document.getElementById('rel-vendedor').innerHTML='<option value="">Todos os vendedores</option>'+vendedores.map(function(v){return'<option>'+esc(v.nome)+'</option>';}).join('');
+  // Filtros dos modos novos - também dropdowns de loja
+  var optLojas='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+esc(l)+'</option>';}).join('');
+  var sel2=document.getElementById('rel2-loja');if(sel2)sel2.innerHTML=optLojas;
+  var selCI=document.getElementById('relci-loja');if(selCI)selCI.innerHTML=optLojas;
+}
 var ultimoRelatorioList=[];
 var ultimoRelatorioNome='relatorio';
 var modoRelatorio='nf';
 function setModoRelatorio(modo){
   modoRelatorio=modo;
-  document.getElementById('btn-relmodo-nf').classList.toggle('active',modo==='nf');
-  document.getElementById('btn-relmodo-comissao').classList.toggle('active',modo==='comissao');
-  document.getElementById('rel-motivo-g').style.display=modo==='nf'?'block':'none';
-  document.getElementById('rel-dt-ini-label').textContent=modo==='nf'?'Data inicial (recebimento NF)':'Data inicial (venda)';
-  document.getElementById('rel-dt-fim-label').textContent=modo==='nf'?'Data final (recebimento NF)':'Data final (venda)';
-  document.getElementById('rel-modo-explicacao').textContent=modo==='nf'?'Baseado nas NFs recebidas — útil pra acompanhar documentação.':'Baseado direto nos créditos lançados — não depende da NF já ter chegado. Só aparecem vendas com comissão a pagar (comissão > 0) — cortesias e vendas sem comissão são ignoradas.';
+  // Botões: só o do modo ativo fica "active"
+  ['nf','comissao','nfrecebidas','cortesia'].forEach(function(m){
+    var b=document.getElementById('btn-relmodo-'+m);
+    if(b)b.classList.toggle('active',modo===m);
+  });
+  // Cards de filtros: só o do modo ativo aparece
+  var eAntigo=(modo==='nf'||modo==='comissao');
+  document.getElementById('card-filtros-antigo').style.display=eAntigo?'block':'none';
+  document.getElementById('card-filtros-nfrecebidas').style.display=modo==='nfrecebidas'?'block':'none';
+  document.getElementById('card-filtros-cortesia').style.display=modo==='cortesia'?'block':'none';
+  // Ajustes do card antigo (só aplicáveis se estiver visível)
+  if(eAntigo){
+    document.getElementById('rel-motivo-g').style.display=modo==='nf'?'block':'none';
+    document.getElementById('rel-dt-ini-label').textContent=modo==='nf'?'Data inicial (recebimento NF)':'Data inicial (venda)';
+    document.getElementById('rel-dt-fim-label').textContent=modo==='nf'?'Data final (recebimento NF)':'Data final (venda)';
+    document.getElementById('rel-modo-explicacao').textContent=modo==='nf'?'Baseado nas NFs recebidas — útil pra acompanhar documentação.':'Baseado direto nos créditos lançados — não depende da NF já ter chegado. Só aparecem vendas com comissão a pagar (comissão > 0) — cortesias e vendas sem comissão são ignoradas.';
+  }
   document.getElementById('rel-output').innerHTML='';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RELATÓRIO NF RECEBIDAS
+// ═══════════════════════════════════════════════════════════════════
+// Mostra todas as NFs recebidas no período. O objetivo é acompanhar
+// o que a Alessandra precisa (identificar Nota Fora e Cortesias).
+// Filtra pela dtReceb (data de recebimento).
+// Exporta Excel com uma aba por loja + aba "Nota Fora" separada por loja.
+var ultimoRelNFRecebidas=[];
+
+function nfsRecebidasFiltradas(){
+  var loja=(document.getElementById('rel2-loja')||{value:''}).value;
+  var di=(document.getElementById('rel2-dt-ini')||{value:''}).value;
+  var df=(document.getElementById('rel2-dt-fim')||{value:''}).value;
+  var minhas=lojasDoUsuario().map(function(l){return norm(l);});
+  return nfs.filter(function(n){
+    if(minhas.indexOf(norm(n.loja))<0)return false; // respeita perfil
+    if(loja&&norm(n.loja)!==norm(loja))return false;
+    if(!n.dtReceb)return false;
+    if(di&&n.dtReceb<di)return false;
+    if(df&&n.dtReceb>df)return false;
+    return true;
+  });
+}
+
+function gerarRelatorioNFRecebidas(){
+  var list=nfsRecebidasFiltradas();
+  ultimoRelNFRecebidas=list;
+  var out=document.getElementById('rel-output');
+  if(!list.length){out.innerHTML='<div class="card"><div style="text-align:center;color:var(--txt3);padding:2rem">Nenhuma NF recebida no período.</div></div>';return;}
+  // Agrupa por loja pra exibir
+  var porLoja={};
+  list.forEach(function(n){var k=n.loja||'(sem loja)';if(!porLoja[k])porLoja[k]=[];porLoja[k].push(n);});
+  var lojasOrdenadas=Object.keys(porLoja).sort();
+  var totalGeral=list.length;
+  var notasForaTotal=list.filter(function(n){return n.nfFora===true||n.nfFora==='TRUE';}).length;
+  var html='<div class="card"><div class="section-title">NFs Recebidas — '+totalGeral+' NF(s), '+notasForaTotal+' Nota(s) Fora</div>';
+  lojasOrdenadas.forEach(function(l){
+    var arr=porLoja[l];
+    var nf=arr.filter(function(x){return x.nfFora===true||x.nfFora==='TRUE';}).length;
+    html+='<div style="margin-top:1rem"><div style="font-size:13px;font-weight:600;margin-bottom:.4rem">'+esc(l)+' <span style="color:var(--txt3);font-weight:400">('+arr.length+' NFs · '+nf+' fora)</span></div>';
+    html+='<div style="overflow-x:auto"><table><thead><tr><th>Cliente</th><th>CPF/CNPJ</th><th>Vendedor</th><th>Dt Faturamento</th><th>Dt Recebimento</th><th>NF Fora</th><th>Cortesia</th></tr></thead><tbody>';
+    arr.forEach(function(n){
+      var fora=(n.nfFora===true||n.nfFora==='TRUE');
+      // Marca cortesia se o crédito vinculado (via OC ou CPF+chassi) tem cortesia
+      var cort=nfEhCortesia(n);
+      html+='<tr'+(fora?' style="background:var(--red-soft)"':'')+'><td>'+esc(n.cliente||'')+'</td><td>'+esc(n.doc||'')+'</td><td>'+esc(n.vendedor||'')+'</td><td>'+fmtDBR(n.dtFat)+'</td><td>'+fmtDBR(n.dtReceb)+'</td><td>'+(fora?'Sim':'Não')+'</td><td>'+(cort?'Sim':'Não')+'</td></tr>';
+    });
+    html+='</tbody></table></div></div>';
+  });
+  html+='</div>';
+  out.innerHTML=html;
+}
+
+// Detecta se a NF corresponde a um crédito com cortesia marcada.
+// Casa por OC (se preenchido) OU por doc+chassi.
+function nfEhCortesia(n){
+  if(!n)return false;
+  var oc=n.ocVinculada;
+  if(oc){
+    var byOc=creditos.find(function(c){return c.oc&&String(c.oc)===String(oc);});
+    if(byOc)return byOc.cortesia===true||byOc.cortesia==='TRUE';
+  }
+  // Fallback: cliente + chassi
+  if(n.doc&&n.chassi){
+    var byDocChassi=creditos.find(function(c){return c.doc===n.doc&&c.chassi===n.chassi;});
+    if(byDocChassi)return byDocChassi.cortesia===true||byDocChassi.cortesia==='TRUE';
+  }
+  return false;
+}
+
+// Detecta se a NF é venda direta (mesmo método - via crédito vinculado)
+function nfEhVendaDireta(n){
+  if(!n)return false;
+  var oc=n.ocVinculada;
+  if(oc){
+    var byOc=creditos.find(function(c){return c.oc&&String(c.oc)===String(oc);});
+    if(byOc)return byOc.vendaDireta===true||byOc.vendaDireta==='TRUE';
+  }
+  if(n.doc&&n.chassi){
+    var byDocChassi=creditos.find(function(c){return c.doc===n.doc&&c.chassi===n.chassi;});
+    if(byDocChassi)return byDocChassi.vendaDireta===true||byDocChassi.vendaDireta==='TRUE';
+  }
+  return false;
+}
+
+// Detecta se é semi-novo (via crédito vinculado, mesma lógica)
+function nfEhSemi(n){
+  if(!n)return false;
+  var oc=n.ocVinculada;
+  if(oc){
+    var byOc=creditos.find(function(c){return c.oc&&String(c.oc)===String(oc);});
+    if(byOc)return norm(byOc.tipo)==='semi';
+  }
+  if(n.doc&&n.chassi){
+    var byDocChassi=creditos.find(function(c){return c.doc===n.doc&&c.chassi===n.chassi;});
+    if(byDocChassi)return norm(byDocChassi.tipo)==='semi';
+  }
+  return false;
+}
+
+// Retorna a placa do crédito vinculado (pra semi-novos)
+function nfPlaca(n){
+  if(!n)return '';
+  var oc=n.ocVinculada;
+  if(oc){
+    var byOc=creditos.find(function(c){return c.oc&&String(c.oc)===String(oc);});
+    if(byOc)return byOc.placa||'';
+  }
+  if(n.doc&&n.chassi){
+    var byDocChassi=creditos.find(function(c){return c.doc===n.doc&&c.chassi===n.chassi;});
+    if(byDocChassi)return byDocChassi.placa||'';
+  }
+  return '';
+}
+
+function exportarNFRecebidasXLSX(){
+  if(!ultimoRelNFRecebidas||!ultimoRelNFRecebidas.length){alert('Gere o relatório primeiro.');return;}
+  if(!window.XLSX){alert('Biblioteca de Excel ainda não carregou. Aguarde alguns segundos e tente de novo.');return;}
+  var list=ultimoRelNFRecebidas;
+  var wb=XLSX.utils.book_new();
+  // Agrupa por loja
+  var porLoja={};
+  list.forEach(function(n){var k=n.loja||'(sem loja)';if(!porLoja[k])porLoja[k]=[];porLoja[k].push(n);});
+  var lojasOrdenadas=Object.keys(porLoja).sort();
+  lojasOrdenadas.forEach(function(l){
+    var arr=porLoja[l];
+    // Aba NF geral
+    var linhasNF=arr.map(function(n){
+      return{
+        'Cliente':n.cliente||'',
+        'CPF/CNPJ':n.doc||'',
+        'Loja':n.loja||'',
+        'Vendedor':n.vendedor||'',
+        'Dt Faturamento NF':fmtDBR(n.dtFat),
+        'Dt Recebimento NF':fmtDBR(n.dtReceb),
+        'Cortesia':nfEhCortesia(n)?'Sim':'Nao',
+        'Venda Direta':nfEhVendaDireta(n)?'Sim':'Nao',
+        'Placa':nfPlaca(n),
+        'Obs':n.obs||''
+      };
+    });
+    if(linhasNF.length){
+      var ws=XLSX.utils.json_to_sheet(linhasNF);
+      XLSX.utils.book_append_sheet(wb, ws, truncateSheet('NF '+l));
+    }
+    // Aba Nota Fora (só as com nfFora=true)
+    var forasArr=arr.filter(function(n){return n.nfFora===true||n.nfFora==='TRUE';});
+    if(forasArr.length){
+      var linhasFora=forasArr.map(function(n){
+        return{
+          'Cliente':n.cliente||'',
+          'CPF/CNPJ':n.doc||'',
+          'Placa':nfPlaca(n),
+          'Loja':n.loja||'',
+          'Vendedor':n.vendedor||'',
+          'Dt Faturamento NF':fmtDBR(n.dtFat),
+          'Dt Recebimento NF':fmtDBR(n.dtReceb),
+          'NF Fora':'Sim',
+          'Motivo NF Fora':n.motivoNfFora||'',
+          'Venda Direta':nfEhVendaDireta(n)?'Sim':'Nao',
+          'Obs':n.obs||''
+        };
+      });
+      var wsF=XLSX.utils.json_to_sheet(linhasFora);
+      XLSX.utils.book_append_sheet(wb, wsF, truncateSheet('Nota Fora '+l));
+    }
+  });
+  var di=(document.getElementById('rel2-dt-ini')||{value:''}).value;
+  var df=(document.getElementById('rel2-dt-fim')||{value:''}).value;
+  var nome='Relatorio_NF_'+(di||'ini')+'_a_'+(df||'fim')+'.xlsx';
+  XLSX.writeFile(wb, nome);
+}
+
+// Nomes de aba no Excel são limitados a 31 caracteres e não podem ter alguns símbolos
+function truncateSheet(nome){
+  return String(nome).replace(/[\\/*?:\[\]]/g,'').substring(0,31);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RELATÓRIO C.I. (CORTESIAS)
+// ═══════════════════════════════════════════════════════════════════
+// Créditos com cortesia=true no período. Filtra por dtVenda.
+// Exporta Excel: uma aba por loja, cada aba dividida em 0km / Semi-novos.
+var ultimoRelCortesias=[];
+
+function cortesiasFiltradas(){
+  var loja=(document.getElementById('relci-loja')||{value:''}).value;
+  var di=(document.getElementById('relci-dt-ini')||{value:''}).value;
+  var df=(document.getElementById('relci-dt-fim')||{value:''}).value;
+  var minhas=lojasDoUsuario().map(function(l){return norm(l);});
+  return creditos.filter(function(c){
+    if(!(c.cortesia===true||c.cortesia==='TRUE'))return false;
+    if(minhas.indexOf(norm(c.loja))<0)return false;
+    if(loja&&norm(c.loja)!==norm(loja))return false;
+    if(!c.dtVenda)return false;
+    if(di&&c.dtVenda<di)return false;
+    if(df&&c.dtVenda>df)return false;
+    return true;
+  });
+}
+
+function gerarRelatorioCortesias(){
+  var list=cortesiasFiltradas();
+  ultimoRelCortesias=list;
+  var out=document.getElementById('rel-output');
+  if(!list.length){out.innerHTML='<div class="card"><div style="text-align:center;color:var(--txt3);padding:2rem">Nenhuma cortesia no período.</div></div>';return;}
+  // Agrupa por loja
+  var porLoja={};
+  list.forEach(function(c){var k=c.loja||'(sem loja)';if(!porLoja[k])porLoja[k]=[];porLoja[k].push(c);});
+  var lojasOrdenadas=Object.keys(porLoja).sort();
+  var html='<div class="card"><div class="section-title">Cortesias — '+list.length+' cortesia(s)</div>';
+  lojasOrdenadas.forEach(function(l){
+    var arr=porLoja[l];
+    var zeros=arr.filter(function(c){return norm(c.tipo)!=='semi';});
+    var semis=arr.filter(function(c){return norm(c.tipo)==='semi';});
+    html+='<div style="margin-top:1rem"><div style="font-size:13px;font-weight:600;margin-bottom:.4rem">'+esc(l)+' <span style="color:var(--txt3);font-weight:400">('+arr.length+' cortesias · '+zeros.length+' 0km · '+semis.length+' semi)</span></div>';
+    if(zeros.length){
+      html+='<div style="font-size:11px;color:var(--txt3);margin:.3rem 0">0 KM</div>';
+      html+='<div style="overflow-x:auto"><table><thead><tr><th style="width:60px">Nº</th><th>OC</th><th>Nome Cliente</th></tr></thead><tbody>';
+      zeros.forEach(function(c){html+='<tr><td></td><td>'+esc(c.oc||'')+'</td><td>'+esc(c.cliente||'')+'</td></tr>';});
+      html+='</tbody></table></div>';
+    }
+    if(semis.length){
+      html+='<div style="font-size:11px;color:var(--txt3);margin:.3rem 0">SEMI-NOVOS</div>';
+      html+='<div style="overflow-x:auto"><table><thead><tr><th style="width:60px">Nº</th><th>OC</th><th>Nome Cliente</th><th>Placa</th></tr></thead><tbody>';
+      semis.forEach(function(c){html+='<tr><td></td><td>'+esc(c.oc||'')+'</td><td>'+esc(c.cliente||'')+'</td><td>'+esc(c.placa||'')+'</td></tr>';});
+      html+='</tbody></table></div>';
+    }
+    html+='</div>';
+  });
+  html+='</div>';
+  out.innerHTML=html;
+}
+
+function exportarCortesiasXLSX(){
+  if(!ultimoRelCortesias||!ultimoRelCortesias.length){alert('Gere o relatório primeiro.');return;}
+  if(!window.XLSX){alert('Biblioteca de Excel ainda não carregou. Aguarde alguns segundos e tente de novo.');return;}
+  var list=ultimoRelCortesias;
+  var wb=XLSX.utils.book_new();
+  var porLoja={};
+  list.forEach(function(c){var k=c.loja||'(sem loja)';if(!porLoja[k])porLoja[k]=[];porLoja[k].push(c);});
+  var lojasOrdenadas=Object.keys(porLoja).sort();
+  lojasOrdenadas.forEach(function(l){
+    var arr=porLoja[l];
+    var zeros=arr.filter(function(c){return norm(c.tipo)!=='semi';});
+    var semis=arr.filter(function(c){return norm(c.tipo)==='semi';});
+    // Monta a matriz da aba manualmente pra ter as 2 seções (0km e semi) com títulos
+    var aoa=[];
+    aoa.push([l]); // título da loja na linha 1
+    aoa.push([]);
+    if(zeros.length){
+      aoa.push(['Nº','OC','NOME CLIENTE']);
+      zeros.forEach(function(c){aoa.push(['',String(c.oc||''),c.cliente||'']);});
+      aoa.push([]);
+    }
+    if(semis.length){
+      aoa.push(['SEMI-NOVOS']);
+      aoa.push(['Nº','OC','NOME CLIENTE','PLACA']);
+      semis.forEach(function(c){aoa.push(['',String(c.oc||''),c.cliente||'',c.placa||'']);});
+    }
+    var ws=XLSX.utils.aoa_to_sheet(aoa);
+    XLSX.utils.book_append_sheet(wb, ws, truncateSheet(l));
+  });
+  var di=(document.getElementById('relci-dt-ini')||{value:''}).value;
+  var df=(document.getElementById('relci-dt-fim')||{value:''}).value;
+  var nome='Relatorio_CI_'+(di||'ini')+'_a_'+(df||'fim')+'.xlsx';
+  XLSX.writeFile(wb, nome);
 }
 function calcularDadosComissao(){
   var loja=document.getElementById('rel-loja').value,vend=document.getElementById('rel-vendedor').value,di=document.getElementById('rel-dt-ini').value,df=document.getElementById('rel-dt-fim').value,ipvaF=document.getElementById('rel-ipva').value,cortFiltro=document.getElementById('rel-cortesia').value,vdFiltro=(document.getElementById('rel-vendaDireta')||{value:''}).value;
