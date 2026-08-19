@@ -2233,7 +2233,7 @@ function renderValesCheques(){
   }
   var hoje=hojeLocal();
   tbody.innerHTML=lista.map(function(c){
-    var dias=diasEntre(c.dtVenda,hoje);
+    var dias=diasDesde(c.dtVenda);
     var corDias=dias>=15?'style="color:var(--red);font-weight:600"':(dias>=7?'style="color:var(--amber);font-weight:600"':'');
     return '<tr>'+
       '<td>'+esc(c.oc||'—')+'</td>'+
@@ -2241,7 +2241,7 @@ function renderValesCheques(){
       '<td>'+esc(c.loja||'')+'</td>'+
       '<td>'+esc(c.vendedor||'')+'</td>'+
       '<td style="text-align:right;font-variant-numeric:tabular-nums">'+fmtM(c.valeChequeValor||0)+'</td>'+
-      '<td>'+fmtDBR(c.dtVenda)+'</td>'+
+      '<td>'+fmtD(c.dtVenda)+'</td>'+
       '<td '+corDias+'>'+dias+' dia'+(dias===1?'':'s')+'</td>'+
       '<td><button class="btn success" style="padding:5px 12px;font-size:12px" onclick="darBaixaValeCheque('+c.id+')">✓ Dar baixa</button></td>'+
       '</tr>';
@@ -2848,7 +2848,7 @@ function editarCredito(id){
   var infoEl=document.getElementById('e-valecheque-baixado-info');
   if(eVale&&eVBaixado){
     infoEl.style.display='block';
-    infoEl.innerHTML='✓ Baixado em '+fmtDBR(c.valeChequeBaixadoEm)+' por '+esc(c.valeChequeBaixadoPor||'—');
+    infoEl.innerHTML='✓ Baixado em '+fmtD(c.valeChequeBaixadoEm)+' por '+esc(c.valeChequeBaixadoPor||'—');
   }else{
     infoEl.style.display='none';
   }
@@ -3150,7 +3150,7 @@ function gerarRelatorioNFRecebidas(){
       var fora=(n.nfFora===true||n.nfFora==='TRUE');
       // Marca cortesia se o crédito vinculado (via OC ou CPF+chassi) tem cortesia
       var cort=nfEhCortesia(n);
-      html+='<tr'+(fora?' style="background:var(--red-soft)"':'')+'><td>'+esc(n.cliente||'')+'</td><td>'+esc(n.doc||'')+'</td><td>'+esc(n.vendedor||'')+'</td><td>'+fmtDBR(n.dtFat)+'</td><td>'+fmtDBR(n.dtReceb)+'</td><td>'+(fora?'Sim':'Não')+'</td><td>'+(cort?'Sim':'Não')+'</td></tr>';
+      html+='<tr'+(fora?' style="background:var(--red-soft)"':'')+'><td>'+esc(n.cliente||'')+'</td><td>'+esc(n.doc||'')+'</td><td>'+esc(n.vendedor||'')+'</td><td>'+fmtD(n.dtFat)+'</td><td>'+fmtD(n.dtReceb)+'</td><td>'+(fora?'Sim':'Não')+'</td><td>'+(cort?'Sim':'Não')+'</td></tr>';
     });
     html+='</tbody></table></div></div>';
   });
@@ -3238,8 +3238,8 @@ function exportarNFRecebidasXLSX(){
         'CPF/CNPJ':n.doc||'',
         'Loja':n.loja||'',
         'Vendedor':n.vendedor||'',
-        'Dt Faturamento NF':fmtDBR(n.dtFat),
-        'Dt Recebimento NF':fmtDBR(n.dtReceb),
+        'Dt Faturamento NF':fmtD(n.dtFat),
+        'Dt Recebimento NF':fmtD(n.dtReceb),
         'Cortesia':nfEhCortesia(n)?'Sim':'Nao',
         'Venda Direta':nfEhVendaDireta(n)?'Sim':'Nao',
         'Placa':nfPlaca(n),
@@ -3260,8 +3260,8 @@ function exportarNFRecebidasXLSX(){
           'Placa':nfPlaca(n),
           'Loja':n.loja||'',
           'Vendedor':n.vendedor||'',
-          'Dt Faturamento NF':fmtDBR(n.dtFat),
-          'Dt Recebimento NF':fmtDBR(n.dtReceb),
+          'Dt Faturamento NF':fmtD(n.dtFat),
+          'Dt Recebimento NF':fmtD(n.dtReceb),
           'NF Fora':'Sim',
           'Motivo NF Fora':n.motivoNfFora||'',
           'Venda Direta':nfEhVendaDireta(n)?'Sim':'Nao',
