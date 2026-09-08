@@ -349,17 +349,6 @@ table tr:hover td{background:var(--line-soft)}
         </div>
       </div>
 
-      <div class="card role-lancar-block">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
-          <div class="section-title" style="margin:0">Aguardando protocolo Forte</div>
-          <select id="prot-forte-loja" onchange="renderAguardandoProtocoloForte()" style="border-radius:8px;border:1px solid #E3E8F0;padding:5px 8px;font-size:12px;color:#333;font-family:inherit">
-            <option value="">Todas as lojas</option>
-          </select>
-        </div>
-        <div style="font-size:12px;color:#888;margin-bottom:10px">Fichões enviados pra Forte, esperando ela protocolar e devolver a capa</div>
-        <div style="overflow-x:auto"><table><thead><tr><th>Cliente</th><th>Placa</th><th>Loja origem</th><th>Loja destino</th><th>Vendedor</th><th>Dt. envio</th><th>Dias em aberto</th><th></th></tr></thead><tbody id="tbl-painel-prot-forte"></tbody></table></div>
-      </div>
-
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
           <div class="section-title" style="margin:0">Enviado para documentar</div>
@@ -367,7 +356,7 @@ table tr:hover td{background:var(--line-soft)}
             <option value="">Todas as lojas</option>
           </select>
         </div>
-        <div style="font-size:12px;color:#888;margin-bottom:10px" id="pend-doc-desc">NFs e fichões enviados para documentação que ainda não voltaram</div>
+        <div style="font-size:12px;color:#888;margin-bottom:10px" id="pend-doc-desc">NFs e semi-novos enviados para documentação que ainda não voltaram</div>
         <div style="overflow-x:auto"><table><thead><tr><th id="pend-doc-th-tipo">Tipo</th><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Dt. envio</th><th>Dias em aberto</th><th></th></tr></thead><tbody id="tbl-painel-pend-doc"></tbody></table></div>
       </div>
 
@@ -426,7 +415,7 @@ table tr:hover td{background:var(--line-soft)}
       <div class="tabs-inner">
         <button class="active" id="btn-tab-cred" onclick="showInner('credito')">💳 Lançar crédito</button>
         <button id="btn-tab-nf" onclick="showInner('nf')">📄 Lançar NF</button>
-        <button id="btn-tab-fichao" onclick="showInner('fichao')">📋 Lançar Fichão</button>
+        <button id="btn-tab-fichao" onclick="showInner('fichao')">📋 Lançar Semi-Novo</button>
       </div>
 
       <!-- CRÉDITO -->
@@ -555,7 +544,7 @@ table tr:hover td{background:var(--line-soft)}
       </div>
       <div id="inner-fichao" style="display:none">
         <div class="card">
-          <div class="section-title">Cadastro de Fichão (Semi-novo)</div>
+          <div class="section-title">Cadastro de Semi-Novo</div>
           <div class="form-grid">
             <div class="fg">
               <label>CPF ou CNPJ do cliente</label>
@@ -565,17 +554,23 @@ table tr:hover td{background:var(--line-soft)}
             </div>
             <div class="fg"><label>Nome do cliente</label><input type="text" id="f-cliente" placeholder="Nome do cliente (preenche automático se achar o CPF/CNPJ)"></div>
             <div class="fg"><label>Placa</label><input type="text" id="f-placa" placeholder="ABC1D23"></div>
-            <div class="fg"><label>Loja de origem</label><select id="f-loja-origem" onchange="filtrarVendedoresPorLoja('f-loja-origem','f-vendedor')"><option>-- selecione --</option></select></div>
-            <div class="fg"><label>Loja destino (protocolo)</label><input type="text" id="f-loja-destino" value="Fiat Forte" readonly style="background:#F2F4F8;color:#666"></div>
+            <div class="fg"><label>Loja</label><select id="f-loja-origem" onchange="filtrarVendedoresPorLoja('f-loja-origem','f-vendedor')"><option>-- selecione --</option></select></div>
             <div class="fg"><label>Vendedor</label><select id="f-vendedor"><option>-- selecione --</option></select></div>
-          </div>
-          <div class="fg" style="margin-bottom:1rem;max-width:300px;display:none">
-            <label>OC do crédito a vincular (opcional)</label>
-            <input type="text" id="f-ocVinculada" placeholder="Ex: 104.731" oninput="checarOcVinculadaFichao()">
+            <div class="fg"><label>Data de recebimento <span style="color:#888;font-weight:400">(opcional)</span></label><input type="date" id="f-dtReceb"></div>
+            <div class="fg"><label>OC do crédito a vincular <span style="color:#888;font-weight:400">(opcional)</span></label><input type="text" id="f-ocVinculada" placeholder="Ex: 104.731" oninput="checarOcVinculadaFichao()"></div>
           </div>
           <div id="f-oc-match" class="doc-match" style="margin-bottom:1rem;display:none"></div>
+          <div class="fg" style="margin-bottom:1rem"><label>Observações</label><textarea id="f-obs" rows="2" style="width:100%;padding:8px;border-radius:9px;border:1px solid #E3E8F0;font-family:inherit;font-size:13px" placeholder="Observações gerais"></textarea></div>
+          <div style="margin-bottom:1rem">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;background:#F2F4F8;padding:8px 12px;border-radius:9px;border:1px solid #E3E8F0;max-width:300px" title="Marque se o documento foi feito fora da loja">
+              <input type="checkbox" id="f-docFora" style="accent-color:#1D9E75" onchange="onToggleDocForaFichao()"> Doc Fora
+            </label>
+            <div id="f-docFora-wrap" style="display:none;margin-top:8px">
+              <div class="fg" style="max-width:500px"><label>Motivo do Doc Fora</label><textarea id="f-motivoDocFora" rows="2" style="width:100%;padding:8px;border-radius:9px;border:1px solid #E3E8F0;font-family:inherit;font-size:13px" placeholder="Explique por que o documento foi feito fora"></textarea></div>
+            </div>
+          </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn success" id="btn-salvar-fichao" onclick="salvarFichao()">💾 Salvar Fichão</button>
+            <button class="btn success" id="btn-salvar-fichao" onclick="salvarFichao()">💾 Salvar Semi-Novo</button>
             <button class="btn" onclick="limparFichao()">✕ Limpar</button>
           </div>
         </div>
@@ -604,7 +599,7 @@ table tr:hover td{background:var(--line-soft)}
       <div class="tabs-inner">
         <button class="active" id="btn-reg-cred" onclick="showRegTab('cred')">Créditos</button>
         <button id="btn-reg-nf" onclick="showRegTab('nf')">NFs avulsas</button>
-        <button id="btn-reg-fichao" onclick="showRegTab('fichao')">Fichões</button>
+        <button id="btn-reg-fichao" onclick="showRegTab('fichao')">Semi-Novos</button>
         <button id="btn-reg-doc" onclick="showRegTab('doc')">Doc pronto</button>
       </div>
       <div id="reg-cred-sec">
@@ -921,7 +916,7 @@ table tr:hover td{background:var(--line-soft)}
 <div class="edit-modal-bg" id="modal-editar-fichao">
   <div class="edit-modal">
     <div class="edit-modal-header">
-      <h2>Editar Fichão</h2>
+      <h2>Editar Semi-Novo</h2>
       <button style="border:none;background:none;cursor:pointer;font-size:20px;color:#888;line-height:1" onclick="fecharModalEditarFichao()">×</button>
     </div>
     <input type="hidden" id="ef-id">
@@ -929,9 +924,19 @@ table tr:hover td{background:var(--line-soft)}
       <div class="fg"><label>CPF ou CNPJ</label><input type="text" id="ef-doc" oninput="fmtDoc('ef-doc')" maxlength="18"></div>
       <div class="fg"><label>Nome do cliente</label><input type="text" id="ef-cliente"></div>
       <div class="fg"><label>Placa</label><input type="text" id="ef-placa"></div>
-      <div class="fg"><label>Loja de origem</label><select id="ef-loja-origem" onchange="filtrarVendedoresPorLoja('ef-loja-origem','ef-vendedor')"><option>-- selecione --</option></select></div>
-      <div class="fg"><label>Loja destino</label><input type="text" id="ef-loja-destino" value="Fiat Forte" readonly style="background:#F2F4F8;color:#666"></div>
+      <div class="fg"><label>Loja</label><select id="ef-loja-origem" onchange="filtrarVendedoresPorLoja('ef-loja-origem','ef-vendedor')"><option>-- selecione --</option></select></div>
       <div class="fg"><label>Vendedor</label><select id="ef-vendedor"><option>-- selecione --</option></select></div>
+      <div class="fg"><label>Data de recebimento <span style="color:#888;font-weight:400">(opcional)</span></label><input type="date" id="ef-dtReceb"></div>
+      <div class="fg"><label>OC do crédito vinculado</label><input type="text" id="ef-ocVinculada" placeholder="Ex: 104.731"></div>
+    </div>
+    <div class="fg" style="margin-top:1rem;margin-bottom:1rem"><label>Observações</label><textarea id="ef-obs" rows="2" style="width:100%;padding:8px;border-radius:9px;border:1px solid #E3E8F0;font-family:inherit;font-size:13px" placeholder="Observações gerais"></textarea></div>
+    <div style="margin-bottom:1rem">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;background:#F2F4F8;padding:8px 12px;border-radius:9px;border:1px solid #E3E8F0;max-width:300px">
+        <input type="checkbox" id="ef-docFora" style="accent-color:#1D9E75" onchange="onToggleDocForaEditarFichao()"> Doc Fora
+      </label>
+      <div id="ef-docFora-wrap" style="display:none;margin-top:8px">
+        <div class="fg" style="max-width:500px"><label>Motivo do Doc Fora</label><textarea id="ef-motivoDocFora" rows="2" style="width:100%;padding:8px;border-radius:9px;border:1px solid #E3E8F0;font-family:inherit;font-size:13px" placeholder="Explique por que o documento foi feito fora"></textarea></div>
+      </div>
     </div>
     <div style="display:flex;gap:8px;margin-top:.5rem;flex-wrap:wrap">
       <button class="btn primary" id="btn-salvar-edicao-fichao" onclick="salvarEdicaoFichao()">💾 Salvar alterações</button>
@@ -1853,24 +1858,66 @@ async function salvarFichao(){
   if(salvandoFichao)return;
   var doc=normDoc(document.getElementById('f-doc').value);
   var lojaOrigem=document.getElementById('f-loja-origem').value;
-  var lojaDestino=(document.getElementById('f-loja-destino').value||'').trim();
   var vendedor=document.getElementById('f-vendedor').value;
   var cliente=document.getElementById('f-cliente').value.trim();
+  var placa=(document.getElementById('f-placa').value||'').trim().toUpperCase();
   if(doc.length<11){alert('CPF ou CNPJ inválido.');return;}
   if(!cliente){alert('Preencha o nome do cliente.');return;}
-  if(lojaOrigem==='-- selecione --'){alert('Selecione a loja de origem.');return;}
-  if(!lojaDestino){alert('Preencha a loja destino (onde o fichão será protocolado).');return;}
+  if(!placa){alert('Preencha a placa.');return;}
+  if(lojaOrigem==='-- selecione --'){alert('Selecione a loja.');return;}
   if(vendedor==='-- selecione --'){alert('Selecione o vendedor.');return;}
-  var rec={id:gerarIdUnico(),doc:document.getElementById('f-doc').value,cliente:cliente,placa:document.getElementById('f-placa').value.trim().toUpperCase(),lojaOrigem:lojaOrigem,lojaDestino:lojaDestino,vendedor:vendedor,ocVinculada:(document.getElementById('f-ocVinculada').value||'').trim(),enviadoForte:false,dtEnviadoForte:'',protocoladoForte:false,dtProtocoladoForte:'',dutRecebido:false,dtDutRecebido:'',enviadoDocumentacao:false,dtEnvioDoc:'',documentoPronto:false,dtDocPronto:'',criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:''};
+  // Doc Fora: se marcado, exigir motivo
+  var docFora=document.getElementById('f-docFora').checked;
+  var motivoDocFora=(document.getElementById('f-motivoDocFora').value||'').trim();
+  if(docFora&&!motivoDocFora){alert('Informe o motivo do Doc Fora.');document.getElementById('f-motivoDocFora').focus();return;}
+  // Reforma v3.7: Semi-Novo não usa mais enviadoForte/protocoladoForte/dutRecebido.
+  // Esses campos continuam no banco pra manter histórico, mas novos registros nascem sem eles.
+  // O checkbox "Doc Fora" reaproveita os mesmos campos nfFora/motivoNfFora que a NF usa (mesmo comportamento).
+  var rec={
+    id:gerarIdUnico(),
+    doc:document.getElementById('f-doc').value,
+    cliente:cliente,
+    placa:placa,
+    lojaOrigem:lojaOrigem,
+    lojaDestino:'', // não usa mais
+    vendedor:vendedor,
+    dtReceb:document.getElementById('f-dtReceb').value||'',
+    obs:(document.getElementById('f-obs').value||'').trim(),
+    ocVinculada:(document.getElementById('f-ocVinculada').value||'').trim(),
+    nfFora:docFora,
+    motivoNfFora:docFora?motivoDocFora:'',
+    enviadoDocumentacao:false,dtEnvioDoc:'',
+    documentoPronto:false,dtDocPronto:'',
+    docUrgente:false,
+    criadoPor:usuarioLogado?usuarioLogado.nome:'',
+    editadoPor:''
+  };
   salvandoFichao=true;
   var btn=document.getElementById('btn-salvar-fichao');
   var txtOriginal=btn?btn.textContent:'';
   if(btn){btn.disabled=true;btn.textContent='Salvando...';}
   // 'update' é um upsert: se o id não existe, insere; se já existe (ex: clique duplo que passou
   // pela trava), apenas sobrescreve a mesma linha - impossível gerar duplicata
-  try{var r=await api({action:'update',sheet:'FICHOES',data:rec});if(r.error)throw new Error(r.error);fichoes.unshift(rec);alert('✓ Fichão salvo!');limparFichao();renderPainel();}catch(e){alert('Erro: '+e.message);}finally{salvandoFichao=false;if(btn){btn.disabled=false;btn.textContent=txtOriginal;}}
+  try{var r=await api({action:'update',sheet:'FICHOES',data:rec});if(r.error)throw new Error(r.error);fichoes.unshift(rec);alert('✓ Semi-Novo salvo!');limparFichao();renderPainel();}catch(e){alert('Erro: '+e.message);}finally{salvandoFichao=false;if(btn){btn.disabled=false;btn.textContent=txtOriginal;}}
 }
-function limparFichao(){['f-doc','f-cliente','f-placa'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('f-loja-origem').value='-- selecione --';document.getElementById('f-vendedor').value='-- selecione --';document.getElementById('f-doc-match').className='doc-match';document.getElementById('f-doc-tipo').innerHTML='';}
+function limparFichao(){
+  ['f-doc','f-cliente','f-placa','f-dtReceb','f-obs','f-ocVinculada','f-motivoDocFora'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('f-loja-origem').value='-- selecione --';
+  document.getElementById('f-vendedor').value='-- selecione --';
+  document.getElementById('f-doc-match').className='doc-match';
+  document.getElementById('f-doc-tipo').innerHTML='';
+  var chk=document.getElementById('f-docFora');if(chk){chk.checked=false;}
+  var wrap=document.getElementById('f-docFora-wrap');if(wrap){wrap.style.display='none';}
+  var ocMatch=document.getElementById('f-oc-match');if(ocMatch){ocMatch.style.display='none';ocMatch.innerHTML='';}
+}
+// Toggle do Doc Fora: mostra/esconde o campo de motivo abaixo do checkbox
+function onToggleDocForaFichao(){
+  var chk=document.getElementById('f-docFora');
+  var wrap=document.getElementById('f-docFora-wrap');
+  if(!chk||!wrap)return;
+  wrap.style.display=chk.checked?'block':'none';
+  if(!chk.checked){var m=document.getElementById('f-motivoDocFora');if(m)m.value='';}
+}
 
 function toggleIPVA(){ipvaAtivo=!ipvaAtivo;document.getElementById('ipva-toggle').classList.toggle('checked',ipvaAtivo);document.getElementById('ipva-toggle').setAttribute('aria-checked',ipvaAtivo);document.getElementById('ipva-icon').textContent=ipvaAtivo?'✓':'';document.getElementById('ipva-label').textContent=ipvaAtivo?'IPVA incluso':'IPVA não incluso';}
 function toggleCortesia(){cortesiaAtiva=!cortesiaAtiva;document.getElementById('cortesia-toggle').classList.toggle('checked',cortesiaAtiva);document.getElementById('cortesia-toggle').setAttribute('aria-checked',cortesiaAtiva);document.getElementById('cortesia-icon').textContent=cortesiaAtiva?'✓':'';document.getElementById('cortesia-label').textContent=cortesiaAtiva?'É cortesia':'Não é cortesia';}
@@ -2190,7 +2237,6 @@ function renderPainel(){
   renderPorLoja();
   renderNfForaMotivos();
   renderCortesiasEspeciais();
-  renderAguardandoProtocoloForte();
   renderPendDocumentacao();
   renderValesCheques();
 }
@@ -2473,7 +2519,7 @@ function renderPendDocumentacao(){
   var tbl=document.getElementById('tbl-painel-pend-doc');
   if(!tbl)return;
   var descEl=document.getElementById('pend-doc-desc');
-  if(descEl)descEl.textContent=isSupervisora()?'NFs enviadas para documentação que ainda não voltaram':'NFs e fichões enviados para documentação que ainda não voltaram';
+  if(descEl)descEl.textContent=isSupervisora()?'NFs enviadas para documentação que ainda não voltaram':'NFs e semi-novos enviados para documentação que ainda não voltaram';
   var selLoja=document.getElementById('pend-doc-loja');
   var valorAtual=selLoja.value;
   selLoja.innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+esc(l)+'</option>';}).join('');
@@ -2556,64 +2602,12 @@ async function marcarDocPronto(id,tipo){
 }
 
 // ── AGUARDANDO PROTOCOLO FORTE ───────────────────────────────────────
-function renderAguardandoProtocoloForte(){
-  var tbl=document.getElementById('tbl-painel-prot-forte');
-  if(!tbl)return;
-  var selLoja=document.getElementById('prot-forte-loja');
-  var valorAtual=selLoja.value;
-  selLoja.innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+esc(l)+'</option>';}).join('');
-  selLoja.value=valorAtual;
-  var lojaFiltro=selLoja.value;
-  var minhas=lojasDoUsuario().map(function(l){return norm(l);});
-  var pend=fichoes.filter(function(f){
-    var enviado=(f.enviadoForte===true||f.enviadoForte==='TRUE');
-    var protocolado=(f.protocoladoForte===true||f.protocoladoForte==='TRUE');
-    if(!enviado||protocolado)return false;
-    // Visível se a loja do usuário bater com origem OU destino (Flavio vê pela origem, Emanuela pela destino)
-    if(minhas.indexOf(norm(f.lojaOrigem))<0&&minhas.indexOf(norm(f.lojaDestino))<0)return false;
-    if(lojaFiltro&&norm(f.lojaOrigem)!==norm(lojaFiltro)&&norm(f.lojaDestino)!==norm(lojaFiltro))return false;
-    return true;
-  }).sort(function(a,b){return diasDesde(b.dtEnviadoForte)-diasDesde(a.dtEnviadoForte);});
-  tbl.innerHTML=pend.length?pend.map(function(f){
-    var dias=diasDesde(f.dtEnviadoForte);
-    var corDias=dias>=7?'#993C1D':(dias>=3?'#854F0B':'#666');
-    return'<tr id="prot-forte-row-'+f.id+'"><td style="font-weight:600">'+(f.cliente?esc(f.cliente):'—')+'</td><td>'+(f.placa?esc(f.placa):'—')+'</td><td>'+esc(f.lojaOrigem)+'</td><td>'+esc(f.lojaDestino)+'</td><td>'+(f.vendedor?esc(f.vendedor):'—')+'</td><td>'+fmtD(f.dtEnviadoForte)+'</td><td style="color:'+corDias+';font-weight:600">'+dias+' dia'+(dias!==1?'s':'')+'</td><td><button style="font-size:12px;padding:7px 14px;background:#fff8e1;color:#92400e;border:1px solid #FAC775;border-radius:7px;cursor:pointer;font-weight:600" onclick="marcarProtocoladoFortePainel('+f.id+')">☐ Marcar protocolado</button></td></tr>';
-  }).join(''):'<tr><td colspan="8" class="empty-state">Nada aguardando protocolo da Forte 🎉</td></tr>';
-}
-async function marcarProtocoladoFortePainel(id){
-  if(idsProcessandoFichao[id+'protocoladoForte'])return;
-  idsProcessandoFichao[id+'protocoladoForte']=true;
-  try{
-    var f=fichoes.find(function(x){return String(x.id)===String(id);});
-    if(!f){alert('Fichão não encontrado.');return;}
-    var dtAntiga=f.dtProtocoladoForte;
-    f.protocoladoForte=true;
-    if(!f.dtProtocoladoForte)f.dtProtocoladoForte=hojeLocal();
-    var row=document.getElementById('prot-forte-row-'+id);
-    if(row){
-      row.style.transition='background-color .2s';
-      row.style.backgroundColor='#d1f5e8';
-      var btn=row.querySelector('button');
-      if(btn){btn.disabled=true;btn.textContent='✓ Protocolado!';btn.style.background='#1D9E75';btn.style.color='#fff';btn.style.borderColor='#1D9E75';}
-      await new Promise(function(resolve){setTimeout(resolve,450);});
-    }
-    renderAguardandoProtocoloForte();
-    renderPainel();
-    if(SURL){
-      try{
-        await apiUpdate('FICHOES',f);
-      }catch(e){
-        f.protocoladoForte=false;
-        f.dtProtocoladoForte=dtAntiga;
-        renderAguardandoProtocoloForte();
-        renderPainel();
-        alert('Erro ao marcar protocolado: '+e.message+'\n\nA alteração foi desfeita. Tente novamente.');
-      }
-    }
-  }finally{
-    delete idsProcessandoFichao[id+'protocoladoForte'];
-  }
-}
+// Widget "Aguardando protocolo Forte" foi removido do Painel na v3.7 (reforma Semi-Novo).
+// Funções mantidas vazias por segurança (evita crash se algum callback antigo chamar).
+// Os dados históricos de enviadoForte/protocoladoForte/dutRecebido continuam no banco.
+function renderAguardandoProtocoloForte(){/* removida da UI */}
+function marcarProtocoladoFortePainel(id){/* removida da UI */}
+
 
 async function classificarPendencia(id,valor){
   var c=creditos.find(function(x){return String(x.id)===String(id);});
@@ -2715,7 +2709,7 @@ async function salvarStatusFichao(id,campo,dtCampo){
   idsProcessandoFichao[id+campo]=true;
   try{
     var f=fichoes.find(function(x){return String(x.id)===String(id);});
-    if(!f){alert('Fichão não encontrado.');return;}
+    if(!f){alert('Semi-Novo não encontrado.');return;}
     var dtAntiga=f[dtCampo];
     f[campo]=true;
     if(!f[dtCampo])f[dtCampo]=hojeLocal();
@@ -2748,6 +2742,9 @@ function editarFichao(id){
   document.getElementById('ef-doc').value=f.doc||'';
   document.getElementById('ef-cliente').value=f.cliente||'';
   document.getElementById('ef-placa').value=f.placa||'';
+  document.getElementById('ef-dtReceb').value=f.dtReceb||'';
+  document.getElementById('ef-ocVinculada').value=f.ocVinculada||'';
+  document.getElementById('ef-obs').value=f.obs||'';
   var efloja=document.getElementById('ef-loja-origem');
   efloja.innerHTML='<option>-- selecione --</option>'+lojasDoUsuario().map(function(l){return'<option'+(f.lojaOrigem===l?' selected':'')+'>'+esc(l)+'</option>';}).join('');
   // Filtra vendedores pela loja selecionada (com fallback: se vendedor atual não está na lista, mostra tudo)
@@ -2755,22 +2752,45 @@ function editarFichao(id){
   if(f.vendedor&&vendListaF.indexOf(f.vendedor)<0)vendListaF=vendedores.map(function(x){return x.nome;});
   var efvend=document.getElementById('ef-vendedor');
   efvend.innerHTML='<option>-- selecione --</option>'+vendListaF.map(function(v){return'<option'+(f.vendedor===v?' selected':'')+'>'+esc(v)+'</option>';}).join('');
+  // Doc Fora: preenche checkbox, mostra/esconde motivo
+  var docFora=(f.nfFora===true||f.nfFora==='TRUE');
+  document.getElementById('ef-docFora').checked=docFora;
+  document.getElementById('ef-motivoDocFora').value=f.motivoNfFora||'';
+  document.getElementById('ef-docFora-wrap').style.display=docFora?'block':'none';
   document.getElementById('modal-editar-fichao').classList.add('open');
 }
 function fecharModalEditarFichao(){document.getElementById('modal-editar-fichao').classList.remove('open');}
+// Toggle do Doc Fora no MODAL EDITAR
+function onToggleDocForaEditarFichao(){
+  var chk=document.getElementById('ef-docFora');
+  var wrap=document.getElementById('ef-docFora-wrap');
+  if(!chk||!wrap)return;
+  wrap.style.display=chk.checked?'block':'none';
+  if(!chk.checked){var m=document.getElementById('ef-motivoDocFora');if(m)m.value='';}
+}
 async function salvarEdicaoFichao(){
   var id=document.getElementById('ef-id').value;
   var f=fichoes.find(function(x){return String(x.id)===String(id);});
-  if(!f){alert('Fichão não encontrado.');return;}
+  if(!f){alert('Semi-Novo não encontrado.');return;}
   var lojaVal=document.getElementById('ef-loja-origem').value;
   var vendVal=document.getElementById('ef-vendedor').value;
-  if(!lojaVal||lojaVal==='-- selecione --'){alert('Selecione uma loja de origem válida antes de salvar.');return;}
+  var placaVal=(document.getElementById('ef-placa').value||'').trim().toUpperCase();
+  if(!lojaVal||lojaVal==='-- selecione --'){alert('Selecione uma loja válida antes de salvar.');return;}
   if(!vendVal||vendVal==='-- selecione --'){alert('Selecione um vendedor válido antes de salvar.');return;}
+  if(!placaVal){alert('Placa é obrigatória.');return;}
+  var docFora=document.getElementById('ef-docFora').checked;
+  var motivoDF=(document.getElementById('ef-motivoDocFora').value||'').trim();
+  if(docFora&&!motivoDF){alert('Informe o motivo do Doc Fora.');document.getElementById('ef-motivoDocFora').focus();return;}
   f.doc=document.getElementById('ef-doc').value;
   f.cliente=document.getElementById('ef-cliente').value.trim();
-  f.placa=document.getElementById('ef-placa').value.trim().toUpperCase();
+  f.placa=placaVal;
   f.lojaOrigem=lojaVal;
   f.vendedor=vendVal;
+  f.dtReceb=document.getElementById('ef-dtReceb').value||'';
+  f.ocVinculada=(document.getElementById('ef-ocVinculada').value||'').trim();
+  f.obs=(document.getElementById('ef-obs').value||'').trim();
+  f.nfFora=docFora;
+  f.motivoNfFora=docFora?motivoDF:'';
   f.editadoPor=usuarioLogado?usuarioLogado.nome:'';
   if(SURL){
     try{
@@ -2780,7 +2800,7 @@ async function salvarEdicaoFichao(){
   fecharModalEditarFichao();
   renderRegFichoes();
   renderPainel();
-  alert('✓ Fichão atualizado!');
+  alert('✓ Semi-Novo atualizado!');
 }
 
 function renderRegDocPronto(){
