@@ -516,11 +516,20 @@ table tr:hover td{background:var(--line-soft)}
             <div class="fg"><label>Data recebimento NF</label><input type="date" id="n-dtreceb"></div>
             <div class="fg"><label>Observações</label><input type="text" id="n-obs"></div>
           </div>
-          <div style="margin-bottom:1rem">
-            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">NF Fora</div>
-            <div class="ipva-toggle" id="nfFora-toggle" onclick="toggleNfFora()" role="checkbox" aria-checked="false" tabindex="0">
-              <div class="ipva-icon" id="nfFora-icon"></div>
-              <span class="ipva-label" id="nfFora-label">NF não ficou fora</span>
+          <div style="margin-bottom:1rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;max-width:600px">
+            <div>
+              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">NF Fora</div>
+              <div class="ipva-toggle" id="nfFora-toggle" onclick="toggleNfFora()" role="checkbox" aria-checked="false" tabindex="0">
+                <div class="ipva-icon" id="nfFora-icon"></div>
+                <span class="ipva-label" id="nfFora-label">NF não ficou fora</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">Venda Direta</div>
+              <div class="ipva-toggle" id="nfVendaDireta-toggle" onclick="toggleNfVendaDireta()" role="checkbox" aria-checked="false" tabindex="0" title="Marque se esta NF é de uma venda direta (venda para pessoa jurídica com faturamento direto)">
+                <div class="ipva-icon" id="nfVendaDireta-icon"></div>
+                <span class="ipva-label" id="nfVendaDireta-label">Não é venda direta</span>
+              </div>
             </div>
           </div>
           <div class="fg" id="n-motivo-g" style="display:none;margin-bottom:1rem;max-width:400px">
@@ -840,9 +849,12 @@ table tr:hover td{background:var(--line-soft)}
       <div class="fg"><label>Data recebimento NF</label><input type="date" id="en-dtreceb"></div>
       <div class="fg"><label>Observações</label><input type="text" id="en-obs"></div>
     </div>
-    <div style="margin-bottom:1rem">
+    <div style="margin-bottom:1rem;display:flex;gap:10px;flex-wrap:wrap">
       <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#F2F4F8;padding:7px 12px;border-radius:9px;border:1px solid #E3E8F0;width:fit-content">
         <input type="checkbox" id="en-nfFora" onchange="document.getElementById('en-motivo-g').style.display=this.checked?'block':'none'" style="accent-color:#1D9E75"> NF ficou fora
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#F2F4F8;padding:7px 12px;border-radius:9px;border:1px solid #E3E8F0;width:fit-content" title="Marque se esta NF é de uma venda direta">
+        <input type="checkbox" id="en-vendaDireta" style="accent-color:#1D9E75"> Venda direta
       </label>
     </div>
     <div class="fg" id="en-motivo-g" style="display:none;margin-bottom:1rem;max-width:400px">
@@ -971,7 +983,7 @@ table tr:hover td{background:var(--line-soft)}
 var COM_0KM=[[1750,75],[1850,125],[1950,175],[2150,225],[2202,250],[2402,300],[2502,350]];
 var COM_SEMI=[[1550,75],[1650,125],[1740,175],[1890,225],[2050,300]];
 var CORT_SALDO=178.68,NOSSA=0.10;
-var ipvaAtivo=false,cortesiaAtiva=false,nfForaAtiva=false,vendaDiretaAtiva=false,somenteComissaoAtiva=false,valeChequeAtivo=false;
+var ipvaAtivo=false,cortesiaAtiva=false,nfForaAtiva=false,vendaDiretaAtiva=false,somenteComissaoAtiva=false,valeChequeAtivo=false,nfVendaDiretaAtiva=false;
 // SURL foi a URL do Google Apps Script (backend anterior). Não é mais usada,
 // mas mantida como truthy pra evitar quebrar checagens "if (SURL)" espalhadas no código.
 // Todo backend agora passa pela nova função api() que usa Supabase (ver bloco BACKEND: SUPABASE).
@@ -1935,6 +1947,14 @@ function toggleValeCheque(){
   if(!valeChequeAtivo){var v=document.getElementById('c-valeChequeValor');if(v)v.value='';}
 }
 function toggleNfFora(){nfForaAtiva=!nfForaAtiva;document.getElementById('nfFora-toggle').classList.toggle('checked',nfForaAtiva);document.getElementById('nfFora-toggle').setAttribute('aria-checked',nfForaAtiva);document.getElementById('nfFora-icon').textContent=nfForaAtiva?'✓':'';document.getElementById('nfFora-label').textContent=nfForaAtiva?'NF ficou fora':'NF não ficou fora';document.getElementById('n-motivo-g').style.display=nfForaAtiva?'block':'none';}
+// Toggle Venda Direta do form NF - marca se a NF é de uma venda direta (independente do crédito vinculado)
+function toggleNfVendaDireta(){
+  nfVendaDiretaAtiva=!nfVendaDiretaAtiva;
+  document.getElementById('nfVendaDireta-toggle').classList.toggle('checked',nfVendaDiretaAtiva);
+  document.getElementById('nfVendaDireta-toggle').setAttribute('aria-checked',nfVendaDiretaAtiva);
+  document.getElementById('nfVendaDireta-icon').textContent=nfVendaDiretaAtiva?'✓':'';
+  document.getElementById('nfVendaDireta-label').textContent=nfVendaDiretaAtiva?'É venda direta':'Não é venda direta';
+}
 function calcRef(){var ref=getRef(document.getElementById('c-tipo').value,parseFloat(document.getElementById('c-valor').value)||0);document.getElementById('c-ref-tabela').textContent=ref?'Tabela sugere: '+fmtM(ref):'';calcNossaCom();}
 function calcNossaCom(){var hon=parseFloat(document.getElementById('c-honorarios').value)||0;document.getElementById('box-hon').textContent=hon?fmtM(hon):'R$ —';document.getElementById('box-nossa-com').textContent=hon?fmtM(hon*NOSSA):'R$ —';}
 
@@ -1972,14 +1992,14 @@ async function salvarNF(){
   if(doc.length<11){alert('CPF ou CNPJ inválido.');return;}
   if(loja==='-- selecione --'){alert('Selecione a loja.');return;}
   if(vendedor==='-- selecione --'){alert('Selecione o vendedor.');return;}
-  var rec={id:gerarIdUnico(),doc:document.getElementById('n-doc').value,cliente:document.getElementById('n-cliente').value.trim(),chassi:document.getElementById('n-chassi').value.trim(),loja:loja,vendedor:vendedor,dtFat:document.getElementById('n-dtfat').value,dtReceb:document.getElementById('n-dtreceb').value,obs:document.getElementById('n-obs').value,nfFora:nfForaAtiva,motivoNfFora:nfForaAtiva?document.getElementById('n-motivo').value.trim():'',criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:''};
+  var rec={id:gerarIdUnico(),doc:document.getElementById('n-doc').value,cliente:document.getElementById('n-cliente').value.trim(),chassi:document.getElementById('n-chassi').value.trim(),loja:loja,vendedor:vendedor,dtFat:document.getElementById('n-dtfat').value,dtReceb:document.getElementById('n-dtreceb').value,obs:document.getElementById('n-obs').value,nfFora:nfForaAtiva,motivoNfFora:nfForaAtiva?document.getElementById('n-motivo').value.trim():'',vendaDireta:nfVendaDiretaAtiva,criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:''};
   salvandoNF=true;
   var btn=document.getElementById('btn-salvar-nf');
   var txtOriginal=btn?btn.textContent:'';
   if(btn){btn.disabled=true;btn.textContent='Salvando...';}
   try{var r=await api({action:'update',sheet:'NFS',data:rec});if(r.error)throw new Error(r.error);nfs.unshift(rec);alert('✓ NF salva!');limparNF();renderPainel();}catch(e){alert('Erro: '+e.message);}finally{salvandoNF=false;if(btn){btn.disabled=false;btn.textContent=txtOriginal;}}
 }
-function limparNF(){['n-doc','n-cliente','n-chassi','n-dtfat','n-dtreceb','n-obs','n-motivo'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('n-loja').value='-- selecione --';document.getElementById('n-vendedor').value='-- selecione --';document.getElementById('n-doc-match').className='doc-match';document.getElementById('n-doc-tipo').innerHTML='';if(nfForaAtiva)toggleNfFora();}
+function limparNF(){['n-doc','n-cliente','n-chassi','n-dtfat','n-dtreceb','n-obs','n-motivo'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('n-loja').value='-- selecione --';document.getElementById('n-vendedor').value='-- selecione --';document.getElementById('n-doc-match').className='doc-match';document.getElementById('n-doc-tipo').innerHTML='';if(nfForaAtiva)toggleNfFora();if(nfVendaDiretaAtiva)toggleNfVendaDireta();}
 
 var modoGrafico='evolucao';
 function setModoGrafico(modo){
@@ -2952,6 +2972,7 @@ function editarNF(id){
   document.getElementById('en-nfFora').checked=isFora;
   document.getElementById('en-motivo-g').style.display=isFora?'block':'none';
   document.getElementById('en-motivo').value=n.motivoNfFora||'';
+  document.getElementById('en-vendaDireta').checked=(n.vendaDireta===true||n.vendaDireta==='TRUE');
   document.getElementById('en-enviadoDoc').checked=(n.enviadoDocumentacao===true||n.enviadoDocumentacao==='TRUE');
   document.getElementById('en-docPronto').checked=(n.documentoPronto===true||n.documentoPronto==='TRUE');
   document.getElementById('en-urgente').checked=(n.docUrgente===true||n.docUrgente==='TRUE');
@@ -3066,6 +3087,7 @@ async function salvarEdicaoNF(){
   n.obs=document.getElementById('en-obs').value;
   n.nfFora=document.getElementById('en-nfFora').checked;
   n.motivoNfFora=n.nfFora?document.getElementById('en-motivo').value.trim():'';
+  n.vendaDireta=document.getElementById('en-vendaDireta').checked;
   var hoje=hojeLocal();
   var enviadoMarcado=document.getElementById('en-enviadoDoc').checked;
   var prontoMarcado=document.getElementById('en-docPronto').checked;
@@ -3212,6 +3234,10 @@ function nfEhCortesia(n){
 // Detecta se a NF é venda direta (mesmo método - via crédito vinculado)
 function nfEhVendaDireta(n){
   if(!n)return false;
+  // A partir da v3.8, a NF tem campo vendaDireta próprio. Se tiver preenchido (true), usa direto.
+  // Se estiver false/undefined, cai pro fallback antigo: verifica o crédito vinculado.
+  // Isso mantém compatibilidade com NFs antigas que só tinham venda direta via crédito.
+  if(n.vendaDireta===true||n.vendaDireta==='TRUE')return true;
   var oc=n.ocVinculada;
   if(oc){
     var byOc=creditos.find(function(c){return c.oc&&String(c.oc)===String(oc);});
