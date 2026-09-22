@@ -474,6 +474,13 @@ table tr:hover td{background:var(--line-soft)}
                 <span class="ipva-label" id="valeCheque-label">Não é vale-cheque</span>
               </div>
             </div>
+            <div>
+              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">Abaixo do custo</div>
+              <div class="ipva-toggle" id="abaixoCusto-toggle" onclick="toggleAbaixoCusto()" role="checkbox" aria-checked="false" tabindex="0" title="Marque se este crédito foi vendido abaixo do custo (para relatórios de perda). Se não marcado, o sistema considera abaixo do custo automaticamente quando o valor for menor que R$1.200.">
+                <div class="ipva-icon" id="abaixoCusto-icon"></div>
+                <span class="ipva-label" id="abaixoCusto-label">Não é abaixo do custo</span>
+              </div>
+            </div>
           </div>
           <div id="c-valecheque-valor-wrap" style="display:none;margin-bottom:1rem">
             <div class="fg" style="max-width:280px"><label>Valor do vale-cheque (R$)</label><input type="number" id="c-valeChequeValor" placeholder="0,00" step="0.01"></div>
@@ -670,12 +677,12 @@ table tr:hover td{background:var(--line-soft)}
     <!-- RELATÓRIOS -->
     <div id="sec-relatorios" class="section">
       <div class="tabs-inner" style="margin-bottom:1rem">
-        <button class="active" id="btn-relmodo-nf" onclick="setModoRelatorio('nf')">📄 Relatório de NFs</button>
+        <button class="active" id="btn-relmodo-credlist" onclick="setModoRelatorio('credlist')">📄 Relatório de Créditos</button>
         <button id="btn-relmodo-comissao" onclick="setModoRelatorio('comissao')">💰 Fechamento de Comissão</button>
         <button id="btn-relmodo-nfrecebidas" onclick="setModoRelatorio('nfrecebidas')">📥 NFs Recebidas</button>
         <button id="btn-relmodo-cortesia" onclick="setModoRelatorio('cortesia')">🎁 Relatório C.I.</button>
       </div>
-      <div class="card" id="card-filtros-antigo">
+      <div class="card" id="card-filtros-antigo" style="display:none">
         <div class="section-title">Filtros</div>
         <div style="font-size:12px;color:#888;margin-bottom:.75rem" id="rel-modo-explicacao">Baseado nas NFs recebidas — útil pra acompanhar documentação.</div>
         <div class="form-grid">
@@ -692,6 +699,21 @@ table tr:hover td{background:var(--line-soft)}
         <button class="btn success" onclick="exportarUltimoRelatorio()">⬇️ Exportar CSV</button>
         <button class="btn" style="background:#185FA5;color:#fff;border-color:#185FA5" onclick="gerarPDF('resumido')">📄 PDF resumido</button>
         <button class="btn" style="background:#0F6E56;color:#fff;border-color:#0F6E56" onclick="gerarPDF('completo')">📄 PDF completo</button>
+      </div>
+
+      <!-- CARD: Filtros do Relatório de Créditos -->
+      <div class="card" id="card-filtros-credlist">
+        <div class="section-title">Filtros — Relatório de Créditos</div>
+        <div style="font-size:12px;color:#888;margin-bottom:.75rem">Todos os créditos lançados no período (filtra pela data da venda). Exporta Excel com uma aba por loja.</div>
+        <div class="form-grid">
+          <div class="fg"><label>Loja</label><select id="relc-loja"><option value="">Todas as lojas</option></select></div>
+          <div class="fg"><label>Data inicial (venda)</label><input type="date" id="relc-dt-ini"></div>
+          <div class="fg"><label>Data final (venda)</label><input type="date" id="relc-dt-fim"></div>
+          <div class="fg"><label>Abaixo do custo</label><select id="relc-abaixocusto"><option value="">Todos</option><option value="1">Só abaixo do custo</option><option value="0">Sem abaixo do custo</option></select></div>
+          <div class="fg"><label>Cortesia</label><select id="relc-cortesia"><option value="">Todos</option><option value="1">Só cortesias</option><option value="0">Sem cortesia</option></select></div>
+        </div>
+        <button class="btn primary" onclick="gerarRelatorioCreditos()">📊 Gerar relatório</button>
+        <button class="btn success" onclick="exportarCreditosXLSX()">⬇️ Exportar Excel</button>
       </div>
 
       <!-- CARD: Filtros do modo NF Recebidas -->
@@ -812,6 +834,9 @@ table tr:hover td{background:var(--line-soft)}
       </label>
       <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#F2F4F8;padding:7px 12px;border-radius:9px;border:1px solid #E3E8F0" title="Vale-cheque: pagamento adiantado que aparece no Painel para dar baixa depois">
         <input type="checkbox" id="e-valeCheque" style="accent-color:#1D9E75" onchange="document.getElementById('e-valecheque-valor-wrap').style.display=this.checked?'block':'none';if(!this.checked){var v=document.getElementById('e-valeChequeValor');if(v)v.value='';}"> Vale-cheque
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#F2F4F8;padding:7px 12px;border-radius:9px;border:1px solid #E3E8F0" title="Abaixo do custo: crédito vendido abaixo do custo (para relatórios de perda)">
+        <input type="checkbox" id="e-abaixoCusto" style="accent-color:#1D9E75"> Abaixo do custo
       </label>
     </div>
     <div id="e-valecheque-valor-wrap" style="display:none;margin-bottom:1rem">
@@ -983,7 +1008,7 @@ table tr:hover td{background:var(--line-soft)}
 var COM_0KM=[[1750,75],[1850,125],[1950,175],[2150,225],[2202,250],[2402,300],[2502,350]];
 var COM_SEMI=[[1550,75],[1650,125],[1740,175],[1890,225],[2050,300]];
 var CORT_SALDO=178.68,NOSSA=0.10;
-var ipvaAtivo=false,cortesiaAtiva=false,nfForaAtiva=false,vendaDiretaAtiva=false,somenteComissaoAtiva=false,valeChequeAtivo=false,nfVendaDiretaAtiva=false;
+var ipvaAtivo=false,cortesiaAtiva=false,nfForaAtiva=false,vendaDiretaAtiva=false,somenteComissaoAtiva=false,valeChequeAtivo=false,nfVendaDiretaAtiva=false,abaixoCustoAtivo=false;
 // SURL foi a URL do Google Apps Script (backend anterior). Não é mais usada,
 // mas mantida como truthy pra evitar quebrar checagens "if (SURL)" espalhadas no código.
 // Todo backend agora passa pela nova função api() que usa Supabase (ver bloco BACKEND: SUPABASE).
@@ -1207,6 +1232,7 @@ var MAPA_CAMEL_PARA_SNAKE = {
   criadoPor: 'criado_por',
   editadoPor: 'editado_por',
   classificacaoPendencia: 'classificacao_pendencia',
+  abaixoCusto: 'abaixo_custo',
   dtFat: 'dt_fat',
   dtReceb: 'dt_receb',
   nfFora: 'nf_fora',
@@ -1946,6 +1972,29 @@ function toggleValeCheque(){
   document.getElementById('c-valecheque-valor-wrap').style.display=valeChequeAtivo?'block':'none';
   if(!valeChequeAtivo){var v=document.getElementById('c-valeChequeValor');if(v)v.value='';}
 }
+// Toggle "Abaixo do custo" - marca manualmente que o crédito foi vendido abaixo do custo.
+// Se não marcado, o sistema aplica regra automática: valor < R$1.200 vira "abaixo do custo"
+// (isso mantém compatibilidade com registros antigos que ainda não foram categorizados).
+function toggleAbaixoCusto(){
+  abaixoCustoAtivo=!abaixoCustoAtivo;
+  document.getElementById('abaixoCusto-toggle').classList.toggle('checked',abaixoCustoAtivo);
+  document.getElementById('abaixoCusto-toggle').setAttribute('aria-checked',abaixoCustoAtivo);
+  document.getElementById('abaixoCusto-icon').textContent=abaixoCustoAtivo?'✓':'';
+  document.getElementById('abaixoCusto-label').textContent=abaixoCustoAtivo?'É abaixo do custo':'Não é abaixo do custo';
+}
+// Helper: retorna true se o crédito é considerado abaixo do custo.
+// Regra: OU o checkbox está marcado (novos registros), OU o valor é menor que R$1.200
+// (regra automática que também pega registros antigos vendidos barato).
+// Assim novos registros marcados manualmente sempre contam, e antigos vendidos
+// abaixo do limite também aparecem no relatório mesmo sem o checkbox.
+var LIMITE_ABAIXO_CUSTO = 1200;
+function isAbaixoCusto(c){
+  if(!c)return false;
+  if(c.abaixoCusto===true||c.abaixoCusto==='TRUE')return true;
+  var v=parseFloat(c.valor);
+  if(!isNaN(v)&&v<LIMITE_ABAIXO_CUSTO)return true;
+  return false;
+}
 function toggleNfFora(){nfForaAtiva=!nfForaAtiva;document.getElementById('nfFora-toggle').classList.toggle('checked',nfForaAtiva);document.getElementById('nfFora-toggle').setAttribute('aria-checked',nfForaAtiva);document.getElementById('nfFora-icon').textContent=nfForaAtiva?'✓':'';document.getElementById('nfFora-label').textContent=nfForaAtiva?'NF ficou fora':'NF não ficou fora';document.getElementById('n-motivo-g').style.display=nfForaAtiva?'block':'none';}
 // Toggle Venda Direta do form NF - marca se a NF é de uma venda direta (independente do crédito vinculado)
 function toggleNfVendaDireta(){
@@ -1972,7 +2021,7 @@ async function salvarCredito(){
   // se o usuário digitou e depois desmarcou)
   var valeVal=valeChequeAtivo?(parseFloat(document.getElementById('c-valeChequeValor').value)||0):null;
   if(valeChequeAtivo&&(!valeVal||valeVal<=0)){alert('Informe o valor do vale-cheque.');document.getElementById('c-valeChequeValor').focus();return;}
-  var rec={id:gerarIdUnico(),doc:document.getElementById('c-doc').value,cliente:cliente,placa:document.getElementById('c-placa').value.trim().toUpperCase(),oc:document.getElementById('c-oc').value.trim(),ipva:ipvaAtivo,cortesia:cortesiaAtiva,vendaDireta:vendaDiretaAtiva,somenteComissao:somenteComissaoAtiva,loja:loja,vendedor:vendedor,tipo:document.getElementById('c-tipo').value,valor:parseFloat(document.getElementById('c-valor').value)||0,comissao:parseFloat(document.getElementById('c-comissao').value)||0,honorarios:hon,nossaCom:parseFloat((hon*NOSSA).toFixed(2)),status:'ok',motivo:'',obs:document.getElementById('c-obs').value,dtVenda:dt,semana:getSem(dt||hojeLocal()),criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:'',classificacaoPendencia:'',
+  var rec={id:gerarIdUnico(),doc:document.getElementById('c-doc').value,cliente:cliente,placa:document.getElementById('c-placa').value.trim().toUpperCase(),oc:document.getElementById('c-oc').value.trim(),ipva:ipvaAtivo,cortesia:cortesiaAtiva,vendaDireta:vendaDiretaAtiva,somenteComissao:somenteComissaoAtiva,abaixoCusto:abaixoCustoAtivo,loja:loja,vendedor:vendedor,tipo:document.getElementById('c-tipo').value,valor:parseFloat(document.getElementById('c-valor').value)||0,comissao:parseFloat(document.getElementById('c-comissao').value)||0,honorarios:hon,nossaCom:parseFloat((hon*NOSSA).toFixed(2)),status:'ok',motivo:'',obs:document.getElementById('c-obs').value,dtVenda:dt,semana:getSem(dt||hojeLocal()),criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:'',classificacaoPendencia:'',
     valeCheque:valeChequeAtivo,valeChequeValor:valeVal,valeChequeBaixado:false,valeChequeBaixadoEm:null,valeChequeBaixadoPor:null
   };
   salvandoCredito=true;
@@ -1981,7 +2030,7 @@ async function salvarCredito(){
   if(btn){btn.disabled=true;btn.textContent='Salvando...';}
   try{var r=await api({action:'update',sheet:'CREDITOS',data:rec});if(r.error)throw new Error(r.error);creditos.unshift(rec);alert('✓ Crédito salvo!');limparCred();renderPainel();}catch(e){alert('Erro: '+e.message);}finally{salvandoCredito=false;if(btn){btn.disabled=false;btn.textContent=txtOriginal;}}
 }
-function limparCred(){['c-doc','c-cliente','c-placa','c-oc','c-valor','c-comissao','c-honorarios','c-obs','c-dtvenda','c-valeChequeValor'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('c-loja').value='-- selecione --';document.getElementById('c-vendedor').value='-- selecione --';document.getElementById('box-hon').textContent='R$ —';document.getElementById('box-nossa-com').textContent='R$ —';document.getElementById('c-ref-tabela').textContent='';document.getElementById('c-doc-match').className='doc-match';document.getElementById('c-doc-tipo').innerHTML='';if(ipvaAtivo)toggleIPVA();if(cortesiaAtiva)toggleCortesia();if(vendaDiretaAtiva)toggleVendaDireta();if(somenteComissaoAtiva)toggleSomenteComissao();if(valeChequeAtivo)toggleValeCheque();}
+function limparCred(){['c-doc','c-cliente','c-placa','c-oc','c-valor','c-comissao','c-honorarios','c-obs','c-dtvenda','c-valeChequeValor'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('c-loja').value='-- selecione --';document.getElementById('c-vendedor').value='-- selecione --';document.getElementById('box-hon').textContent='R$ —';document.getElementById('box-nossa-com').textContent='R$ —';document.getElementById('c-ref-tabela').textContent='';document.getElementById('c-doc-match').className='doc-match';document.getElementById('c-doc-tipo').innerHTML='';if(ipvaAtivo)toggleIPVA();if(cortesiaAtiva)toggleCortesia();if(vendaDiretaAtiva)toggleVendaDireta();if(somenteComissaoAtiva)toggleSomenteComissao();if(valeChequeAtivo)toggleValeCheque();if(abaixoCustoAtivo)toggleAbaixoCusto();}
 
 var salvandoNF=false;
 async function salvarNF(){
@@ -2879,6 +2928,14 @@ function editarCredito(id){
   document.getElementById('e-cortesia').checked=isCortesia(c);
   document.getElementById('e-vendaDireta').checked=(c.vendaDireta===true||c.vendaDireta==='TRUE');
   document.getElementById('e-somenteComissao').checked=isSomenteComissao(c);
+  // Abaixo do custo: prefere o valor SALVO do campo abaixoCusto (mesmo que false).
+  // A regra automática (valor<1200) só é aplicada quando o campo está null/undefined
+  // (registros antigos que nunca tiveram esse campo).
+  var eAC;
+  if(c.abaixoCusto===true||c.abaixoCusto==='TRUE')eAC=true;
+  else if(c.abaixoCusto===false||c.abaixoCusto==='FALSE')eAC=false;
+  else eAC=isAbaixoCusto(c); // registros antigos: aplica regra do valor
+  document.getElementById('e-abaixoCusto').checked=eAC;
   // Vale-cheque: preenche checkbox, valor, mostra/esconde bloco e mostra info se já baixado
   var eVale=(c.valeCheque===true||c.valeCheque==='TRUE');
   var eVBaixado=(c.valeChequeBaixado===true||c.valeChequeBaixado==='TRUE');
@@ -2934,6 +2991,7 @@ async function salvarEdicao(){
   c.cortesia=document.getElementById('e-cortesia').checked;
   c.vendaDireta=document.getElementById('e-vendaDireta').checked;
   c.somenteComissao=document.getElementById('e-somenteComissao').checked;
+  c.abaixoCusto=document.getElementById('e-abaixoCusto').checked;
   // Vale-cheque: só grava valor se checkbox marcado. Se desmarcado agora,
   // limpa o valor. Não mexemos em baixado/baixadoEm/baixadoPor aqui - essas
   // informações são gerenciadas pelo botão "Dar baixa" do widget do Painel.
@@ -3121,28 +3179,30 @@ function renderRelFiltros(){
   var optLojas='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+esc(l)+'</option>';}).join('');
   var sel2=document.getElementById('rel2-loja');if(sel2)sel2.innerHTML=optLojas;
   var selCI=document.getElementById('relci-loja');if(selCI)selCI.innerHTML=optLojas;
+  var selC=document.getElementById('relc-loja');if(selC)selC.innerHTML=optLojas;
 }
 var ultimoRelatorioList=[];
 var ultimoRelatorioNome='relatorio';
-var modoRelatorio='nf';
+var modoRelatorio='credlist';
 function setModoRelatorio(modo){
   modoRelatorio=modo;
   // Botões: só o do modo ativo fica "active"
-  ['nf','comissao','nfrecebidas','cortesia'].forEach(function(m){
+  ['credlist','comissao','nfrecebidas','cortesia'].forEach(function(m){
     var b=document.getElementById('btn-relmodo-'+m);
     if(b)b.classList.toggle('active',modo===m);
   });
   // Cards de filtros: só o do modo ativo aparece
-  var eAntigo=(modo==='nf'||modo==='comissao');
+  var eAntigo=(modo==='comissao'); // card antigo agora só serve pro fechamento de comissão
   document.getElementById('card-filtros-antigo').style.display=eAntigo?'block':'none';
+  document.getElementById('card-filtros-credlist').style.display=modo==='credlist'?'block':'none';
   document.getElementById('card-filtros-nfrecebidas').style.display=modo==='nfrecebidas'?'block':'none';
   document.getElementById('card-filtros-cortesia').style.display=modo==='cortesia'?'block':'none';
-  // Ajustes do card antigo (só aplicáveis se estiver visível)
+  // Ajustes do card antigo (só usado pro modo comissão agora)
   if(eAntigo){
-    document.getElementById('rel-motivo-g').style.display=modo==='nf'?'block':'none';
-    document.getElementById('rel-dt-ini-label').textContent=modo==='nf'?'Data inicial (recebimento NF)':'Data inicial (venda)';
-    document.getElementById('rel-dt-fim-label').textContent=modo==='nf'?'Data final (recebimento NF)':'Data final (venda)';
-    document.getElementById('rel-modo-explicacao').textContent=modo==='nf'?'Baseado nas NFs recebidas — útil pra acompanhar documentação.':'Baseado direto nos créditos lançados — não depende da NF já ter chegado. Só aparecem vendas com comissão a pagar (comissão > 0) — cortesias e vendas sem comissão são ignoradas.';
+    document.getElementById('rel-motivo-g').style.display='none';
+    document.getElementById('rel-dt-ini-label').textContent='Data inicial (venda)';
+    document.getElementById('rel-dt-fim-label').textContent='Data final (venda)';
+    document.getElementById('rel-modo-explicacao').textContent='Baseado direto nos créditos lançados — não depende da NF já ter chegado. Só aparecem vendas com comissão a pagar (comissão > 0) — cortesias e vendas sem comissão são ignoradas.';
   }
   document.getElementById('rel-output').innerHTML='';
 }
@@ -3432,6 +3492,109 @@ function exportarCortesiasXLSX(){
   var di=(document.getElementById('relci-dt-ini')||{value:''}).value;
   var df=(document.getElementById('relci-dt-fim')||{value:''}).value;
   var nome='Relatorio_CI_'+(di||'ini')+'_a_'+(df||'fim')+'.xlsx';
+  XLSX.writeFile(wb, nome);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RELATÓRIO DE CRÉDITOS (v3.9)
+// ═══════════════════════════════════════════════════════════════════
+// Substitui o antigo "Relatório de NFs". Mostra todos os créditos lançados
+// no período (filtra por dtVenda), com filtros de loja, cortesia e abaixo do custo.
+// Excel exportado tem uma aba por loja com TODAS as infos do crédito exceto
+// a comissão do vendedor (por questão de sigilo compartilhado no relatório).
+var ultimoRelCreditos=[];
+function creditosFiltradosRel(){
+  var loja=(document.getElementById('relc-loja')||{value:''}).value;
+  var di=(document.getElementById('relc-dt-ini')||{value:''}).value;
+  var df=(document.getElementById('relc-dt-fim')||{value:''}).value;
+  var acF=(document.getElementById('relc-abaixocusto')||{value:''}).value;
+  var cortF=(document.getElementById('relc-cortesia')||{value:''}).value;
+  var minhas=lojasDoUsuario().map(function(l){return norm(l);});
+  return creditos.filter(function(c){
+    if(minhas.indexOf(norm(c.loja))<0)return false;
+    if(loja&&norm(c.loja)!==norm(loja))return false;
+    if(!c.dtVenda)return false;
+    if(di&&c.dtVenda<di)return false;
+    if(df&&c.dtVenda>df)return false;
+    if(acF==='1'&&!isAbaixoCusto(c))return false;
+    if(acF==='0'&&isAbaixoCusto(c))return false;
+    var eCort=(c.cortesia===true||c.cortesia==='TRUE');
+    if(cortF==='1'&&!eCort)return false;
+    if(cortF==='0'&&eCort)return false;
+    return true;
+  });
+}
+function gerarRelatorioCreditos(){
+  var list=creditosFiltradosRel();
+  ultimoRelCreditos=list;
+  var out=document.getElementById('rel-output');
+  if(!list.length){out.innerHTML='<div class="card"><div style="text-align:center;color:var(--txt3);padding:2rem">Nenhum crédito no período.</div></div>';return;}
+  // Agrupa por loja
+  var porLoja={};
+  list.forEach(function(c){var k=c.loja||'(sem loja)';if(!porLoja[k])porLoja[k]=[];porLoja[k].push(c);});
+  var lojasOrdenadas=Object.keys(porLoja).sort();
+  var totAbaixo=list.filter(isAbaixoCusto).length;
+  var totCort=list.filter(function(c){return c.cortesia===true||c.cortesia==='TRUE';}).length;
+  var html='<div class="card"><div class="section-title">Créditos — '+list.length+' lançamento(s), '+totAbaixo+' abaixo do custo, '+totCort+' cortesia(s)</div>';
+  lojasOrdenadas.forEach(function(l){
+    var arr=porLoja[l];
+    html+='<div style="margin-top:1rem"><div style="font-size:13px;font-weight:600;margin-bottom:.4rem">'+esc(l)+' <span style="color:var(--txt3);font-weight:400">('+arr.length+' cr\u00e9ditos)</span></div>';
+    html+='<div style="overflow-x:auto"><table><thead><tr><th>Dt Venda</th><th>OC</th><th>Cliente</th><th>CPF/CNPJ</th><th>Placa</th><th>Vendedor</th><th>Tipo</th><th style="text-align:right">Valor</th><th>Cortesia</th><th>Abaixo custo</th></tr></thead><tbody>';
+    arr.forEach(function(c){
+      var eCort=(c.cortesia===true||c.cortesia==='TRUE');
+      var eAC=isAbaixoCusto(c);
+      var estilo=eAC?' style="background:var(--red-soft)"':'';
+      html+='<tr'+estilo+'><td>'+fmtD(c.dtVenda)+'</td><td>'+esc(c.oc||'')+'</td><td>'+esc(c.cliente||'')+'</td><td>'+esc(c.doc||'')+'</td><td>'+esc(c.placa||'')+'</td><td>'+esc(c.vendedor||'')+'</td><td>'+esc(c.tipo||'')+'</td><td style="text-align:right;font-variant-numeric:tabular-nums">'+fmtM(c.valor||0)+'</td><td>'+(eCort?'Sim':'Não')+'</td><td>'+(eAC?'Sim':'Não')+'</td></tr>';
+    });
+    html+='</tbody></table></div></div>';
+  });
+  html+='</div>';
+  out.innerHTML=html;
+}
+function exportarCreditosXLSX(){
+  if(!ultimoRelCreditos||!ultimoRelCreditos.length){alert('Gere o relatório primeiro.');return;}
+  if(!window.XLSX){alert('Biblioteca de Excel ainda não carregou. Aguarde alguns segundos e tente de novo.');return;}
+  var list=ultimoRelCreditos;
+  var wb=XLSX.utils.book_new();
+  var porLoja={};
+  list.forEach(function(c){var k=c.loja||'(sem loja)';if(!porLoja[k])porLoja[k]=[];porLoja[k].push(c);});
+  var lojasOrdenadas=Object.keys(porLoja).sort();
+  lojasOrdenadas.forEach(function(l){
+    var arr=porLoja[l];
+    // TODAS as infos do crédito MENOS comissão do vendedor (por pedido do Flavio)
+    var linhas=arr.map(function(c){
+      return{
+        'Dt Venda':fmtD(c.dtVenda),
+        'Semana':c.semana||'',
+        'OC':c.oc||'',
+        'Cliente':c.cliente||'',
+        'CPF/CNPJ':c.doc||'',
+        'Chassi':c.chassi||'',
+        'Placa':c.placa||'',
+        'Loja':c.loja||'',
+        'Vendedor':c.vendedor||'',
+        'Tipo':c.tipo||'',
+        'Valor':Number(c.valor||0),
+        'Honorários':Number(c.honorarios||0),
+        'Nossa Comissão':Number(c.nossaCom||0),
+        'IPVA':(c.ipva===true||c.ipva==='TRUE')?'Sim':'Não',
+        'Cortesia':(c.cortesia===true||c.cortesia==='TRUE')?'Sim':'Não',
+        'Venda Direta':(c.vendaDireta===true||c.vendaDireta==='TRUE')?'Sim':'Não',
+        'Somente Comissão':(c.somenteComissao===true||c.somenteComissao==='TRUE')?'Sim':'Não',
+        'Abaixo do Custo':isAbaixoCusto(c)?'Sim':'Não',
+        'Status':c.status||'',
+        'Motivo':c.motivo||'',
+        'Observações':c.obs||'',
+        'Criado Por':c.criadoPor||'',
+        'Editado Por':c.editadoPor||''
+      };
+    });
+    var ws=XLSX.utils.json_to_sheet(linhas);
+    XLSX.utils.book_append_sheet(wb, ws, truncateSheet(l));
+  });
+  var di=(document.getElementById('relc-dt-ini')||{value:''}).value;
+  var df=(document.getElementById('relc-dt-fim')||{value:''}).value;
+  var nome='Relatorio_Creditos_'+(di||'ini')+'_a_'+(df||'fim')+'.xlsx';
   XLSX.writeFile(wb, nome);
 }
 function calcularDadosComissao(){
