@@ -1042,6 +1042,10 @@ var COM_0KM=[[1750,75],[1850,125],[1950,175],[2150,225],[2202,250],[2402,300],[2
 var COM_SEMI=[[1550,75],[1650,125],[1740,175],[1890,225],[2050,300]];
 var CORT_SALDO=178.68,NOSSA=0.10;
 var ipvaAtivo=false,cortesiaAtiva=false,nfForaAtiva=false,vendaDiretaAtiva=false,somenteComissaoAtiva=false,valeChequeAtivo=false,nfVendaDiretaAtiva=false,abaixoCustoAtivo=false,revendaAtiva=false,comissaoAtpvAtiva=false,pcdAtivo=false;
+// Guarda o estado "documento pronto" ao abrir o modal de editar NF, pra detectar
+// se o usuário acabou de marcar pronto nessa edição (então aciona finalizar crédito).
+// Variável externa pra não grudar no objeto NF e quebrar o save (fix v4.0.1).
+var prontoAntesEdicao=false;
 // SURL foi a URL do Google Apps Script (backend anterior). Não é mais usada,
 // mas mantida como truthy pra evitar quebrar checagens "if (SURL)" espalhadas no código.
 // Todo backend agora passa pela nova função api() que usa Supabase (ver bloco BACKEND: SUPABASE).
@@ -1314,6 +1318,9 @@ function camelParaSnake(obj) {
   if (!obj) return obj;
   var out = {};
   Object.keys(obj).forEach(function(k) {
+    // Ignora chaves com underscore inicial - são propriedades transient do frontend
+    // (ex: _prontoAntes do fix v4.0.1) e nunca devem ir pro banco.
+    if (k.charAt(0) === '_') return;
     var novaChave = MAPA_CAMEL_PARA_SNAKE[k] || k;
     out[novaChave] = obj[k];
   });
@@ -3204,9 +3211,9 @@ function editarNF(id){
   document.getElementById('en-vendaDireta').checked=(n.vendaDireta===true||n.vendaDireta==='TRUE');
   document.getElementById('en-enviadoDoc').checked=(n.enviadoDocumentacao===true||n.enviadoDocumentacao==='TRUE');
   document.getElementById('en-docPronto').checked=(n.documentoPronto===true||n.documentoPronto==='TRUE');
-  // Guarda o estado "antes da edição" pra detectar se o usuário ACABOU de marcar pronto
-  // (e assim decidir se finaliza o crédito vinculado). Transient, não é salvo.
-  n._prontoAntes=(n.documentoPronto===true||n.documentoPronto==='TRUE');
+  // Guarda o estado "antes da edição" em variável externa (NÃO grudar no objeto n,
+  // senão vai parar no banco como campo fantasma e quebrar o save - bug v4.0.1).
+  prontoAntesEdicao=(n.documentoPronto===true||n.documentoPronto==='TRUE');
   document.getElementById('en-urgente').checked=(n.docUrgente===true||n.docUrgente==='TRUE');
   document.getElementById('en-ocVinculada').value=n.ocVinculada||'';
   checarOcVinculada();
@@ -3338,7 +3345,7 @@ async function salvarEdicaoNF(){
   // v4.0: se o checkbox "documento pronto" acabou de ser marcado nesta edição,
   // propaga pro crédito vinculado (finalizado=true) - mesma lógica do botão
   // "Marcar pronto" do Painel.
-  var prontoAgoraNovo=prontoMarcado&&!(n._prontoAntes===true);
+  var prontoAgoraNovo=prontoMarcado&&!prontoAntesEdicao;
   if(SURL){
     try{
       await apiUpdate('NFS',n);
