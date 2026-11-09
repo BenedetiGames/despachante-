@@ -481,6 +481,27 @@ table tr:hover td{background:var(--line-soft)}
                 <span class="ipva-label" id="abaixoCusto-label">Não é abaixo do custo</span>
               </div>
             </div>
+            <div>
+              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">Revenda</div>
+              <div class="ipva-toggle" id="revenda-toggle" onclick="toggleRevenda()" role="checkbox" aria-checked="false" tabindex="0" title="Marque se este lançamento é de uma operação de revenda. É apenas um marcador — não muda o comportamento de vínculo com NF.">
+                <div class="ipva-icon" id="revenda-icon"></div>
+                <span class="ipva-label" id="revenda-label">Não é revenda</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">Comissão ATPV</div>
+              <div class="ipva-toggle" id="comissaoAtpv-toggle" onclick="toggleComissaoAtpv()" role="checkbox" aria-checked="false" tabindex="0" title="Marque se este lançamento é uma comissão ATPV. Comporta-se como 'Somente comissão': NÃO casa com NF nem aparece como pendente de documentação.">
+                <div class="ipva-icon" id="comissaoAtpv-icon"></div>
+                <span class="ipva-label" id="comissaoAtpv-label">Não é comissão ATPV</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">PCD</div>
+              <div class="ipva-toggle" id="pcd-toggle" onclick="togglePcd()" role="checkbox" aria-checked="false" tabindex="0" title="Marque se este lançamento é de um processo PCD (Pessoa com Deficiência). Casa com NF normalmente — é só um marcador para identificação.">
+                <div class="ipva-icon" id="pcd-icon"></div>
+                <span class="ipva-label" id="pcd-label">Não é PCD</span>
+              </div>
+            </div>
           </div>
           <div id="c-valecheque-valor-wrap" style="display:none;margin-bottom:1rem">
             <div class="fg" style="max-width:280px"><label>Valor do vale-cheque (R$)</label><input type="number" id="c-valeChequeValor" placeholder="0,00" step="0.01"></div>
@@ -838,6 +859,18 @@ table tr:hover td{background:var(--line-soft)}
       <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#F2F4F8;padding:7px 12px;border-radius:9px;border:1px solid #E3E8F0" title="Abaixo do custo: crédito vendido abaixo do custo (para relatórios de perda)">
         <input type="checkbox" id="e-abaixoCusto" style="accent-color:#1D9E75"> Abaixo do custo
       </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#F2F4F8;padding:7px 12px;border-radius:9px;border:1px solid #E3E8F0" title="Finalizado: trava o vínculo automático deste crédito. Novas NFs do mesmo cliente/loja não vão casar com este crédito. Útil pra fechar casos antigos.">
+        <input type="checkbox" id="e-finalizado" style="accent-color:#1D9E75"> Finalizado (trava vínculo)
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#F2F4F8;padding:7px 12px;border-radius:9px;border:1px solid #E3E8F0" title="Revenda: marcador para operações de revenda">
+        <input type="checkbox" id="e-revenda" style="accent-color:#1D9E75"> Revenda
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#F2F4F8;padding:7px 12px;border-radius:9px;border:1px solid #E3E8F0" title="Comissão ATPV: lançamento de comissão ATPV. Não casa com NF (igual 'Só comissão').">
+        <input type="checkbox" id="e-comissaoAtpv" style="accent-color:#1D9E75"> Comissão ATPV
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#F2F4F8;padding:7px 12px;border-radius:9px;border:1px solid #E3E8F0" title="PCD: marcador para processos de Pessoa com Deficiência. Casa com NF normalmente.">
+        <input type="checkbox" id="e-pcd" style="accent-color:#1D9E75"> PCD
+      </label>
     </div>
     <div id="e-valecheque-valor-wrap" style="display:none;margin-bottom:1rem">
       <div class="fg" style="max-width:280px"><label>Valor do vale-cheque (R$)</label><input type="number" id="e-valeChequeValor" step="0.01" placeholder="0,00"></div>
@@ -846,7 +879,7 @@ table tr:hover td{background:var(--line-soft)}
     <div style="font-size:13px;font-weight:600;margin-bottom:.75rem;margin-top:.5rem">Valores financeiros</div>
     <div class="form-grid">
       <div class="fg"><label>Valor da venda (R$)</label><input type="number" id="e-valor"></div>
-      <div class="fg"><label>Comissão do vendedor (R$)</label><input type="number" id="e-comissao"></div>
+      <div class="fg" id="e-comissao-wrap"><label>Comissão do vendedor (R$)</label><input type="number" id="e-comissao"></div>
       <div class="fg"><label>Honorários (R$)</label><input type="number" id="e-honorarios" oninput="calcEditCom()"><span class="hint" id="e-nossa-com-hint"></span></div>
     </div>
     <div style="display:flex;gap:8px;margin-top:.5rem;flex-wrap:wrap">
@@ -1008,7 +1041,7 @@ table tr:hover td{background:var(--line-soft)}
 var COM_0KM=[[1750,75],[1850,125],[1950,175],[2150,225],[2202,250],[2402,300],[2502,350]];
 var COM_SEMI=[[1550,75],[1650,125],[1740,175],[1890,225],[2050,300]];
 var CORT_SALDO=178.68,NOSSA=0.10;
-var ipvaAtivo=false,cortesiaAtiva=false,nfForaAtiva=false,vendaDiretaAtiva=false,somenteComissaoAtiva=false,valeChequeAtivo=false,nfVendaDiretaAtiva=false,abaixoCustoAtivo=false;
+var ipvaAtivo=false,cortesiaAtiva=false,nfForaAtiva=false,vendaDiretaAtiva=false,somenteComissaoAtiva=false,valeChequeAtivo=false,nfVendaDiretaAtiva=false,abaixoCustoAtivo=false,revendaAtiva=false,comissaoAtpvAtiva=false,pcdAtivo=false;
 // SURL foi a URL do Google Apps Script (backend anterior). Não é mais usada,
 // mas mantida como truthy pra evitar quebrar checagens "if (SURL)" espalhadas no código.
 // Todo backend agora passa pela nova função api() que usa Supabase (ver bloco BACKEND: SUPABASE).
@@ -1111,6 +1144,10 @@ function stBadge(s){var m={ok:['ok','Normal'],pendente:['pendente','Pendente'],a
 function cortesiaBadge(c){return c?'<span class="badge cortesia">🎁 Cortesia</span>':'';}
 function vendaDiretaBadge(c){return(c&&(c.vendaDireta===true||c.vendaDireta==='TRUE'))?'<span class="badge vendaDireta">⚡ VD Direta</span>':'';}
 function somenteComissaoBadge(c){return(c&&isSomenteComissao(c))?'<span class="badge" style="background:#e6f1fb;color:#185FA5">💰 Só comissão</span>':'';}
+function finalizadoBadge(c){return(c&&isFinalizado(c))?'<span class="badge" style="background:#e8e8e8;color:#555">🔒 Finalizado</span>':'';}
+function revendaBadge(c){return(c&&isRevenda(c))?'<span class="badge" style="background:#fff0e0;color:#8B4513">🔄 Revenda</span>':'';}
+function comissaoAtpvBadge(c){return(c&&isComissaoAtpv(c))?'<span class="badge" style="background:#f0e6fa;color:#5B2D8E">📋 Com. ATPV</span>':'';}
+function pcdBadge(c){return(c&&isPcd(c))?'<span class="badge" style="background:#e1f0ff;color:#0B4B91">♿ PCD</span>':'';}
 function nfForaBadge(n){if(!n||!(n.nfFora===true||n.nfFora==='TRUE'))return'';var m=motivoNfForaLabel(n.motivoNfFora);return'<span class="badge perdida">NF Fora'+(m?': '+esc(m):'')+'</span>';}
 function dotH(st){if(st==='casado')return'<span class="dot green"></span>';if(st==='semi')return'<span class="dot" style="background:#aaa" title="Semi-novo"></span>';if(st==='comissao')return'<span class="dot" style="background:#185FA5" title="Somente comissão"></span>';if(st==='sem-nf')return'<span class="dot red"></span>';return'<span class="dot amber"></span>';}
 function ipvaB(v){return(v===true||v==='TRUE')?'<span class="badge ipva">✓ IPVA</span>':'<span style="color:#ccc;font-size:12px">—</span>';}
@@ -1123,6 +1160,11 @@ function isAdm(){return usuarioLogado&&String(usuarioLogado.perfil||'').trim().t
 function isGerencia(){return usuarioLogado&&String(usuarioLogado.perfil||'').trim().toLowerCase()==='gerencia';}
 function isSupervisora(){return usuarioLogado&&String(usuarioLogado.perfil||'').trim().toLowerCase()==='supervisora';}
 function isUsuario(){return usuarioLogado&&String(usuarioLogado.perfil||'').trim().toLowerCase()==='usuario';}
+// v4.0: comissão do vendedor é visível só para perfis gerenciais (adm, gerência, supervisora).
+// Usuário comum (vendedor) DIGITA no form de lançamento, mas não VÊ depois em registros/vínculo/editar.
+function podeVerComissao(){return isAdm()||isGerencia()||isSupervisora();}
+// Helper pra renderizar célula de comissão protegida: devolve "—" quando o perfil não pode ver.
+function comProt(v){return podeVerComissao()?fmtM(v||0):'—';}
 // Pode cadastrar/remover lojas globais e vendedores
 function podeMexerLojasVendedores(){return isAdm()||isGerencia();}
 // Vê a aba Relatórios
@@ -1233,6 +1275,13 @@ var MAPA_CAMEL_PARA_SNAKE = {
   editadoPor: 'editado_por',
   classificacaoPendencia: 'classificacao_pendencia',
   abaixoCusto: 'abaixo_custo',
+  finalizado: 'finalizado',
+  revenda: 'revenda',
+  comissaoAtpv: 'comissao_atpv',
+  pcd: 'pcd',
+  revenda: 'revenda',
+  comissaoAtpv: 'comissao_atpv',
+  pcd: 'pcd',
   dtFat: 'dt_fat',
   dtReceb: 'dt_receb',
   nfFora: 'nf_fora',
@@ -1776,18 +1825,32 @@ function lojaEfetivaNF(n){
   }
   return n.loja;
 }
-function isSomenteComissao(c){return c.somenteComissao===true||c.somenteComissao==='TRUE';}
+// isSomenteComissao retorna true para QUALQUER tipo de "só comissão":
+//  - o checkbox clássico "Somente comissão"
+//  - a nova variante "Comissão ATPV" (v4.0) - mesmo comportamento: não casa com NF
+// Assim toda a lógica de vínculo (creditoDaNF, buildVin, etc.) já trata ATPV
+// corretamente sem precisar ser alterada em cada lugar.
+function isSomenteComissao(c){return !!c&&(c.somenteComissao===true||c.somenteComissao==='TRUE'||c.comissaoAtpv===true||c.comissaoAtpv==='TRUE');}
+// Crédito finalizado = quitado (documentação entregue). Não participa de vínculos
+// automáticos novos, mas ainda pode ser vinculado manualmente via OC explícita.
+// Marca-se automaticamente quando a NF do crédito vai pra "documento pronto",
+// e manualmente via checkbox no modal editar crédito.
+function isFinalizado(c){return c&&(c.finalizado===true||c.finalizado==='TRUE');}
 function creditoDaNF(n){
   // Busca o crédito vinculado a uma NF (por OC forçada, ou por doc+loja)
   var cred=null;
+  // OC explícita SEMPRE vincula - é o override manual da pessoa que lançou,
+  // vale mesmo que o crédito esteja finalizado (permite corrigir casos antigos)
   if(n.ocVinculada)cred=creditos.find(function(c){return norm(c.oc)===norm(n.ocVinculada);});
   if(!cred){
     var docNF=normDoc(n.doc);
     // Guarda crítica: doc vazio NUNCA deve "casar" com outro doc vazio (evita pegar o 1º crédito qualquer da loja)
     if(docNF.length>=11){
-      // Créditos "somente comissão" nunca entram na busca automática - evita vincular com o crédito errado
-      // quando o mesmo cliente tem 2 lançamentos (um só de comissão, outro com a documentação real)
-      cred=creditos.find(function(c){return normDoc(c.doc)===docNF&&norm(c.loja)===norm(n.loja)&&!isSomenteComissao(c);});
+      // Vínculo automático descarta:
+      //  - "somente comissão" (crédito só pra fechar comissão, nunca tem NF real)
+      //  - "finalizado" (crédito já quitado - evita que NF de carro novo
+      //    case com crédito antigo do mesmo cliente na mesma loja, bug 11/2026)
+      cred=creditos.find(function(c){return normDoc(c.doc)===docNF&&norm(c.loja)===norm(n.loja)&&!isSomenteComissao(c)&&!isFinalizado(c);});
     }
   }
   return cred||null;
@@ -1812,7 +1875,31 @@ function chaveVinculo(docVal,lojaVal,idUnico){
   if(d.length<11)return'__SEMDOC__'+idUnico+'||'+norm(lojaVal);
   return d+'||'+norm(lojaVal);
 }
-function buildVin(){var map={};creditos.forEach(function(c){var k=isSomenteComissao(c)?'__SOCOM__c'+c.id:chaveVinculo(c.doc,c.loja,'c'+c.id);if(!map[k])map[k]={doc:c.doc,cliente:c.cliente,loja:c.loja,creditos:[],nfs:[]};map[k].creditos.push(c);});nfs.forEach(function(n){var k=chaveVinculo(docEfetivoNF(n),lojaEfetivaNF(n),'n'+n.id);if(!map[k])map[k]={doc:n.doc,cliente:n.cliente,loja:n.loja,creditos:[],nfs:[]};map[k].nfs.push(n);});return Object.values(map);}
+function buildVin(){var map={};creditos.forEach(function(c){
+  // Chaves isoladas pra créditos que não devem agrupar automaticamente:
+  //  - somente comissão: nunca tem NF, grupo próprio
+  //  - finalizado: já quitado, novas NFs do mesmo cliente/loja NÃO entram nele
+  //    (uma NF agora vinculada MANUALMENTE via OC ainda cai aqui, graças a
+  //    docEfetivoNF/lojaEfetivaNF que retornam os dados do crédito OC-vinculado)
+  var k;
+  if(isSomenteComissao(c))k='__SOCOM__c'+c.id;
+  else if(isFinalizado(c))k='__FIN__c'+c.id;
+  else k=chaveVinculo(c.doc,c.loja,'c'+c.id);
+  if(!map[k])map[k]={doc:c.doc,cliente:c.cliente,loja:c.loja,creditos:[],nfs:[]};
+  map[k].creditos.push(c);
+});
+nfs.forEach(function(n){
+  // Se a NF tem OC vinculada a um crédito finalizado, cai no grupo __FIN__ dele
+  var kNF;
+  if(n.ocVinculada){
+    var credOC=creditos.find(function(c){return norm(c.oc)===norm(n.ocVinculada);});
+    if(credOC&&isFinalizado(credOC))kNF='__FIN__c'+credOC.id;
+  }
+  if(!kNF)kNF=chaveVinculo(docEfetivoNF(n),lojaEfetivaNF(n),'n'+n.id);
+  if(!map[kNF])map[kNF]={doc:n.doc,cliente:n.cliente,loja:n.loja,creditos:[],nfs:[]};
+  map[kNF].nfs.push(n);
+});
+return Object.values(map);}
 function casSt(g){
   if(g.creditos.length>0&&g.nfs.length>0)return'casado';
   // Somente comissão nunca tem NF de propósito — não é pendência, status próprio
@@ -1995,6 +2082,33 @@ function isAbaixoCusto(c){
   if(!isNaN(v)&&v<LIMITE_ABAIXO_CUSTO)return true;
   return false;
 }
+// v4.0: toggles dos novos marcadores no form Lançar Crédito.
+// Revenda e PCD = só marcadores (casam com NF normal).
+// Comissão ATPV = subtipo de "só comissão", NÃO casa com NF nem fica pendente.
+function toggleRevenda(){
+  revendaAtiva=!revendaAtiva;
+  document.getElementById('revenda-toggle').classList.toggle('checked',revendaAtiva);
+  document.getElementById('revenda-toggle').setAttribute('aria-checked',revendaAtiva);
+  document.getElementById('revenda-icon').textContent=revendaAtiva?'✓':'';
+  document.getElementById('revenda-label').textContent=revendaAtiva?'É revenda':'Não é revenda';
+}
+function toggleComissaoAtpv(){
+  comissaoAtpvAtiva=!comissaoAtpvAtiva;
+  document.getElementById('comissaoAtpv-toggle').classList.toggle('checked',comissaoAtpvAtiva);
+  document.getElementById('comissaoAtpv-toggle').setAttribute('aria-checked',comissaoAtpvAtiva);
+  document.getElementById('comissaoAtpv-icon').textContent=comissaoAtpvAtiva?'✓':'';
+  document.getElementById('comissaoAtpv-label').textContent=comissaoAtpvAtiva?'É comissão ATPV':'Não é comissão ATPV';
+}
+function togglePcd(){
+  pcdAtivo=!pcdAtivo;
+  document.getElementById('pcd-toggle').classList.toggle('checked',pcdAtivo);
+  document.getElementById('pcd-toggle').setAttribute('aria-checked',pcdAtivo);
+  document.getElementById('pcd-icon').textContent=pcdAtivo?'✓':'';
+  document.getElementById('pcd-label').textContent=pcdAtivo?'É PCD':'Não é PCD';
+}
+function isRevenda(c){return c&&(c.revenda===true||c.revenda==='TRUE');}
+function isComissaoAtpv(c){return c&&(c.comissaoAtpv===true||c.comissaoAtpv==='TRUE');}
+function isPcd(c){return c&&(c.pcd===true||c.pcd==='TRUE');}
 function toggleNfFora(){nfForaAtiva=!nfForaAtiva;document.getElementById('nfFora-toggle').classList.toggle('checked',nfForaAtiva);document.getElementById('nfFora-toggle').setAttribute('aria-checked',nfForaAtiva);document.getElementById('nfFora-icon').textContent=nfForaAtiva?'✓':'';document.getElementById('nfFora-label').textContent=nfForaAtiva?'NF ficou fora':'NF não ficou fora';document.getElementById('n-motivo-g').style.display=nfForaAtiva?'block':'none';}
 // Toggle Venda Direta do form NF - marca se a NF é de uma venda direta (independente do crédito vinculado)
 function toggleNfVendaDireta(){
@@ -2021,7 +2135,7 @@ async function salvarCredito(){
   // se o usuário digitou e depois desmarcou)
   var valeVal=valeChequeAtivo?(parseFloat(document.getElementById('c-valeChequeValor').value)||0):null;
   if(valeChequeAtivo&&(!valeVal||valeVal<=0)){alert('Informe o valor do vale-cheque.');document.getElementById('c-valeChequeValor').focus();return;}
-  var rec={id:gerarIdUnico(),doc:document.getElementById('c-doc').value,cliente:cliente,placa:document.getElementById('c-placa').value.trim().toUpperCase(),oc:document.getElementById('c-oc').value.trim(),ipva:ipvaAtivo,cortesia:cortesiaAtiva,vendaDireta:vendaDiretaAtiva,somenteComissao:somenteComissaoAtiva,abaixoCusto:abaixoCustoAtivo,loja:loja,vendedor:vendedor,tipo:document.getElementById('c-tipo').value,valor:parseFloat(document.getElementById('c-valor').value)||0,comissao:parseFloat(document.getElementById('c-comissao').value)||0,honorarios:hon,nossaCom:parseFloat((hon*NOSSA).toFixed(2)),status:'ok',motivo:'',obs:document.getElementById('c-obs').value,dtVenda:dt,semana:getSem(dt||hojeLocal()),criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:'',classificacaoPendencia:'',
+  var rec={id:gerarIdUnico(),doc:document.getElementById('c-doc').value,cliente:cliente,placa:document.getElementById('c-placa').value.trim().toUpperCase(),oc:document.getElementById('c-oc').value.trim(),ipva:ipvaAtivo,cortesia:cortesiaAtiva,vendaDireta:vendaDiretaAtiva,somenteComissao:somenteComissaoAtiva,abaixoCusto:abaixoCustoAtivo,revenda:revendaAtiva,comissaoAtpv:comissaoAtpvAtiva,pcd:pcdAtivo,loja:loja,vendedor:vendedor,tipo:document.getElementById('c-tipo').value,valor:parseFloat(document.getElementById('c-valor').value)||0,comissao:parseFloat(document.getElementById('c-comissao').value)||0,honorarios:hon,nossaCom:parseFloat((hon*NOSSA).toFixed(2)),status:'ok',motivo:'',obs:document.getElementById('c-obs').value,dtVenda:dt,semana:getSem(dt||hojeLocal()),criadoPor:usuarioLogado?usuarioLogado.nome:'',editadoPor:'',classificacaoPendencia:'',
     valeCheque:valeChequeAtivo,valeChequeValor:valeVal,valeChequeBaixado:false,valeChequeBaixadoEm:null,valeChequeBaixadoPor:null
   };
   salvandoCredito=true;
@@ -2030,7 +2144,7 @@ async function salvarCredito(){
   if(btn){btn.disabled=true;btn.textContent='Salvando...';}
   try{var r=await api({action:'update',sheet:'CREDITOS',data:rec});if(r.error)throw new Error(r.error);creditos.unshift(rec);alert('✓ Crédito salvo!');limparCred();renderPainel();}catch(e){alert('Erro: '+e.message);}finally{salvandoCredito=false;if(btn){btn.disabled=false;btn.textContent=txtOriginal;}}
 }
-function limparCred(){['c-doc','c-cliente','c-placa','c-oc','c-valor','c-comissao','c-honorarios','c-obs','c-dtvenda','c-valeChequeValor'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('c-loja').value='-- selecione --';document.getElementById('c-vendedor').value='-- selecione --';document.getElementById('box-hon').textContent='R$ —';document.getElementById('box-nossa-com').textContent='R$ —';document.getElementById('c-ref-tabela').textContent='';document.getElementById('c-doc-match').className='doc-match';document.getElementById('c-doc-tipo').innerHTML='';if(ipvaAtivo)toggleIPVA();if(cortesiaAtiva)toggleCortesia();if(vendaDiretaAtiva)toggleVendaDireta();if(somenteComissaoAtiva)toggleSomenteComissao();if(valeChequeAtivo)toggleValeCheque();if(abaixoCustoAtivo)toggleAbaixoCusto();}
+function limparCred(){['c-doc','c-cliente','c-placa','c-oc','c-valor','c-comissao','c-honorarios','c-obs','c-dtvenda','c-valeChequeValor'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});document.getElementById('c-loja').value='-- selecione --';document.getElementById('c-vendedor').value='-- selecione --';document.getElementById('box-hon').textContent='R$ —';document.getElementById('box-nossa-com').textContent='R$ —';document.getElementById('c-ref-tabela').textContent='';document.getElementById('c-doc-match').className='doc-match';document.getElementById('c-doc-tipo').innerHTML='';if(ipvaAtivo)toggleIPVA();if(cortesiaAtiva)toggleCortesia();if(vendaDiretaAtiva)toggleVendaDireta();if(somenteComissaoAtiva)toggleSomenteComissao();if(valeChequeAtivo)toggleValeCheque();if(abaixoCustoAtivo)toggleAbaixoCusto();if(revendaAtiva)toggleRevenda();if(comissaoAtpvAtiva)toggleComissaoAtpv();if(pcdAtivo)togglePcd();}
 
 var salvandoNF=false;
 async function salvarNF(){
@@ -2656,6 +2770,12 @@ async function marcarDocPronto(id,tipo){
       try{
         // Update atômico: reescreve a linha no lugar - sem janela de perda de dados
         await apiUpdate(sheet,n);
+        // v4.0: marca o crédito vinculado como finalizado - evita que o próximo
+        // lançamento do mesmo cliente/loja case automaticamente com esse crédito
+        // já quitado. Só faz pra NFs (fichões/semi-novos não têm crédito 0km).
+        if(tipo!=='fichao'){
+          await finalizarCreditoDaNF(n);
+        }
       }catch(e){
         // Reverte o estado local já que o servidor não confirmou a alteração
         n.documentoPronto=false;
@@ -2667,6 +2787,24 @@ async function marcarDocPronto(id,tipo){
     }
   }finally{
     delete idsProcessandoDoc[chave];
+  }
+}
+// Marca o crédito vinculado a uma NF como "finalizado". Chamada quando a NF
+// vai pra documento pronto. Silencioso se não encontrar vínculo ou falhar -
+// a NF já foi marcada OK e o pior cenário é o crédito seguir "aberto" (que
+// era o comportamento anterior, então nada quebra).
+async function finalizarCreditoDaNF(n){
+  if(!n)return;
+  var cred=creditoDaNF(n);
+  if(!cred)return;
+  if(isFinalizado(cred))return; // já tá
+  cred.finalizado=true;
+  try{
+    await apiUpdate('CREDITOS',cred);
+  }catch(e){
+    // Reverte local se não salvou - não bloqueia o fluxo principal
+    cred.finalizado=false;
+    console.warn('[finalizarCreditoDaNF] Falhou:',e.message);
   }
 }
 
@@ -2702,7 +2840,7 @@ function renderVinculo(){
   if(loja)gs=gs.filter(function(g){return norm(g.loja)===norm(loja);});
   if(busca)gs=gs.filter(function(g){var c=g.creditos[0];return norm(g.doc).includes(busca)||norm(g.cliente||'').includes(busca)||(c&&norm(c.placa||'').includes(busca))||(c&&norm(c.oc||'').includes(busca));});
   if(filtro)gs=gs.filter(function(g){return casSt(g)===filtro;});
-  document.getElementById('tbl-vinculo').innerHTML=gs.length?gs.map(function(g){var st=casSt(g);var c=g.creditos[0];var n=g.nfs[0];var marcadores=[cortesiaBadge(c&&isCortesia(c)),c&&(c.vendaDireta===true||c.vendaDireta==='TRUE')?vendaDiretaBadge(c):''].filter(Boolean).join(' ')||'<span style="color:#ccc;font-size:12px">—</span>';return'<tr><td>'+dotH(st)+'</td><td style="font-weight:600;color:#185FA5">'+(c&&c.oc?esc(c.oc):'—')+'</td><td style="font-weight:600">'+(g.cliente?esc(g.cliente):'—')+'</td><td style="font-size:11px;color:#888">'+esc(g.doc)+'</td><td>'+esc(g.loja)+'</td><td>'+(c?esc(c.vendedor):'—')+'</td><td>'+(c&&c.placa?esc(c.placa):'—')+'</td><td>'+(c?ipvaB(c.ipva):'—')+'</td><td>'+(c?fmtM(c.valor):'—')+'</td><td style="color:#854F0B">'+(c&&c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c&&c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c&&c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+marcadores+'</td><td>'+(c?fmtD(c.dtVenda):'—')+'</td><td>'+(n?fmtD(n.dtReceb):'—')+'</td></tr>';}).join(''):'<tr><td colspan="15" class="empty-state">Nenhum registro</td></tr>';
+  document.getElementById('tbl-vinculo').innerHTML=gs.length?gs.map(function(g){var st=casSt(g);var c=g.creditos[0];var n=g.nfs[0];var marcadores=[cortesiaBadge(c&&isCortesia(c)),c&&(c.vendaDireta===true||c.vendaDireta==='TRUE')?vendaDiretaBadge(c):'',revendaBadge(c),comissaoAtpvBadge(c),pcdBadge(c),finalizadoBadge(c)].filter(Boolean).join(' ')||'<span style="color:#ccc;font-size:12px">—</span>';var comissaoCell=podeVerComissao()?(c&&c.comissao?fmtM(c.comissao):'—'):'—';return'<tr><td>'+dotH(st)+'</td><td style="font-weight:600;color:#185FA5">'+(c&&c.oc?esc(c.oc):'—')+'</td><td style="font-weight:600">'+(g.cliente?esc(g.cliente):'—')+'</td><td style="font-size:11px;color:#888">'+esc(g.doc)+'</td><td>'+esc(g.loja)+'</td><td>'+(c?esc(c.vendedor):'—')+'</td><td>'+(c&&c.placa?esc(c.placa):'—')+'</td><td>'+(c?ipvaB(c.ipva):'—')+'</td><td>'+(c?fmtM(c.valor):'—')+'</td><td style="color:#854F0B">'+comissaoCell+'</td><td>'+(c&&c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c&&c.nossaCom?fmtM(c.nossaCom):'—')+'</td><td>'+marcadores+'</td><td>'+(c?fmtD(c.dtVenda):'—')+'</td><td>'+(n?fmtD(n.dtReceb):'—')+'</td></tr>';}).join(''):'<tr><td colspan="15" class="empty-state">Nenhum registro</td></tr>';
 }
 
 function renderRegistros(){['rc-loja','rn-loja','rd-loja','rf-loja'].forEach(function(id){document.getElementById(id).innerHTML='<option value="">Todas as lojas</option>'+lojasDoUsuario().map(function(l){return'<option>'+esc(l)+'</option>';}).join('');});renderRegCreditos();}
@@ -2723,9 +2861,10 @@ function renderRegCreditos(){
   });
   document.getElementById('tbl-creditos').innerHTML=list.length?list.map(function(c){
     var quemLancou=(c.editadoPor?esc(c.editadoPor)+' <span style="color:#aaa">(edit)</span>':(c.criadoPor?esc(c.criadoPor):'—'));
-    var badges=[cortesiaBadge(isCortesia(c)),vendaDiretaBadge(c),somenteComissaoBadge(c)].filter(Boolean).join(' ');
+    var badges=[cortesiaBadge(isCortesia(c)),vendaDiretaBadge(c),somenteComissaoBadge(c),revendaBadge(c),comissaoAtpvBadge(c),pcdBadge(c),finalizadoBadge(c)].filter(Boolean).join(' ');
     var stHtml=badges||'<span style="color:#ccc;font-size:12px">—</span>';
-    return'<tr><td style="font-weight:600;color:#185FA5">'+(c.oc?esc(c.oc):'—')+'</td><td style="font-weight:600">'+(c.cliente?esc(c.cliente):'—')+'</td><td style="font-size:11px;color:#888">'+(c.doc?esc(c.doc):'—')+'</td><td>'+(c.placa?esc(c.placa):'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+esc(c.loja)+'</td><td>'+esc(c.vendedor)+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+(c.comissao?fmtM(c.comissao):'—')+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom&&!isNaN(Number(c.nossaCom))?fmtM(c.nossaCom):'—')+'</td><td>'+stHtml+'</td><td>'+fmtD(c.dtVenda)+'</td><td style="font-size:12px;color:#666">'+quemLancou+'</td><td class="tbl-actions"><button onclick="editarCredito('+c.id+')">✏️</button><button onclick="excCred('+c.id+')">🗑</button></td></tr>';
+    var comissaoCell=podeVerComissao()?(c.comissao?fmtM(c.comissao):'—'):'—';
+    return'<tr><td style="font-weight:600;color:#185FA5">'+(c.oc?esc(c.oc):'—')+'</td><td style="font-weight:600">'+(c.cliente?esc(c.cliente):'—')+'</td><td style="font-size:11px;color:#888">'+(c.doc?esc(c.doc):'—')+'</td><td>'+(c.placa?esc(c.placa):'—')+'</td><td>'+ipvaB(c.ipva)+'</td><td>'+esc(c.loja)+'</td><td>'+esc(c.vendedor)+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B">'+comissaoCell+'</td><td>'+(c.honorarios?fmtM(c.honorarios):'—')+'</td><td style="color:#0F6E56;font-weight:600">'+(c.nossaCom&&!isNaN(Number(c.nossaCom))?fmtM(c.nossaCom):'—')+'</td><td>'+stHtml+'</td><td>'+fmtD(c.dtVenda)+'</td><td style="font-size:12px;color:#666">'+quemLancou+'</td><td class="tbl-actions"><button onclick="editarCredito('+c.id+')">✏️</button><button onclick="excCred('+c.id+')">🗑</button></td></tr>';
   }).join(''):'<tr><td colspan="15" class="empty-state">Nenhum crédito</td></tr>';
 }
 function renderRegNFs(){
@@ -2900,6 +3039,22 @@ async function desfazerDocPronto(id){
   if(SURL){
     try{
       await apiUpdate('NFS',n);
+      // v4.0: se o crédito vinculado foi finalizado automaticamente, reabre também.
+      // Importante: a busca creditoDaNF agora ignora crédito finalizado, então
+      // procuramos pelo doc+loja sem o filtro de finalizado pra achar o quitado.
+      var cred=null;
+      if(n.ocVinculada)cred=creditos.find(function(c){return norm(c.oc)===norm(n.ocVinculada);});
+      if(!cred){
+        var docNF=normDoc(n.doc);
+        if(docNF.length>=11){
+          cred=creditos.find(function(c){return normDoc(c.doc)===docNF&&norm(c.loja)===norm(n.loja)&&!isSomenteComissao(c)&&isFinalizado(c);});
+        }
+      }
+      if(cred&&isFinalizado(cred)){
+        cred.finalizado=false;
+        try{await apiUpdate('CREDITOS',cred);}
+        catch(e2){cred.finalizado=true;console.warn('[desfazerDocPronto] reabrir crédito falhou:',e2.message);}
+      }
     }catch(e){
       n.documentoPronto=prontoAntigo;
       n.dtDocPronto=dtAntiga;
@@ -2923,6 +3078,9 @@ function editarCredito(id){
   document.getElementById('e-obs').value=c.obs||'';
   document.getElementById('e-valor').value=c.valor||'';
   document.getElementById('e-comissao').value=c.comissao||'';
+  // v4.0: Comissão só visível/editável para perfis gerenciais. Usuário comum não vê.
+  // O valor continua no banco (não é apagado); só o campo some da UI.
+  document.getElementById('e-comissao-wrap').style.display=podeVerComissao()?'block':'none';
   document.getElementById('e-honorarios').value=c.honorarios||'';
   document.getElementById('e-ipva').checked=(c.ipva===true||c.ipva==='TRUE');
   document.getElementById('e-cortesia').checked=isCortesia(c);
@@ -2936,6 +3094,10 @@ function editarCredito(id){
   else if(c.abaixoCusto===false||c.abaixoCusto==='FALSE')eAC=false;
   else eAC=isAbaixoCusto(c); // registros antigos: aplica regra do valor
   document.getElementById('e-abaixoCusto').checked=eAC;
+  document.getElementById('e-finalizado').checked=isFinalizado(c);
+  document.getElementById('e-revenda').checked=isRevenda(c);
+  document.getElementById('e-comissaoAtpv').checked=isComissaoAtpv(c);
+  document.getElementById('e-pcd').checked=isPcd(c);
   // Vale-cheque: preenche checkbox, valor, mostra/esconde bloco e mostra info se já baixado
   var eVale=(c.valeCheque===true||c.valeCheque==='TRUE');
   var eVBaixado=(c.valeChequeBaixado===true||c.valeChequeBaixado==='TRUE');
@@ -2984,7 +3146,12 @@ async function salvarEdicao(){
   c.dtVenda=document.getElementById('e-dtvenda').value;
   c.obs=document.getElementById('e-obs').value;
   c.valor=parseFloat(document.getElementById('e-valor').value)||0;
-  c.comissao=parseFloat(document.getElementById('e-comissao').value)||0;
+  // v4.0: Só atualiza comissão se o perfil pode ver/editar. Pra usuário comum
+  // o campo está oculto, então mantemos o valor anterior intacto - do contrário
+  // ele seria zerado toda vez que um vendedor editasse o próprio crédito.
+  if(podeVerComissao()){
+    c.comissao=parseFloat(document.getElementById('e-comissao').value)||0;
+  }
   c.honorarios=hon;
   c.nossaCom=parseFloat((hon*0.10).toFixed(2));
   c.ipva=document.getElementById('e-ipva').checked;
@@ -2992,6 +3159,10 @@ async function salvarEdicao(){
   c.vendaDireta=document.getElementById('e-vendaDireta').checked;
   c.somenteComissao=document.getElementById('e-somenteComissao').checked;
   c.abaixoCusto=document.getElementById('e-abaixoCusto').checked;
+  c.finalizado=document.getElementById('e-finalizado').checked;
+  c.revenda=document.getElementById('e-revenda').checked;
+  c.comissaoAtpv=document.getElementById('e-comissaoAtpv').checked;
+  c.pcd=document.getElementById('e-pcd').checked;
   // Vale-cheque: só grava valor se checkbox marcado. Se desmarcado agora,
   // limpa o valor. Não mexemos em baixado/baixadoEm/baixadoPor aqui - essas
   // informações são gerenciadas pelo botão "Dar baixa" do widget do Painel.
@@ -3033,6 +3204,9 @@ function editarNF(id){
   document.getElementById('en-vendaDireta').checked=(n.vendaDireta===true||n.vendaDireta==='TRUE');
   document.getElementById('en-enviadoDoc').checked=(n.enviadoDocumentacao===true||n.enviadoDocumentacao==='TRUE');
   document.getElementById('en-docPronto').checked=(n.documentoPronto===true||n.documentoPronto==='TRUE');
+  // Guarda o estado "antes da edição" pra detectar se o usuário ACABOU de marcar pronto
+  // (e assim decidir se finaliza o crédito vinculado). Transient, não é salvo.
+  n._prontoAntes=(n.documentoPronto===true||n.documentoPronto==='TRUE');
   document.getElementById('en-urgente').checked=(n.docUrgente===true||n.docUrgente==='TRUE');
   document.getElementById('en-ocVinculada').value=n.ocVinculada||'';
   checarOcVinculada();
@@ -3050,6 +3224,8 @@ function fecharModalEditarNF(){document.getElementById('modal-editar-nf').classL
 // ── DASHBOARD POR VENDEDOR ──────────────────────────────────────────
 var dashVendAtual='';
 function abrirDashVendedor(nome){
+  // v4.0: dashboard de vendedor mostra comissões. Usuário comum não vê.
+  if(!podeVerComissao()){alert('Você não tem permissão para visualizar comissões.');return;}
   dashVendAtual=nome;
   var sufixoTitulo=(modoRelatorio==='comissao')?' — Fechamento de comissão':'';
   document.getElementById('dash-vend-titulo').textContent='📊 '+nome+sufixoTitulo;
@@ -3122,7 +3298,7 @@ function renderDashVendedor(){
     '<div style="font-size:12px;font-weight:600;color:#666;margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px">Lançamentos</div>'+
     '<div style="overflow-x:auto"><table><thead><tr><th>OC</th><th>Cliente</th><th>Loja</th><th>Valor</th><th>Honorários</th><th>Nossa com.</th><th>Marcadores</th><th>Dt. venda</th></tr></thead><tbody>'+
     list.map(function(c){
-      var badges=[cortesiaBadge(isCortesia(c)),vendaDiretaBadge(c),somenteComissaoBadge(c)].filter(Boolean).join(' ')||'—';
+      var badges=[cortesiaBadge(isCortesia(c)),vendaDiretaBadge(c),somenteComissaoBadge(c),revendaBadge(c),comissaoAtpvBadge(c),pcdBadge(c),finalizadoBadge(c)].filter(Boolean).join(' ')||'—';
       return'<tr><td style="font-weight:600;color:#185FA5;font-size:12px">'+(c.oc?esc(c.oc):'—')+'</td><td style="font-weight:600;font-size:13px">'+esc(c.cliente)+'</td><td style="font-size:12px">'+esc(c.loja)+'</td><td>'+fmtM(c.valor)+'</td><td>'+fmtM(c.honorarios)+'</td><td style="color:#0F6E56;font-weight:600">'+fmtM(c.nossaCom)+'</td><td>'+badges+'</td><td style="font-size:12px;color:#666">'+fmtD(c.dtVenda)+'</td></tr>';
     }).join('')+'</tbody></table></div>':
     '<div class="empty-state" style="padding:1.5rem;text-align:center;color:#aaa">Nenhum lançamento neste período</div>';
@@ -3159,9 +3335,14 @@ async function salvarEdicaoNF(){
   n.docUrgente=document.getElementById('en-urgente').checked;
   n.ocVinculada=(document.getElementById('en-ocVinculada').value||'').trim();
   n.editadoPor=usuarioLogado?usuarioLogado.nome:'';
+  // v4.0: se o checkbox "documento pronto" acabou de ser marcado nesta edição,
+  // propaga pro crédito vinculado (finalizado=true) - mesma lógica do botão
+  // "Marcar pronto" do Painel.
+  var prontoAgoraNovo=prontoMarcado&&!(n._prontoAntes===true);
   if(SURL){
     try{
       await apiUpdate('NFS',n);
+      if(prontoAgoraNovo)await finalizarCreditoDaNF(n);
     }catch(e){alert('Erro ao salvar: '+e.message);return;}
   }
   fecharModalEditarNF();
@@ -3252,10 +3433,12 @@ function gerarRelatorioNFRecebidas(){
     // Bloco NFs normais
     if(normais.length){
       html+='<div style="font-size:11px;color:var(--txt3);margin:.3rem 0">NFS RECEBIDAS</div>';
-      html+='<div style="overflow-x:auto"><table><thead><tr><th>Cliente</th><th>CPF/CNPJ</th><th>Vendedor</th><th>Dt Faturamento</th><th>Dt Recebimento</th><th>Cortesia</th></tr></thead><tbody>';
+      html+='<div style="overflow-x:auto"><table><thead><tr><th>Cliente</th><th>CPF/CNPJ</th><th>Vendedor</th><th>Dt Faturamento</th><th>Dt Recebimento</th><th>Cortesia</th><th>Revenda</th><th>PCD</th></tr></thead><tbody>';
       normais.forEach(function(n){
         var cort=nfEhCortesia(n);
-        html+='<tr><td>'+esc(n.cliente||'')+'</td><td>'+esc(n.doc||'')+'</td><td>'+esc(n.vendedor||'')+'</td><td>'+fmtD(n.dtFat)+'</td><td>'+fmtD(n.dtReceb)+'</td><td>'+(cort?'Sim':'Não')+'</td></tr>';
+        var rev=nfEhRevenda(n);
+        var pcd=nfEhPcd(n);
+        html+='<tr><td>'+esc(n.cliente||'')+'</td><td>'+esc(n.doc||'')+'</td><td>'+esc(n.vendedor||'')+'</td><td>'+fmtD(n.dtFat)+'</td><td>'+fmtD(n.dtReceb)+'</td><td>'+(cort?'Sim':'Não')+'</td><td>'+(rev?'Sim':'Não')+'</td><td>'+(pcd?'Sim':'Não')+'</td></tr>';
       });
       html+='</tbody></table></div>';
     }
@@ -3290,6 +3473,23 @@ function nfEhCortesia(n){
   }
   return false;
 }
+// v4.0: busca o crédito vinculado à NF (mesma lógica do nfEhCortesia)
+// e devolve o valor de um campo booleano. Usado por nfEhRevenda e nfEhPcd.
+function nfFlagDoCredito(n,campo){
+  if(!n)return false;
+  var oc=n.ocVinculada;
+  if(oc){
+    var byOc=creditos.find(function(c){return c.oc&&String(c.oc)===String(oc);});
+    if(byOc)return byOc[campo]===true||byOc[campo]==='TRUE';
+  }
+  if(n.doc&&n.chassi){
+    var byDocChassi=creditos.find(function(c){return c.doc===n.doc&&c.chassi===n.chassi;});
+    if(byDocChassi)return byDocChassi[campo]===true||byDocChassi[campo]==='TRUE';
+  }
+  return false;
+}
+function nfEhRevenda(n){return nfFlagDoCredito(n,'revenda');}
+function nfEhPcd(n){return nfFlagDoCredito(n,'pcd');}
 
 // Detecta se a NF é venda direta (mesmo método - via crédito vinculado)
 function nfEhVendaDireta(n){
@@ -3363,6 +3563,8 @@ function exportarNFRecebidasXLSX(){
         'Dt Recebimento NF':fmtD(n.dtReceb),
         'Cortesia':nfEhCortesia(n)?'Sim':'Nao',
         'Venda Direta':nfEhVendaDireta(n)?'Sim':'Nao',
+        'Revenda':nfEhRevenda(n)?'Sim':'Nao',
+        'PCD':nfEhPcd(n)?'Sim':'Nao',
         'Placa':nfPlaca(n),
         'Obs':n.obs||''
       };
@@ -3386,6 +3588,8 @@ function exportarNFRecebidasXLSX(){
           'NF Fora':'Sim',
           'Motivo NF Fora':n.motivoNfFora||'',
           'Venda Direta':nfEhVendaDireta(n)?'Sim':'Nao',
+          'Revenda':nfEhRevenda(n)?'Sim':'Nao',
+          'PCD':nfEhPcd(n)?'Sim':'Nao',
           'Obs':n.obs||''
         };
       });
@@ -3650,7 +3854,7 @@ function gerarFechamentoComissao(){
   }
   html+='<div class="section-title" style="margin-bottom:.5rem">Créditos no período'+(d.loja?' — '+esc(d.loja):'')+'</div><div style="overflow-x:auto"><table><thead><tr><th>OC</th><th>Cliente</th><th>Placa</th><th>Loja</th><th>Vendedor</th><th>Valor</th><th>Com. vendedor</th><th>Honorários</th><th>Marcadores</th><th>Data venda</th></tr></thead><tbody>'+
     (d.list.length?d.list.map(function(c){
-      var badges=[cortesiaBadge(isCortesia(c)),vendaDiretaBadge(c),somenteComissaoBadge(c)].filter(Boolean).join(' ')||'—';
+      var badges=[cortesiaBadge(isCortesia(c)),vendaDiretaBadge(c),somenteComissaoBadge(c),revendaBadge(c),comissaoAtpvBadge(c),pcdBadge(c),finalizadoBadge(c)].filter(Boolean).join(' ')||'—';
       return'<tr><td style="font-size:11px;color:#888">'+(c.oc?esc(c.oc):'—')+'</td><td style="font-weight:600">'+(c.cliente?esc(c.cliente):'—')+'</td><td>'+(c.placa?esc(c.placa):'—')+'</td><td>'+esc(c.loja)+'</td><td>'+esc(c.vendedor)+'</td><td>'+fmtM(c.valor)+'</td><td style="color:#854F0B;font-weight:600">'+fmtM(c.comissao)+'</td><td>'+fmtM(c.honorarios)+'</td><td>'+badges+'</td><td>'+fmtD(c.dtVenda)+'</td></tr>';
     }).join(''):'<tr><td colspan="10" class="empty-state">Nenhum crédito nesse período</td></tr>')+
     '</tbody></table></div></div>';
